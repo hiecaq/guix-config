@@ -15,9 +15,6 @@ This is my all-in-one [[https://guix.gnu.org/][Guix]] configuration, working in 
 Unless explicitly stated, all code in this configuration is under GPL3 license.
 
 * Home Configuration
-:PROPERTIES:
-:header-args:scheme: :tangle "build/home-configuration.scm"
-:END:
 This is the main entry point for =guix home=. It can be tested with
 #+begin_src sh
   guix home -L build container build/home-configuration.scm
@@ -27,30 +24,39 @@ and deployed with
   guix home -L build reconfigure build/home-configuration.scm
 #+end_src
 
-#+begin_src scheme
+#+begin_src scheme :tangle "build/home-configuration.scm" :noweb yes
   (use-modules
    (gnu home)
    (gnu services)
    (gnu packages)
-   ((hiecaq home shell) #:prefix shell:)
-   ((hiecaq home fonts) #:prefix fonts:))
+   <<home-module>>
+   )
 
   (home-environment
-   (essential-services
-    (fonts:modify-essential-service
-     ((@@(gnu home) home-environment-default-essential-services)
-      this-home-environment)))
-   (packages (specifications->packages
-              (list
-               "fd"
-               "ripgrep"
-               "neovim"
-               "guile"
-               "glibc-locales")))
+   <<home-environment-conf>>
    (services
     (append
-     shell:services
-     fonts:services)))
+     <<home-environment-service>>
+     )))
+#+end_src
+
+This basically reads the default essential service list, and modifies it as needed. ~home-environment-default-essential-services~ is private, so we have to use [[https://www.gnu.org/software/guile/manual/html_node/Using-Guile-Modules.html][@@]] syntax to force importing it. Maybe there is a better way.
+#+begin_src scheme :noweb-ref home-environment-conf
+  (essential-services
+   (fonts:modify-essential-service
+    ((@@(gnu home) home-environment-default-essential-services)
+     this-home-environment)))
+#+end_src
+
+This is a list of packages that are not installed by services. Eventually this list should be empty.
+#+begin_src scheme :noweb-ref home-environment-conf
+  (packages (specifications->packages
+             (list
+              "fd"
+              "ripgrep"
+              "neovim"
+              "guile"
+              "glibc-locales")))
 #+end_src
 
 * Shells
@@ -232,6 +238,13 @@ And the aliases that I'm using:
   alias gc="git commit -v"
 #+end_src
 
+#+begin_src scheme :tangle no :noweb-ref home-module
+  ((hiecaq home shell) #:prefix shell:)
+#+end_src
+
+#+begin_src scheme :tangle no :noweb-ref home-environment-service
+  shell:services
+#+end_src
 * Fonts
 :PROPERTIES:
 :header-args:scheme: :tangle "build/hiecaq/home/fonts.scm"
@@ -336,6 +349,13 @@ this module simply provides a single service that install the fonts needed.
             font-google-noto-sans-cjk))))
 #+end_src
 
+#+begin_src scheme :tangle no :noweb-ref home-module
+  ((hiecaq home fonts) #:prefix fonts:)
+#+end_src
+
+#+begin_src scheme :tangle no :noweb-ref home-environment-service
+  fonts:services
+#+end_src
 * References and Recommendations
 This configuration is written while referencing the following guix configurations:
 - [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
