@@ -60,8 +60,6 @@ This is a list of packages that are not installed by services. Eventually this l
 #+begin_src scheme :noweb-ref home-environment-conf
   (packages (specifications->packages
              (list
-              "fd"
-              "ripgrep"
               "neovim"
               "guile"
               )))
@@ -343,6 +341,28 @@ Add [[https://github.com/ogham/exa][exa]], which is "a modern replacement for =l
                  "*.zip=0:*.gz=0:*.rar=0:*.tar=0:*.7z=0:ex=31:di=244;1"))))))
     (default-value #f)
     (description #f)))
+#+end_src
+
+*** ripgrep
+Add [[https://github.com/BurntSushi/ripgrep][ripgrep]], which is "a line-oriented search tool that recursively searches the current directory for a regex pattern". In other words, it is a modern =grep=.
+#+begin_src scheme
+  (simple-service
+   'home-ripgrep
+   home-profile-service-type
+   (list
+    (specification->package
+     "ripgrep")))
+#+end_src
+
+*** fd
+Add [[https://github.com/sharkdp/fd][fd]], which is "a simple, fast and user-friendly alternative to 'find'".
+#+begin_src scheme
+  (simple-service
+   'home-fd
+   home-profile-service-type
+   (list
+    (specification->package
+     "fd")))
 #+end_src
 
 ** Aliases
