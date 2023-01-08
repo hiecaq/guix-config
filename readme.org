@@ -11,6 +11,9 @@
 - [[#cross-desktop-group-xdg][Cross-Desktop Group (XDG)]]
   - [[#user-directories][User Directories]]
 - [[#shells][Shells]]
+  - [[#zsh][Zsh]]
+  - [[#tools][Tools]]
+  - [[#aliases][Aliases]]
 - [[#fonts][Fonts]]
 - [[#references-and-recommendations][References and Recommendations]]
 
@@ -172,11 +175,7 @@ As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-u
     (videos      "$HOME/videos")))
 #+end_src
 * Shells
-:PROPERTIES:
-:header-args:scheme: :tangle "build/hiecaq/home/shell.scm"
-:END:
-
-#+begin_src scheme
+#+begin_src scheme :tangle "build/hiecaq/home/shell.scm"
   (define-module (hiecaq home shell)
     #:use-module (gnu home)
     #:use-module (gnu services)
@@ -190,25 +189,68 @@ As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-u
     #:use-module (rde home services shells))
 #+end_src
 
+TODO: I should split this out later.
+#+begin_src scheme :tangle "build/hiecaq/home/shell.scm" :noweb yes
+  (define-public services
+    (list
+     (simple-service
+      'extend-environment-variables
+      home-environment-variables-service-type
+      `(("PS1" . "$ ")
+        ("EDITOR" . "nvim")
+        ("VISUAL" . "nvim")
+        ("MANPAGER" . "nvim +Man!")
+        ("MANWIDTH" . "80")
+        ("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")))
+     <<shell-service>>
+     ))
+#+end_src
+
+Add this module and its services:
+#+begin_src scheme :tangle no :noweb-ref home-module
+  ((hiecaq home shell) #:prefix shell:)
+#+end_src
+
+#+begin_src scheme :tangle no :noweb-ref home-environment-service
+  shell:services
+#+end_src
+
+** Zsh
+:PROPERTIES:
+:header-args:scheme: :noweb-ref shell-service
+:END:
+I'm currently using [[https://www.zsh.org/][zsh]] as my primary shell.
+#+begin_src scheme
+  (service
+   home-zsh-service-type
+   (home-zsh-configuration
+    (zshrc
+     (list (slurp-file-like (local-file "../../.zshrc"
+                                        "zshrc"))
+           (slurp-file-like (local-file "../../.aliases"
+                                        "aliases"))))))
+#+end_src
+
+*** syntax highlighting
 Add [[https://github.com/zsh-users/zsh-syntax-highlighting][zsh-syntax-highlighting]], which provides "fish shell like syntax highlighting for Zsh."
 #+begin_src scheme
-  (define home-zsh-syntax-highlighting-service-type
-    (service-type
-     (name 'home-zsh-syntax-highlighting)
-     (extensions
-      (list
-       (service-extension home-zsh-plugin-manager-service-type
-                          (const
-                           (list
-                            (specification->package
-                             "zsh-syntax-highlighting"))))
-       (service-extension
-        home-zsh-service-type
-        (const
-         (home-zsh-extension
-          (zshrc '("# Improve highlighting")))))))
-     (default-value #f)
-     (description #f)))
+  (service
+   (service-type
+    (name 'home-zsh-syntax-highlighting)
+    (extensions
+     (list
+      (service-extension home-zsh-plugin-manager-service-type
+                         (const
+                          (list
+                           (specification->package
+                            "zsh-syntax-highlighting"))))
+      (service-extension
+       home-zsh-service-type
+       (const
+        (home-zsh-extension
+         (zshrc '("# Improve highlighting")))))))
+    (default-value #f)
+    (description #f)))
 #+end_src
 And its configuration
 #+begin_src sh :tangle "build/.zshrc"
@@ -257,70 +299,53 @@ And its configuration
   ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets)
 #+end_src
 
+** Tools
+:PROPERTIES:
+:header-args:scheme: :noweb-ref shell-service
+:END:
+There are many tools that enhance the command line user experience.
+*** bat
 Add [[https://github.com/sharkdp/bat][bat]], which is a =cat= clone with colors.
 #+begin_src scheme
-  (define home-bat-service-type
-    (service-type
-     (name 'home-bat)
-     (extensions
-      (list
-       (service-extension
-        home-profile-service-type
-        (const (list
-                (specification->package
-                 "bat"))))
-       (service-extension
-        home-environment-variables-service-type
-        (const '(("BAT_THEME" . "TwoDark"))))))
-     (default-value #f)
-     (description #f)))
+  (service
+   (service-type
+    (name 'home-bat)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list
+               (specification->package
+                "bat"))))
+      (service-extension
+       home-environment-variables-service-type
+       (const '(("BAT_THEME" . "TwoDark"))))))
+    (default-value #f)
+    (description #f)))
 #+end_src
 
+*** exa
 Add [[https://github.com/ogham/exa][exa]], which is "a modern replacement for =ls=".
 #+begin_src scheme
-  (define home-exa-service-type
-    (service-type
-     (name 'home-exa)
-     (extensions
-      (list
-       (service-extension
-        home-profile-service-type
-        (const (list
-                (specification->package
-                 "exa"))))
-       (service-extension
-        home-environment-variables-service-type
-        (const '(("EXA_COLORS" .
-                  "*.zip=0:*.gz=0:*.rar=0:*.tar=0:*.7z=0:ex=31:di=244;1"))))))
-     (default-value #f)
-     (description #f)))
+  (service
+   (service-type
+    (name 'home-exa)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list
+               (specification->package
+                "exa"))))
+      (service-extension
+       home-environment-variables-service-type
+       (const '(("EXA_COLORS" .
+                 "*.zip=0:*.gz=0:*.rar=0:*.tar=0:*.7z=0:ex=31:di=244;1"))))))
+    (default-value #f)
+    (description #f)))
 #+end_src
 
-TODO: I should split this out later.
-#+begin_src scheme
-  (define-public services
-    (list
-     (simple-service
-      'extend-environment-variables
-      home-environment-variables-service-type
-      `(("PS1" . "$ ")
-        ("EDITOR" . "nvim")
-        ("VISUAL" . "nvim")
-        ("MANPAGER" . "nvim +Man!")
-        ("MANWIDTH" . "80")
-        ("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")))
-     (service home-zsh-syntax-highlighting-service-type)
-     (service home-zsh-service-type
-              (home-zsh-configuration
-               (zshrc
-                (list (slurp-file-like (local-file "../../.zshrc"
-                                                   "zshrc"))
-                      (slurp-file-like (local-file "../../.aliases"
-                                                   "aliases"))))))
-     (service home-bat-service-type)
-     (service home-exa-service-type)))
-#+end_src
-
+** Aliases
 And the aliases that I'm using:
 #+begin_src sh :tangle "build/.aliases"
   alias v="nvim"
@@ -330,14 +355,6 @@ And the aliases that I'm using:
   alias l="exa --git-ignore"
   alias l.="ls -lah"
   alias gc="git commit -v"
-#+end_src
-
-#+begin_src scheme :tangle no :noweb-ref home-module
-  ((hiecaq home shell) #:prefix shell:)
-#+end_src
-
-#+begin_src scheme :tangle no :noweb-ref home-environment-service
-  shell:services
 #+end_src
 * Fonts
 :PROPERTIES:
@@ -355,7 +372,8 @@ This file describe how fonts are configured.
     #:use-module ((gnu home services fontutils) #:prefix fontutils:))
 #+end_src
 
-The ~home-fontconfig-service-type~ from vanilla =guix= comes with a =fonts.conf= that is literately inconfigurable, so we have to overwrite it. SIDE NOTES: I cannot use ~@@~ to import ~regenerate-font-cache-gexp~ from =(gnu home services fontutils)= I have totally no idea why.
+The ~home-fontconfig-service-type~ from vanilla =guix= comes with a =fonts.conf= that is literately inconfigurable, so we have to overwrite it.
+SIDE NOTES: I cannot use ~@@~ to import ~regenerate-font-cache-gexp~ from =(gnu home services fontutils)= I have totally no idea why.
 #+begin_src scheme
   (define (add-fontconfig-config-file he-symlink-path)
     `(("fontconfig/fonts.conf"
