@@ -8,6 +8,8 @@
 - [[#guix][Guix]]
   - [[#locales][Locales]]
   - [[#channels][Channels]]
+- [[#cross-desktop-group-xdg][Cross-Desktop Group (XDG)]]
+  - [[#user-directories][User Directories]]
 - [[#shells][Shells]]
 - [[#fonts][Fonts]]
 - [[#references-and-recommendations][References and Recommendations]]
@@ -72,8 +74,6 @@ This file defines those settings related to Guix itself.
     #:use-module (gnu home services guix)
     #:use-module (guix channels))
 
-  <<guix-define>>
-
   (define-public services
     (list
      <<guix-service>>
@@ -96,26 +96,22 @@ Add this module and its services:
 
 ** Locales
 Set the locales as recommended in [[https://guix.gnu.org/manual/en/html_node/Application-Setup.html][the manual]].
-#+begin_src scheme :noweb-ref guix-define
-  (define home-locale-service-type
-    (service-type
-     (name 'home-locale)
-     (extensions
-      (list
-       (service-extension
-        home-profile-service-type
-        (const (list
-                (specification->package
-                 "glibc-locales"))))
-       (service-extension
-        home-environment-variables-service-type
-        (const '(("GUIX_LOCPATH" . "${GUIX_PROFILE}/lib/locale"))))))
-     (default-value #f)
-     (description #f)))
-#+end_src
-
 #+begin_src scheme :noweb-ref guix-service
-  (service home-locale-service-type)
+  (service
+   (service-type
+    (name 'home-locale)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list
+               (specification->package
+                "glibc-locales"))))
+      (service-extension
+       home-environment-variables-service-type
+       (const '(("GUIX_LOCPATH" . "${GUIX_PROFILE}/lib/locale"))))))
+    (default-value #f)
+    (description #f)))
 #+end_src
 
 ** Channels
@@ -134,6 +130,47 @@ Set the locales as recommended in [[https://guix.gnu.org/manual/en/html_node/App
       "2841 9AC6 5038 7440 C7E9  2FFA 2208 D209 58C1 DEB0"))))
 #+end_src
 
+* Cross-Desktop Group (XDG)
+This section defines those settings related to the [[https://www.freedesktop.org/wiki/Specifications/][XDG]] specifications.
+#+begin_src scheme :tangle "build/hiecaq/home/xdg.scm" :noweb yes
+  (define-module (hiecaq home xdg)
+    #:use-module (gnu services)
+    #:use-module (gnu packages)
+    #:use-module (gnu home services)
+    #:use-module (gnu home services xdg)
+    #:use-module (guix channels))
+
+  (define-public services
+    (list
+     <<xdg-service>>
+     ))
+#+end_src
+
+Add this module and its services:
+#+begin_src scheme :noweb-ref home-module
+  ((hiecaq home xdg) #:prefix xdg:)
+#+end_src
+
+#+begin_src scheme :noweb-ref home-environment-service
+  xdg:services
+#+end_src
+
+** User Directories
+As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-user-dirs]], this defines "well known" user directories, and their localization.
+#+begin_src scheme :noweb-ref xdg-service
+  (simple-service
+   'xdg-user-directories-config-service
+   home-xdg-user-directories-service-type
+   (home-xdg-user-directories-configuration
+    (desktop     "$HOME/desktop")
+    (documents   "$HOME/documents")
+    (download    "$HOME/downloads")
+    (music       "$HOME/music")
+    (pictures    "$HOME/pictures")
+    (publicshare "$HOME/public")
+    (templates   "$HOME/templates")
+    (videos      "$HOME/videos")))
+#+end_src
 * Shells
 :PROPERTIES:
 :header-args:scheme: :tangle "build/hiecaq/home/shell.scm"
@@ -146,7 +183,6 @@ Set the locales as recommended in [[https://guix.gnu.org/manual/en/html_node/App
     #:use-module (gnu packages)
     #:use-module (gnu home services)
     #:use-module (guix channels)
-    #:use-module (gnu home services xdg)
     #:use-module (gnu home services guix)
     #:use-module (gnu home-services shellutils)
     #:use-module (guix gexp)
@@ -273,18 +309,6 @@ TODO: I should split this out later.
         ("MANPAGER" . "nvim +Man!")
         ("MANWIDTH" . "80")
         ("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")))
-     (simple-service
-      'xdg-user-directories-config-service
-      home-xdg-user-directories-service-type
-      (home-xdg-user-directories-configuration
-       (desktop     "$HOME/desktop")
-       (documents   "$HOME/documents")
-       (download    "$HOME/downloads")
-       (music       "$HOME/music")
-       (pictures    "$HOME/pictures")
-       (publicshare "$HOME/public")
-       (templates   "$HOME/templates")
-       (videos      "$HOME/videos")))
      (service home-zsh-syntax-highlighting-service-type)
      (service home-zsh-service-type
               (home-zsh-configuration
