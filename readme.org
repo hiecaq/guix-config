@@ -5,6 +5,9 @@
 * Table of Contents :TOC:noexport:
 - [[#introduction][Introduction]]
 - [[#home-configuration][Home Configuration]]
+- [[#guix][Guix]]
+  - [[#locales][Locales]]
+  - [[#channels][Channels]]
 - [[#shells][Shells]]
 - [[#fonts][Fonts]]
 - [[#references-and-recommendations][References and Recommendations]]
@@ -56,7 +59,79 @@ This is a list of packages that are not installed by services. Eventually this l
               "ripgrep"
               "neovim"
               "guile"
-              "glibc-locales")))
+              )))
+#+end_src
+
+* Guix
+This file defines those settings related to Guix itself.
+#+begin_src scheme :tangle "build/hiecaq/home/guix.scm" :noweb yes
+  (define-module (hiecaq home guix)
+    #:use-module (gnu services)
+    #:use-module (gnu packages)
+    #:use-module (gnu home services)
+    #:use-module (gnu home services guix)
+    #:use-module (guix channels))
+
+  <<guix-define>>
+
+  (define-public services
+    (list
+     <<guix-service>>
+     (simple-service
+      'variant-packages-service
+      home-channels-service-type
+      (list
+       <<guix-channel>>
+       ))))
+#+end_src
+
+Add this module and its services:
+#+begin_src scheme :noweb-ref home-module
+  ((hiecaq home guix) #:prefix guix:)
+#+end_src
+
+#+begin_src scheme :noweb-ref home-environment-service
+  guix:services
+#+end_src
+
+** Locales
+Set the locales as recommended in [[https://guix.gnu.org/manual/en/html_node/Application-Setup.html][the manual]].
+#+begin_src scheme :noweb-ref guix-define
+  (define home-locale-service-type
+    (service-type
+     (name 'home-locale)
+     (extensions
+      (list
+       (service-extension
+        home-profile-service-type
+        (const (list
+                (specification->package
+                 "glibc-locales"))))
+       (service-extension
+        home-environment-variables-service-type
+        (const '(("GUIX_LOCPATH" . "${GUIX_PROFILE}/lib/locale"))))))
+     (default-value #f)
+     (description #f)))
+#+end_src
+
+#+begin_src scheme :noweb-ref guix-service
+  (service home-locale-service-type)
+#+end_src
+
+** Channels
+:PROPERTIES:
+:header-args:scheme: :noweb-ref guix-channel
+:END:
+[[https://git.sr.ht/~abcdw/rde][rde]] is a "developers and power user friendly GNU/Linux distribution based on GNU Guix package manager", which can be used as a channel directly. In this way, I can use the helper procedures that it defines.
+#+begin_src scheme
+  (channel
+   (name 'rde)
+   (url "https://git.sr.ht/~abcdw/rde")
+   (introduction
+    (make-channel-introduction
+     "257cebd587b66e4d865b3537a9a88cccd7107c95"
+     (openpgp-fingerprint
+      "2841 9AC6 5038 7440 C7E9  2FFA 2208 D209 58C1 DEB0"))))
 #+end_src
 
 * Shells
@@ -196,25 +271,8 @@ TODO: I should split this out later.
         ("EDITOR" . "nvim")
         ("VISUAL" . "nvim")
         ("MANPAGER" . "nvim +Man!")
-        ("MANWIDTH" . "80")))
-     (simple-service
-      'extend-environment-variables2
-      home-environment-variables-service-type
-      `(("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")
-        ("GUIX_LOCPATH" . "${GUIX_PROFILE}/lib/locale")
-        ))
-     (simple-service
-      'variant-packages-service
-      home-channels-service-type
-      (list
-       (channel
-        (name 'rde)
-        (url "https://git.sr.ht/~abcdw/rde")
-        (introduction
-         (make-channel-introduction
-          "257cebd587b66e4d865b3537a9a88cccd7107c95"
-          (openpgp-fingerprint
-           "2841 9AC6 5038 7440 C7E9  2FFA 2208 D209 58C1 DEB0"))))))
+        ("MANWIDTH" . "80")
+        ("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")))
      (simple-service
       'xdg-user-directories-config-service
       home-xdg-user-directories-service-type
