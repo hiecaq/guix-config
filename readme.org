@@ -104,6 +104,18 @@ And its configuration
   # Declare the variable
   typeset -A ZSH_HIGHLIGHT_STYLES
 
+  # disable highlighting for unknown-token
+  ZSH_HIGHLIGHT_STYLES[unknown-token]='none'
+
+  # use blue to highlight command(e.g., git)
+  ZSH_HIGHLIGHT_STYLES[command]='fg=004'
+
+  # builtins(e.g., pwd): blue, italic
+  ZSH_HIGHLIGHT_STYLES[builtin]='fg=004,standout'
+
+  # commandseparator(;, &&): lighter gray
+  ZSH_HIGHLIGHT_STYLES[commandseparator]='fg=014'
+
   # alias: blue
   ZSH_HIGHLIGHT_STYLES[alias]='fg=004'
 
