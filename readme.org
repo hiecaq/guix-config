@@ -1,0 +1,348 @@
+# -*- org-use-property-inheritance: t; -*-
+#+title: hiecaq's guix configuration
+#+property: header-args :comments org :results silent :mkdirp t
+
+* Table of Contents :TOC:noexport:
+- [[#introduction][Introduction]]
+- [[#home-configuration][Home Configuration]]
+- [[#shells][Shells]]
+- [[#fonts][Fonts]]
+- [[#references-and-recommendations][References and Recommendations]]
+
+* Introduction
+This is my all-in-one [[https://guix.gnu.org/][Guix]] configuration, working in progress. This aims to eventually replace and deprecate [[https://github.com/hiecaq/dotfiles][my dotfiles]], which has too many historical burdens.
+
+Unless explicitly stated, all code in this configuration is under GPL3 license.
+
+* Home Configuration
+:PROPERTIES:
+:header-args:scheme: :tangle "build/home-configuration.scm"
+:END:
+This is the main entry point for =guix home=. It can be tested with
+#+begin_src sh
+  guix home -L build container build/home-configuration.scm
+#+end_src
+and deployed with
+#+begin_src sh
+  guix home -L build reconfigure build/home-configuration.scm
+#+end_src
+
+#+begin_src scheme
+  (use-modules
+   (gnu home)
+   (gnu services)
+   (gnu packages)
+   ((hiecaq home shell) #:prefix shell:)
+   ((hiecaq home fonts) #:prefix fonts:))
+
+  (home-environment
+   (essential-services
+    (fonts:modify-essential-service
+     ((@@(gnu home) home-environment-default-essential-services)
+      this-home-environment)))
+   (packages (specifications->packages
+              (list
+               "fd"
+               "ripgrep"
+               "neovim"
+               "guile"
+               "glibc-locales")))
+   (services
+    (append
+     shell:services
+     fonts:services)))
+#+end_src
+
+* Shells
+:PROPERTIES:
+:header-args:scheme: :tangle "build/hiecaq/home/shell.scm"
+:END:
+
+#+begin_src scheme
+  (define-module (hiecaq home shell)
+    #:use-module (gnu home)
+    #:use-module (gnu services)
+    #:use-module (gnu packages)
+    #:use-module (gnu home services)
+    #:use-module (guix channels)
+    #:use-module (gnu home services xdg)
+    #:use-module (gnu home services guix)
+    #:use-module (gnu home-services shellutils)
+    #:use-module (guix gexp)
+    #:use-module (rde gexp)
+    #:use-module (rde home services shells))
+#+end_src
+
+Add [[https://github.com/zsh-users/zsh-syntax-highlighting][zsh-syntax-highlighting]], which provides "fish shell like syntax highlighting for Zsh."
+#+begin_src scheme
+  (define home-zsh-syntax-highlighting-service-type
+    (service-type
+     (name 'home-zsh-syntax-highlighting)
+     (extensions
+      (list
+       (service-extension home-zsh-plugin-manager-service-type
+                          (const
+                           (list
+                            (specification->package
+                             "zsh-syntax-highlighting"))))
+       (service-extension
+        home-zsh-service-type
+        (const
+         (home-zsh-extension
+          (zshrc '("# Improve highlighting")))))))
+     (default-value #f)
+     (description #f)))
+#+end_src
+And its configuration
+#+begin_src sh :tangle "build/.zshrc"
+  # Declare the variable
+  typeset -A ZSH_HIGHLIGHT_STYLES
+
+  # alias: blue
+  ZSH_HIGHLIGHT_STYLES[alias]='fg=004'
+
+  # single hyphen-option: darker red,italic
+  ZSH_HIGHLIGHT_STYLES[single-hyphen-option]='fg=001'
+
+  # double hyphen-option: darker red
+  ZSH_HIGHLIGHT_STYLES[double-hyphen-option]='fg=001'
+
+  # quoted arguments(strings)
+  ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=006'
+  ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=006'
+
+  # dollar quoted arguments:gold
+  ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]='fg=003'
+
+  # other commands: red
+  ZSH_HIGHLIGHT_STYLES[arg0]='fg=001'
+
+  # To define styles for nested brackets up to level 4
+  ZSH_HIGHLIGHT_STYLES[bracket-level-1]='fg=010'
+  ZSH_HIGHLIGHT_STYLES[bracket-level-2]='fg=014'
+  ZSH_HIGHLIGHT_STYLES[bracket-level-3]='fg=010'
+  ZSH_HIGHLIGHT_STYLES[bracket-level-4]='fg=014'
+  ZSH_HIGHLIGHT_STYLES[bracket-error]='fg=001'
+  ZSH_HIGHLIGHT_STYLES[cursor-matchingbracket]='fg=007'
+
+  ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets)
+#+end_src
+
+Add [[https://github.com/sharkdp/bat][bat]], which is a =cat= clone with colors.
+#+begin_src scheme
+  (define home-bat-service-type
+    (service-type
+     (name 'home-bat)
+     (extensions
+      (list
+       (service-extension
+        home-profile-service-type
+        (const (list
+                (specification->package
+                 "bat"))))
+       (service-extension
+        home-environment-variables-service-type
+        (const '(("BAT_THEME" . "TwoDark"))))))
+     (default-value #f)
+     (description #f)))
+#+end_src
+
+Add [[https://github.com/ogham/exa][exa]], which is "a modern replacement for =ls=".
+#+begin_src scheme
+  (define home-exa-service-type
+    (service-type
+     (name 'home-exa)
+     (extensions
+      (list
+       (service-extension
+        home-profile-service-type
+        (const (list
+                (specification->package
+                 "exa"))))
+       (service-extension
+        home-environment-variables-service-type
+        (const '(("EXA_COLORS" .
+                  "*.zip=0:*.gz=0:*.rar=0:*.tar=0:*.7z=0:ex=31:di=244;1"))))))
+     (default-value #f)
+     (description #f)))
+#+end_src
+
+TODO: I should split this out later.
+#+begin_src scheme
+  (define-public services
+    (list
+     (simple-service
+      'extend-environment-variables
+      home-environment-variables-service-type
+      `(("PS1" . "$ ")
+        ("EDITOR" . "nvim")
+        ("VISUAL" . "nvim")
+        ("MANPAGER" . "nvim +Man!")
+        ("MANWIDTH" . "80")))
+     (simple-service
+      'extend-environment-variables2
+      home-environment-variables-service-type
+      `(("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")
+        ("GUIX_LOCPATH" . "${GUIX_PROFILE}/lib/locale")
+        ))
+     (simple-service
+      'variant-packages-service
+      home-channels-service-type
+      (list
+       (channel
+        (name 'rde)
+        (url "https://git.sr.ht/~abcdw/rde")
+        (introduction
+         (make-channel-introduction
+          "257cebd587b66e4d865b3537a9a88cccd7107c95"
+          (openpgp-fingerprint
+           "2841 9AC6 5038 7440 C7E9  2FFA 2208 D209 58C1 DEB0"))))))
+     (simple-service
+      'xdg-user-directories-config-service
+      home-xdg-user-directories-service-type
+      (home-xdg-user-directories-configuration
+       (desktop     "$HOME/desktop")
+       (documents   "$HOME/documents")
+       (download    "$HOME/downloads")
+       (music       "$HOME/music")
+       (pictures    "$HOME/pictures")
+       (publicshare "$HOME/public")
+       (templates   "$HOME/templates")
+       (videos      "$HOME/videos")))
+     (service home-zsh-syntax-highlighting-service-type)
+     (service home-zsh-service-type
+              (home-zsh-configuration
+               (zshrc
+                (list (slurp-file-like (local-file "../../.zshrc"
+                                                   "zshrc"))
+                      (slurp-file-like (local-file "../../.aliases"
+                                                   "aliases"))))))
+     (service home-bat-service-type)
+     (service home-exa-service-type)))
+#+end_src
+
+And the aliases that I'm using:
+#+begin_src sh :tangle "build/.aliases"
+  alias v="nvim"
+  alias e="emacsclient -c --no-wait"
+  alias g="git"
+  alias ls="exa"
+  alias l="exa --git-ignore"
+  alias l.="ls -lah"
+  alias gc="git commit -v"
+#+end_src
+
+* Fonts
+:PROPERTIES:
+:header-args:scheme: :tangle "build/hiecaq/home/fonts.scm"
+:END:
+
+This file describe how fonts are configured.
+#+begin_src scheme
+  (define-module (hiecaq home fonts)
+    #:use-module (gnu services)
+    #:use-module (gnu home services)
+    #:use-module (gnu packages fonts)
+    #:use-module (gnu packages fontutils)
+    #:use-module (guix gexp)
+    #:use-module ((gnu home services fontutils) #:prefix fontutils:))
+#+end_src
+
+The ~home-fontconfig-service-type~ from vanilla =guix= comes with a =fonts.conf= that is literately inconfigurable, so we have to overwrite it. SIDE NOTES: I cannot use ~@@~ to import ~regenerate-font-cache-gexp~ from =(gnu home services fontutils)= I have totally no idea why.
+#+begin_src scheme
+  (define (add-fontconfig-config-file he-symlink-path)
+    `(("fontconfig/fonts.conf"
+       ,(local-file "../../fonts.conf"))))
+
+  (define (regenerate-font-cache-gexp _)
+    `(("profile/share/fonts"
+       ,#~(system* #$(file-append fontconfig "/bin/fc-cache") "-fv"))))
+
+  (define home-fontconfig-service-type
+    (service-type (name 'home-fontconfig)
+                  (extensions
+                   (list (service-extension
+                          home-xdg-configuration-files-service-type
+                          add-fontconfig-config-file)
+                         (service-extension
+                          home-run-on-change-service-type
+                          regenerate-font-cache-gexp)
+                         (service-extension
+                          home-profile-service-type
+                          (const (list fontconfig)))))
+                  (default-value #f)
+                  (description
+                   "Provides configuration file for fontconfig and make
+  fc-* utilities aware of font packages installed in Guix Home's profile.")))
+
+  (define-public (modify-essential-service services)
+    `(,@(modify-services
+         services
+         (delete fontutils:home-fontconfig-service-type))
+      ,(service home-fontconfig-service-type)))
+#+end_src
+
+Here is the modified =fonts.conf=:
+#+begin_src nxml :tangle "build/fonts.conf" :comments no
+  <?xml version="1.0"?>
+  <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+  <fontconfig>
+      <dir>~/.guix-home/profile/share/fonts</dir>
+      <alias>
+          <family>serif</family>
+          <prefer>
+              <family>Noto Serif</family>
+              <family>Noto Serif CJK SC</family>
+              <family>Noto Serif CJK JP</family>
+              <family>Noto Serif CJK TC</family>
+          </prefer>
+      </alias>
+      <alias>
+          <family>sans-serif</family>
+          <prefer>
+              <family>Noto Sans</family>
+              <family>Noto Sans CJK SC</family>
+              <family>Noto Sans CJK JP</family>
+              <family>Noto Sans CJK TC</family>
+          </prefer>
+      </alias>
+      <alias>
+          <family>monospace</family>
+          <prefer>
+              <family>Noto Sans Mono</family>
+              <family>Noto Sans Mono CJK SC</family>
+              <family>Noto Sans Mono CJK JP</family>
+              <family>Noto Sans Mono CJK TC</family>
+          </prefer>
+      </alias>
+      <alias>
+          <family>emoji</family>
+          <prefer>
+              <family>Noto Color Emoji</family>
+          </prefer>
+      </alias>
+  </fontconfig>
+#+end_src
+
+this module simply provides a single service that install the fonts needed.
+#+begin_src scheme
+  (define-public services
+    (list (simple-service
+           'extend-environment-variables
+           home-profile-service-type
+           (list
+            font-hack
+            font-google-noto
+            font-google-noto-sans-cjk))))
+#+end_src
+
+* References and Recommendations
+This configuration is written while referencing the following guix configurations:
+- [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
+- [[https://github.com/dustinlyons/guix-config][Dustin Lyon's Literate Configuration for Guix Linux]]
+- [[https://git.envs.net/iyzsong/guixrc.git][iyzsong's Guix System and Home Config]]
+- [[https://git.sr.ht/~krevedkokun/dotfiles][Nikita Domnitskii's Dotfiles]]
+- [[https://github.com/nicolas-graves/dotfiles][Nicolas Graves's Dotfiles]]
+- [[https://github.com/qbladea/linux-os][Luhux 的 Guix 操作系统配置文件]]
+- [[https://git.sr.ht/~abcdw/rde][rde by Andrew Tropin]]. I use it as a channel.
+- [[https://github.com/tumashu/geeguix][Tumashu's Guixsd Configuration]]
