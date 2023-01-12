@@ -9,6 +9,7 @@
   - [[#locales][Locales]]
   - [[#channels][Channels]]
 - [[#cross-desktop-group-xdg][Cross-Desktop Group (XDG)]]
+  - [[#base-directories][Base Directories]]
   - [[#user-directories][User Directories]]
 - [[#shells][Shells]]
   - [[#zsh][Zsh]]
@@ -156,6 +157,13 @@ Add this module and its services:
   xdg:services
 #+end_src
 
+** Base Directories
+See [[https://specifications.freedesktop.org/basedir-spec/latest/ar01s03.html][Enviroment Variables chapter in latest XDG Base Directory Specification]] for the description on their purposes.
+
+Guix home [[https://git.savannah.gnu.org/cgit/guix.git/tree/gnu/home.scm#n86][instantiate]] [[https://git.savannah.gnu.org/cgit/guix.git/tree/gnu/home/services/xdg.scm#n148][it]] by default, so technically there is no configuration needed, unless we want to modify their values.
+
+Note that their values are set in =$GUIX_HOME/setup-environment=, which should be run by =$HOME/.profile=, which is sourced at the beginning of a login shell.
+
 ** User Directories
 As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-user-dirs]], this defines "well known" user directories, and their localization.
 #+begin_src scheme :noweb-ref xdg-service
@@ -172,6 +180,7 @@ As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-u
     (templates   "$HOME/templates")
     (videos      "$HOME/videos")))
 #+end_src
+
 * Shells
 #+begin_src scheme :tangle "build/hiecaq/home/shell.scm"
   (define-module (hiecaq home shell)
