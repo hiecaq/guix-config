@@ -498,6 +498,580 @@ this module simply provides a single service that install the fonts needed.
 #+begin_src scheme :tangle no :noweb-ref home-environment-service
   fonts:services
 #+end_src
+
+* Emacs
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle "build/init.el"
+:header-args:scheme: :noweb-ref emacs-service
+:END:
+TODO: I'm still not sure if I should put some config as big as Emacs' in this file.
+#+begin_src scheme :tangle "build/hiecaq/home/emacs.scm" :noweb yes :noweb-ref nil
+  (define-module (hiecaq home emacs)
+    #:use-module (gnu services)
+    #:use-module (gnu packages)
+    #:use-module (gnu home services)
+    #:use-module (guix gexp))
+
+  (define-public services
+    (list
+     <<emacs-service>>))
+#+end_src
+
+Add this module and its services:
+#+begin_src scheme :noweb-ref home-module
+  ((hiecaq home emacs) #:prefix emacs:)
+#+end_src
+
+#+begin_src scheme :noweb-ref home-environment-service
+  emacs:services
+#+end_src
+** Basics
+I'm currently using =emacs-next= from Guix official channel.
+#+begin_src scheme
+  (service
+   (service-type
+    (name 'home-emacs)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list
+               (specification->package
+                "emacs-next"))))
+      (service-extension
+       home-xdg-configuration-files-service-type
+       (const `(("emacs/init.el" ,(local-file "../../init.el"))
+                ("emacs/early-init.el" ,(local-file "../../early-init.el")))))
+      (service-extension
+       home-environment-variables-service-type
+       (const '(("EDITOR" . "emacsclient -a nvim -c")
+                ("VISUAL" . "emacsclient -a nvim -c"))))))
+
+    (default-value #f)
+    (description #f)))
+#+end_src
+** Early Initialization
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle "build/early-init.el"
+:END:
+#+begin_src emacs-lisp :comments no
+  ;;; early-init.el --- Configurations before package systems and UI systems -*- lexical-binding: t; buffer-read-only: t; eval: (auto-revert-mode 1) -*-
+#+end_src
+*** Packages
+I don't use the built-in =package.el= to fetch packages, so I'll turn it off:
+#+begin_src emacs-lisp
+  (setq package-enable-at-startup nil)
+#+end_src
+
+*** Special Key Remapping
+grabbed from [[https://emacsnotes.wordpress.com/2022/09/11/three-bonus-keys-c-i-c-m-and-c-for-your-gui-emacs-all-with-zero-headache/][Three bonus keys—‘C-i’, ‘C-m’ and ‘C-[’—for your GUI Emacs; all with zero headache]]
+#+begin_src emacs-lisp
+  (add-hook
+   'after-make-frame-functions
+   (defun setup-blah-keys (frame)
+     (with-selected-frame frame
+       (when (display-graphic-p)
+         (define-key input-decode-map (kbd "C-i") [CTRL-i])
+         (define-key input-decode-map (kbd "C-[") [CTRL-lsb]) ; left square bracket
+         (define-key input-decode-map (kbd "C-m") [CTRL-m])))))
+#+end_src
+** Main Configurations
+Init file header:
+#+begin_src emacs-lisp :comments no
+  ;;; init.el --- Main Configurations -*- lexical-binding: t; buffer-read-only: t; eval: (auto-revert-mode 1) -*-
+#+end_src
+
+Use Utf-8 as the default coding system.
+#+begin_src emacs-lisp
+  (set-language-environment "UTF-8")
+  (prefer-coding-system 'utf-8-unix)
+#+end_src
+*** setup.el
+[[https://www.emacswiki.org/emacs/SetupEl][setup.el]] provides "context sensitive local macros" to "ease repetitive configuration patterns in Emacs". It is considered as an alternative to the now built-in [[https://github.com/jwiegley/use-package][use-package]].
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-setup")))
+#+end_src
+
+See Alternative Macro Definer at [[https://www.emacswiki.org/emacs/SetupEl][its Emacs Wiki page]], and [[https://github.com/mfiano/emacs-config/blob/main/lisp/mf-setup.el][Michael Fiano's Emacs Configuration on this]]. Many of the following tweaks are based on them, with some modifications, mainly for the Emacs 29 changes.
+
+TODO: I should split this out later.
+#+begin_src emacs-lisp
+  (require 'setup)
+  (require 'cl-macs)
+
+  (defmacro defsetup (name signature &rest body)
+    "Shorthand for `setup-define'.
+  NAME is the name of the local macro.  SIGNATURE is used as the
+  argument list for FN.  If BODY starts with a string, use this as
+  the value for :documentation.  Any following keywords are passed
+  as OPTS to `setup-define'."
+    (declare (debug defun))
+    (let (opts)
+      (when (stringp (car body))
+        (setq opts (nconc (list :documentation (pop body))
+                          opts)))
+      (while (keywordp (car body))
+        (let* ((prop (pop body))
+               (val `',(pop body)))
+          (setq opts (nconc (list prop val) opts))))
+      `(setup-define ,name
+         (cl-function (lambda ,signature ,@body))
+         ,@opts)))
+
+  (put #'defsetup 'lisp-indent-function 'defun)
+  ;; use Emacs 29's new `setopt'
+  (setup-define :option
+    (setup-make-setter
+     (lambda (name)
+       `(funcall (or (get ',name 'custom-get)
+                     #'symbol-value)
+                 ',name))
+     (lambda (name val)
+       `(setopt ,name ,val)))
+
+    :documentation "Set the option NAME to VAL.
+  NAME may be a symbol, or a cons-cell.  If NAME is a cons-cell, it
+  will use the car value to modify the behaviour.  These forms are
+  supported:
+
+  (append VAR)    Assuming VAR designates a list, add VAL as its last
+                  element, unless it is already member of the list.
+
+  (prepend VAR)   Assuming VAR designates a list, add VAL to the
+                  beginning, unless it is already member of the
+                  list.
+
+  (remove VAR)    Assuming VAR designates a list, remove all instances
+                  of VAL.
+
+  Note that if the value of an option is modified partially by
+  append, prepend, remove, one should ensure that the default value
+  has been loaded. Also keep in mind that user options customized
+  with this macro are not added to the \"user\" theme, and will
+  therefore not be stored in `custom-set-variables' blocks."
+    :debug '(sexp form)
+    :repeatable t)
+
+  (defsetup :global (&rest body)
+    "Use the global keymap for the BODY. This is intended to be used with ':bind'."
+    :indent 1
+    :debug '(sexp)
+    (let (bodies)
+      (push (setup-bind body (map 'global-map))
+            bodies)
+      (macroexp-progn (nreverse bodies))))
+
+  (defsetup :with-state (state &rest body)
+    "Change the evil STATE that BODY will bind to. If STATE is a list, apply BODY
+  to all elements of STATE. This is intended to be used with ':bind'."
+    :indent 1
+    :debug '(sexp setup)
+    (let (bodies)
+      (dolist (state (ensure-list state))
+        (push (setup-bind body (state state))
+              bodies))
+      (macroexp-progn (nreverse bodies))))
+
+  (defsetup :bind (key command)
+    "Bind KEY to COMMAND in current map, and optionally for current evil states."
+    :after-loaded t
+    :debug '(form sexp)
+    :repeatable t
+    :ensure (nil func)
+    (let* ((map (setup-get 'map))
+           (global (or (not map) (eq map 'global) (eq map 'global-map)))
+           (state (ignore-errors (setup-get 'state))))
+      (cond
+       ((and state global)
+        `(with-eval-after-load 'evil
+           (evil-define-key* ',state 'global ,(kbd key) ,command)))
+       (state
+        `(with-eval-after-load 'evil
+           (evil-define-key* ',state ,map ,(kbd key) ,command)))
+       (global `(keymap-global-set ,key ,command))
+       (t `(keymap-set ,map ,key ,command)))))
+
+  (defsetup :unbind (key)
+    "Unbind KEY in current map, and optionally for current evil states."
+    :after-loaded t
+    :debug '(form)
+    :repeatable t
+    (let* ((map (setup-get 'map))
+           (global (or (not map) (eq map 'global) (eq map 'global-map)))
+           (state (ignore-errors (setup-get 'state))))
+      (cond
+       ((and state global)
+        `(with-eval-after-load 'evil
+           (evil-define-key* ',state 'global ,(kbd key) nil)))
+       (state
+        `(with-eval-after-load 'evil
+           (evil-define-key* ',state ,map ,(kbd key) nil)))
+       (global `(keymap-global-unset ,key :remove))
+       (t `(keymap-unset ,map ,key :remove)))))
+#+end_src
+
+*** Some sane Configurations
+#+begin_src emacs-lisp
+  (setup simple
+    (:option indent-tabs-mode nil))
+
+  (setup frame
+    (:option blink-cursor-mode nil))
+
+  (setup scroll-bar
+    (:option scroll-bar-mode nil))
+
+  (setup tool-bar
+    (:option tool-bar-mode nil))
+
+  (setup menu-bar
+    (:option menu-bar-mode nil))
+#+end_src
+
+One extra thing: Emacs comes with a customization interface, which supports setting via function calls too (good!) and saves the results in a file (bad!). This snippet set the storage to =/dev/null=:
+#+begin_src emacs-lisp
+  (setup cus-edit
+    (:option custom-file null-device))
+#+end_src
+
+*** Help
+TODO: this should not require help.
+#+begin_src emacs-lisp
+  (setup (:require help)
+    (:global (:unbind "C-h C-h")))
+#+end_src
+
+*** No Littering
+[[https://github.com/emacscollective/no-littering][no-littering]] helps put emacs directory clean, sorting package-created files and directories into reasonable directories. One thing it misses is the distinguishing between permanent data and temporary data. I used to fork it to provide this distinguishing, but it turns out to be too troublesome to maintain. Now I simply consider this as a "fallback" solution. Later on for the variables from packages I really use I'll overwrite them manually.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-no-littering")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require no-littering))
+#+end_src
+
+*** Modus Themes
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-modus-themes")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup modus-themes
+    (:option modus-themes-mixed-fonts t)
+    (:require modus-themes)
+    (load-theme 'modus-vivendi :no-confirm))
+#+end_src
+
+*** Evil
+It's name tells everything: the Extensible Vi Layer for Emacs, [[https://github.com/emacs-evil/evil][Evil]]. It works pretty well as a Vim simulation, much better than VsCode's or Intellij's. Besides, it is charming combination of Vim's model-based editing with Emacs' keymap system, to some extent, as a personal opinion, better than the native Vim on the model-based editing system.
+
+References:
+- [[https://github.com/noctuid/evil-guide][evil-guide]] by noctuid
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (specifications->packages
+     (list
+      "emacs-evil"
+      "emacs-evil-collection")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup evil
+    (:option
+     evil-want-integration t ;; require by collection
+     evil-want-keybinding nil ;; require by collection
+     evil-echo-state nil ;; Don't echo the =<INSERT>= etc info in minibuffer.
+     evil-undo-system 'undo-redo ;; Use Emacs 28 new ~undo-redo~ as the undo-redo system
+     evil-disable-insert-state-bindings t ;; I don't want to use Vim's insert mode bindings in insert state:
+     evil-respect-visual-line-mode t ;; When =visual-line-mode= is set (especially in =org-mode=), I want Vim to behave as visual lines are normal lines (i.e. bind =j= to =gj= etc)
+     )
+    (defvar-keymap my-leader-map)
+    (defun my-leader-key ()
+      (interactive)
+      (set-transient-map my-leader-map))
+    (:global
+      (:unbind "C-SPC")
+      (:bind "C-SPC" #'my-leader-key))
+    (:require evil)
+    (evil-mode 1))
+
+  (setup evil-collection
+    (:option evil-collection-setup-minibuffer t)
+    (:require evil-collection)
+    (evil-collection-init))
+#+end_src
+
+*** God mode
+[[https://github.com/emacsorphanage/god-mode][god-mode]] provides a minor mode in which modifier keys of key bindings are handled sepecially: =C-= is not needed any more, =M-= is implied with a single key, etc.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-god-mode")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require god-mode)
+    (:option god-mode-alist '((nil . "C-") ("m" . "M-") ("M" . "C-M-"))
+             god-mode-enable-function-key-translation t)
+    (:global
+        (:with-state (normal visual motion)
+          (:bind "SPC" #'god-execute-with-current-bindings))
+      (:with-state (insert emacs motion)
+        (:bind "C-<espace>" #'god-execute-with-current-bindings))))
+#+end_src
+
+*** Which key
+[[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode that hints you the keybindings prefixed with what you have typed when you get stuck.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-which-key")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require which-key)
+    (:option which-key-show-transient-maps t)
+    (which-key-enable-god-mode-support)
+    (which-key-mode 1))
+#+end_src
+
+*** Orderless
+ [[https://github.com/oantolin/orderless][orderless]] add space-separated component (which then matches against several matching styles) completion style to minibuffer and other completion UI.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-orderless")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup orderless
+    (:option completion-category-defaults nil)
+    ;; see https://www.reddit.com/r/emacs/comments/ns5jfu/defmacro_and_nested_backquotes_confusion/
+    (defmacro my-orderless--dispatch-prefix-def (prefix style)
+      `(defun ,(intern (format "my-%s-prefix" (symbol-name (eval style)))) (pattern _index _total)
+         (cond
+          ((equal ,prefix pattern)
+           '(orderless-literal . ""))
+          ((string-prefix-p ,prefix pattern)
+           (cons ,style  (substring pattern 1))))))
+    (my-orderless--dispatch-prefix-def "$" 'orderless-regexp)
+    (my-orderless--dispatch-prefix-def "=" 'orderless-literal)
+    (my-orderless--dispatch-prefix-def "!" 'orderless-without-literal)
+    (my-orderless--dispatch-prefix-def "-" 'orderless-prefixes)
+    (my-orderless--dispatch-prefix-def "'" 'orderless-initialism)
+    (my-orderless--dispatch-prefix-def ";" 'orderless-flex)
+    (:option orderless-component-separator 'orderless-escapable-split-on-space
+             completion-styles '(orderless basic)
+             completion-category-overrides '((file (styles basic partial-completion)))
+             orderless-matching-styles '(orderless-regexp)
+             orderless-style-dispatchers '(my-orderless-regexp-prefix
+                                           my-orderless-literal-prefix
+                                           my-orderless-without-literal-prefix
+                                           my-orderless-prefixes-prefix
+                                           my-orderless-initialism-prefix
+                                           my-orderless-flex-prefix)))
+#+end_src
+*** Vertico
+[[https://github.com/minad/vertico][vertico]] "provides a performant and minimalistic vertical completion UI based on the default completion system."
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-vertico")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require vertico)
+    (vertico-mode 1))
+#+end_src
+
+*** Marginalia
+[[https://github.com/minad/marginalia][marginalia]] adds info to the right of completion candidates, thus the name margin-alia.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-marginalia")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require marginalia)
+    (marginalia-mode 1))
+#+end_src
+
+*** Consult
+[[https://github.com/minad/consult][consult]] provides practical commands based on the Emacs completion function =completing-read=. What this means is that basically =consult= pop up candidates when calling its commands into =comleting-read=.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-consult")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require consult)
+    (:option consult-preview-key "\C-j"
+             xref-show-definitions-function #'consult-xref
+             xref-show-xrefs-function #'consult-xref)
+    (:with-map my-leader-map
+      (:bind
+       "h b" #'consult-buffer
+       "h s" (lambda ()
+               (interactive)
+               (let ((current-prefix-arg '(4)))
+                 (call-interactively #'consult-ripgrep)))
+       "h l" #'consult-flymake
+       "h f" #'consult-find
+       "h F" #'consult-locate
+       "h i" #'consult-imenu
+       "h o" #'consult-outline
+       "h m" #'consult-minor-mode-menu
+       "h x" #'consult-mode-command
+       "h k" #'consult-man)))
+#+end_src
+
+*** Embark
+[[https://github.com/oantolin/embark][embark]] is probably the most world-changing package in Emacs recently. It basically provides a just-in-time context-aware action list (quite like no-repeating hydra or which-key) in minibuffer on the =complete-read= candidate or on anything in the editing file.
+
+Reference:
+- [[https://github.com/oantolin/embark/wiki][wiki]]
+- [[https://karthinks.com/software/fifteen-ways-to-use-embark/][15 ways to use embark]]
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-embark")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup embark
+    ;; Optionally replace the key help with a completing-read interface
+    (:option prefix-help-command #'embark-prefix-help-command)
+    (:option embark-cycle-key (kbd "C-'"))
+    (:with-map minibuffer-local-map (:bind "C-'" #'embark-act))
+    (:global (:bind "C-h B" #'embark-bindings) ;; alternative for `describe-bindings'
+      (:with-state (normal visual)
+        (:bind "g a" #'embark-act
+               "g A" #'embark-dwim))))
+#+end_src
+
+*** corfu
+[[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-corfu")))
+#+end_src
+
+#+begin_src emacs-lisp :noweb yes
+  (setup corfu
+    (:option corfu-preview-current nil
+             corfu-quit-at-boundary nil)
+    (:option tab-always-indent 'complete)
+    (:with-state (insert emacs)
+      (:global (:bind "<CTRL-i>" #'completion-at-point)) ;; see early-init.el
+      (:with-map corfu-map (:bind "<escape>" #'corfu-reset
+                                  "SPC" #'corfu-insert-separator)))
+    (defun corfu-enable-always-in-minibuffer ()
+      "Enable Corfu in the minibuffer if Vertico/Mct are not active."
+      (unless (or (bound-and-true-p mct--active)
+                  (bound-and-true-p vertico--input))
+        (corfu-mode 1)))
+    (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)
+    (:require corfu)
+    (global-corfu-mode +1))
+#+end_src
+
+*** electric-pair-mode
+=electric-pair-mode= is a built-in package that auto insert the left bracket/parentheses when we type the left one. It also skip the right bracket/parentheses if we type it. This behavior might be familiar to many IDE users.
+#+begin_src emacs-lisp
+  (setup elec-pair
+    (:with-mode electric-pair-local-mode
+      (:hook-into emacs-lisp-mode scheme-mode)))
+#+end_src
+
+*** Aggresive Indent
+[[https://github.com/Malabarba/aggressive-indent-mode][aggressize-indent-mode]] basically reindents what you have changed after every change you made.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-aggressive-indent")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup aggressive-indent
+    (:hook-into emacs-lisp-mode scheme-mode)
+    (:option aggressive-indent-dont-indent-if '((evil-insert-state-p) (evil-replace-state-p)))
+    (defun my-aggressive-indent-after-change ()
+      (cond (aggressive-indent-mode
+             (add-hook 'evil-normal-state-entry-hook #'aggressive-indent--process-changed-list-and-indent nil t))
+            (t
+             (remove-hook 'evil-normal-state-entry-hook #'aggressive-indent--process-changed-list-and-indent nil t))))
+    (:hook #'my-aggressive-indent-after-change))
+#+end_src
+
+*** Magit
+[[https://github.com/magit/magit][magit]] is an Emacs interface to git, which provides not only commands to call but also a full GUI-like wrapper around git.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-magit")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup magit
+    (:option magit-display-buffer-function #'display-buffer
+             magit-bury-buffer-function #'quit-window ;; play nice with shackle
+             evil-collection-magit-use-z-for-folds t
+             magit-bind-magit-project-status nil))
+#+end_src
+
+Its Evil integration is now a part of evil-collection.
 * References and Recommendations
 This configuration is written while referencing the following guix configurations:
 - [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
