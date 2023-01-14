@@ -575,6 +575,13 @@ grabbed from [[https://emacsnotes.wordpress.com/2022/09/11/three-bonus-keys-c-i-
          (define-key input-decode-map (kbd "C-[") [CTRL-lsb]) ; left square bracket
          (define-key input-decode-map (kbd "C-m") [CTRL-m])))))
 #+end_src
+
+*** Some Configurations that might make sense to put here
+~load~ prefers the newest version of a file (when suffix is not given).
+#+begin_src emacs-lisp
+  (setq load-prefer-newer t)
+#+end_src
+
 ** Main Configurations
 Init file header:
 #+begin_src emacs-lisp :comments no
@@ -713,9 +720,15 @@ TODO: I should split this out later.
            (evil-define-key* ',state ,map ,(kbd key) nil)))
        (global `(keymap-global-unset ,key :remove))
        (t `(keymap-unset ,map ,key :remove)))))
+
+  (defsetup :needs (executable)
+    "If EXECUTABLE is not in the path, stop here."
+    :debug '(form)
+    `(unless (executable-find ,executable)
+       ,(setup-quit)))
 #+end_src
 
-*** Some sane Configurations
+*** Some Sane Configurations
 #+begin_src emacs-lisp
   (setup simple
     (:option indent-tabs-mode nil))
@@ -731,6 +744,43 @@ TODO: I should split this out later.
 
   (setup menu-bar
     (:option menu-bar-mode nil))
+#+end_src
+
+Turn off lockfiles. They cannot be moved to a different directory, and they consistently screw up with file watchers and version control systems. It'd be just easier to turn this feature off.
+#+begin_src emacs-lisp
+  (setup emacs
+    (:option create-lockfiles nil))
+#+end_src
+
+4-space indentation:
+#+begin_src emacs-lisp
+  (setup simple
+    (:option tab-width 4))
+#+end_src
+
+General programming set up:
+#+begin_src emacs-lisp
+  (setup prog-mode
+    (:hook #'display-line-numbers-mode)
+    (:local-set truncate-lines t))
+#+end_src
+
+When Emacs writes buffers to files, by the high-level sense it replace the existing file with the content in the buffer. The buffer itself can be backuped, so that if Emacs crashes before the writing, the dirty content can be recovered. How it replaces the content is configurable, and I want to always prefer copying the existing file and then writing the buffer on top of the existing file. See [[help:make-backup-files][help]] for details.
+#+begin_src emacs-lisp
+  (setup files
+    (:option backup-by-copying t))
+#+end_src
+
+Always use =y-or-p= over =yes-or-no=:
+#+begin_src emacs-lisp
+  (setup emacs
+    (:option use-short-answers t))
+#+end_src
+
+I don't want Emacs to auto-recenter when scrolling off-the-screen:
+#+begin_src emacs-lisp
+  (setup emacs
+    (:option scroll-conservatively 100))
 #+end_src
 
 One extra thing: Emacs comes with a customization interface, which supports setting via function calls too (good!) and saves the results in a file (bad!). This snippet set the storage to =/dev/null=:
@@ -776,6 +826,53 @@ TODO: this should not require help.
     (:option modus-themes-mixed-fonts t)
     (:require modus-themes)
     (load-theme 'modus-vivendi :no-confirm))
+#+end_src
+
+*** Recentf
+[[info:emacs#File Conveniences][recentf]] is an Emacs built-in minor mode that saves recent file list.
+#+begin_src emacs-lisp
+  (setup recentf
+    (recentf-mode 1))
+#+end_src
+
+*** Save History
+[[help:savehist-mode][savehist]] is an Emacs built-in minor mode that save minibuffer histories to a file.
+#+begin_src emacs-lisp
+  (setup savehist
+    (savehist-mode 1))
+#+end_src
+
+***  COMMENT Save Place
+[[https://www.emacswiki.org/emacs/SavePlace][Save Place]] is a Emacs built-in mode that "nave place in files between sessions".
+#+begin_src emacs-lisp
+  (setup saveplace
+    (:option save-place-forget-unreadable-files nil)
+    (save-place-mode 1))
+#+end_src
+
+*** Editorconfig
+[[https://editorconfig.org/][editorconfig]] is a very handy tool that standardize how different editors should behave according to different language, including tab width, trailing space and so on. It is not only helpful for team to maintain a codestyle standard, but also a handful tool for people use several different editors / computers, like I do.
+
+[[https://github.com/editorconfig/editorconfig-emacs][editorconfig-emacs]] implements its own =editorconfig= core, so it's logical to assume that it works on any platform.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-editorconfig")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup editorconfig
+    (editorconfig-mode 1))
+#+end_src
+
+*** Subword
+[[help:subword-mode][subword-mode]] is an Emacs built-in that makes =CamelCase= be considered as 2 separate words =Camel= and =Case=. Evil also respects this minor mode. I've found that to turn on this mode is almost always positive for Evil usages, because the =io= =ao= text objects select the whole symbol anyway, pretty much covers the non-subword usage. There is also [[help:superword-mode][superword-mode]] BTW. See [[info:emacs#MixedCase Words][MixedCase Words]] and [[info:emacs#Misc for Programs][Misc for Programs]] in the documentation.
+#+begin_src emacs-lisp
+  (setup subword
+    (:hook-into text-mode prog-mode))
 #+end_src
 
 *** Evil
@@ -917,11 +1014,50 @@ References:
                     "<remap> <other-window>" #'ace-window)))
 #+end_src
 
+*** Spell Checking
+See the [[info:emacs#Spelling][documentation]] for details.
+
+Emacs comes with a spell checking wrapper...
+#+begin_src emacs-lisp
+  (setup ispell
+    (:needs "aspell")
+    (:option ispell-program-name "aspell"))
+#+end_src
+
+... and an on-the-fly spell checker(which uses ~ispell~ as the backend).
+#+begin_src emacs-lisp
+  (setup flyspell
+    (:needs "aspell")
+    ;; (general-unbind flyspell-mode-map "C-;")
+    (:unbind "C-;")
+    (:hook-into text-mode)
+    (:with-mode flyspell-prog-mode
+      (:hook-into prog-mode)))
+#+end_src
+
+**** Flyspell Correct
+The default UI for ~ispell~ is quite hard to use, and there is a package [[https://github.com/d12frosted/flyspell-correct][flyspell-correct]] that makes use of the ~completing-read~ interface to make things much more usable.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-flyspell-correct
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-flyspell-correct")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require flyspell-correct)
+    (:needs "aspell")
+    (:also-load flyspell)
+    (:global (:bind "<remap> <ispell-word>" #'flyspell-correct-wrapper)))
+#+end_src
+
 *** Orderless
  [[https://github.com/oantolin/orderless][orderless]] add space-separated component (which then matches against several matching styles) completion style to minibuffer and other completion UI.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
+   'home-emacs-orderless
    home-profile-service-type
    (list
     (specification->package
