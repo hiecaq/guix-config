@@ -1,5 +1,6 @@
 # -*- org-use-property-inheritance: t; -*-
 #+title: hiecaq's guix configuration
+#+startup: indent
 #+property: header-args :comments org :results silent :mkdirp t
 
 * Table of Contents :TOC:noexport:
