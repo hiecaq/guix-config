@@ -859,6 +859,64 @@ References:
     (which-key-mode 1))
 #+end_src
 
+*** Posframe
+[[https://github.com/tumashu/posframe][posframe]] pops a child-frame at point, connected to its root window's buffer.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-posframe")))
+#+end_src
+
+*** Ace Window
+[[https://github.com/abo-abo/ace-window][ace-window]] is helpful to do things the "embark" way: pick a window, then decide what to do with it.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-setup
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-ace-window")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require ace-window)
+    (:option aw-keys '(?u ?h ?e ?t ?i ?d ?o ?n ?a ?s)
+             aw-translate-char-function (lambda (c)
+                                          (pcase c
+                                            (?\[ ?7)
+                                            (?\{ ?5)
+                                            (?\} ?3)
+                                            (?\( ?1)
+                                            (?= ?9)
+                                            (?* ?0)
+                                            (?\) ?2)
+                                            (?+ ?4)
+                                            (?\] ?6)
+                                            (?! ?8)
+                                            (_ c)))
+             aw-dispatch-alist '((?Q aw-delete-window "Delete Window")
+                                 (?W aw-swap-window "Swap Windows")
+                                 (?M aw-move-window "Move Window")
+                                 (?C aw-copy-window "Copy Window")
+                                 (?J aw-switch-buffer-in-window "Select Buffer")
+                                 (?D aw-use-frame "Make frame for window")
+                                 (?N aw-flip-window)
+                                 (?U aw-switch-buffer-other-window "Switch Buffer Other Window")
+                                 (?E aw-execute-command-other-window "Execute Command Other Window")
+                                 (?F aw-split-window-fair "Split Fair Window")
+                                 (?S aw-split-window-vert "Split horizontally")
+                                 (?V aw-split-window-horz "Split vertically")
+                                 (?O delete-other-windows "Delete Other Windows")
+                                 (?T aw-transpose-frame "Transpose Frame")
+                                 ;; ?i ?r ?t are used by hyperbole.el
+                                 (?? aw-show-dispatch-help)))
+    (:global (:bind "<remap> <evil-window-next>" #'ace-window
+                    "<remap> <other-window>" #'ace-window)))
+#+end_src
+
 *** Orderless
  [[https://github.com/oantolin/orderless][orderless]] add space-separated component (which then matches against several matching styles) completion style to minibuffer and other completion UI.
 #+begin_src scheme
@@ -980,17 +1038,37 @@ Reference:
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup embark
+  (setup (:require embark)
     ;; Optionally replace the key help with a completing-read interface
     (:option prefix-help-command #'embark-prefix-help-command)
     (:option embark-cycle-key (kbd "C-'"))
+
+    ;; adapted from https://karthinks.com/software/fifteen-ways-to-use-embark/
+    (defmacro my-embark-ace-action (fn)
+      `(defun ,(intern (concat "my-embark-ace-" (symbol-name fn))) ()
+         (interactive)
+         (with-demoted-errors "%s"
+           (require 'ace-window)
+           (let ((aw-dispatch-always t))
+             (aw-switch-to-window (aw-select nil))
+             (call-interactively (symbol-function ',fn))))))
+    (my-embark-ace-action find-file)
+    (my-embark-ace-action switch-to-buffer)
+    (my-embark-ace-action bookmark-jump)
+
     (:with-map minibuffer-local-map (:bind "C-'" #'embark-act))
     (:global (:bind "C-h B" #'embark-bindings) ;; alternative for `describe-bindings'
       (:with-state (normal visual)
         (:bind "g a" #'embark-act
-               "g A" #'embark-dwim))))
+               "g A" #'embark-dwim)))
+    (:with-map embark-file-map (:bind "o" #'my-embark-ace-find-file))
+    (:with-map embark-buffer-map (:bind "o" #'my-embark-ace-switch-to-buffer))
+    (:with-map embark-bookmark-map (:bind "o" #'my-embark-ace-bookmark-jump)))
 #+end_src
 
+#+begin_src emacs-lisp
+  (setup (:require embark-consult))
+#+end_src
 *** corfu
 [[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
 #+begin_src scheme
@@ -1019,6 +1097,23 @@ Reference:
     (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)
     (:require corfu)
     (global-corfu-mode +1))
+#+end_src
+
+
+*** Visual Undo
+[[https://github.com/casouri/vundo][vundo]] is basically a less-buggy [[https://www.dr-qubit.org/undo-tree.html][undo-tree]] that supports Emacs 28's new ~undo-redo~.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-vundo
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-vundo")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require vundo)
+    (:with-map my-leader-map (:bind "u" #'vundo)))
 #+end_src
 
 *** electric-pair-mode
