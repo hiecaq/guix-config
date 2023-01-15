@@ -828,7 +828,7 @@ TODO: this should not require help.
 *** Modus Themes
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
+   'home-emacs-modus-themes
    home-profile-service-type
    (list
     (specification->package
@@ -889,6 +889,79 @@ TODO: this should not require help.
     (:hook-into text-mode prog-mode))
 #+end_src
 
+*** Highlight Parentheses
+[[https://git.sr.ht/~tsdh/highlight-parentheses.el][highlight-parentheses]], well, highlights parentheses surrounding [[info:emacs#Point][point]].
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-highlight-parentheses
+    (let ((version "2.1.1")
+          (revision "0")
+          (url "https://git.sr.ht/~tsdh/highlight-parentheses.el"))
+      (package
+        (name "emacs-highlight-parentheses")
+        (version version)
+        (source
+         (origin
+           (method git-fetch)
+           (uri
+            (git-reference
+             (url url)
+             (commit version)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32 "0ixjai9w9x4sm1lx9yljl58r7ydbbjlkb0a2pbv316l8qph8w44r"))))
+        (build-system emacs-build-system)
+        (home-page url)
+        (synopsis "Highlights parentheses surrounding point in Emacs")
+        (description "Highlight-parentheses.el dynamically highlights
+  the parentheses surrounding point based on nesting-level using configurable
+  lists of colors, background colors, and other properties.")
+        (license license:gpl3))))
+#+end_src
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-highlight-parentheses
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-highlight-parentheses")))
+#+end_src
+
+The configs here is basically modified a little bit from [[https://protesilaos.com/emacs/modus-themes#h:24bab397-dcb2-421d-aa6e-ec5bd622b913][Note on highlight-parentheses.el]] in Modus Themes documentation.
+#+begin_src emacs-lisp
+  (setup highlight-parentheses
+    (defvar my-highlight-parentheses-use-background t
+      "Prefer `highlight-parentheses-background-colors'.")
+
+    (setq my-highlight-parentheses-use-background t) ; Set to nil to disable backgrounds
+
+    (modus-themes-with-colors
+      ;; Our preference for setting either background or foreground
+      ;; styles, depending on `my-highlight-parentheses-use-background'.
+      (if my-highlight-parentheses-use-background
+
+          ;; Here we set color combinations that involve both a background
+          ;; and a foreground value.
+          (setq highlight-parentheses-background-colors (list bg-cyan-intense
+                                                              bg-magenta-intense
+                                                              bg-green-intense
+                                                              bg-yellow-intense)
+                highlight-parentheses-colors (list cyan
+                                                   magenta
+                                                   green
+                                                   yellow))
+
+        ;; And here we pass only foreground colors while disabling any
+        ;; backgrounds.
+        (setq highlight-parentheses-colors (list green-intense
+                                                 magenta-intense
+                                                 blue-intense
+                                                 red-intense)
+              highlight-parentheses-background-colors nil)))
+    (:hook-into prog-mode)
+    (:with-function highlight-parentheses-minibuffer-setup
+      (:hook-into minibuffer-setup)))
+#+end_src
 *** Evil
 It's name tells everything: the Extensible Vi Layer for Emacs, [[https://github.com/emacs-evil/evil][Evil]]. It works pretty well as a Vim simulation, much better than VsCode's or Intellij's. Besides, it is charming combination of Vim's model-based editing with Emacs' keymap system, to some extent, as a personal opinion, better than the native Vim on the model-based editing system.
 
@@ -1543,15 +1616,24 @@ this is only a facial overall summary of what [[https://orgmode.org][org-mode]] 
   (simple-service
    'home-emacs-org
    home-profile-service-type
-   (list
-    (specification->package
-     "emacs-org")))
+   (specifications->packages
+    (list "emacs-org"
+          "emacs-toc-org")))
 #+end_src
 
 #+begin_src emacs-lisp
   (setup org
     (:hook visual-line-mode variable-pitch-mode))
 #+end_src
+
+**** Toc Org
+[[https://github.com/snosov1/toc-org][toc-org]] will automatically update the content of the first heading with a =:TOC:= tag in an org file to show an up-to-date TOC whenever the file is saved. Handy!
+#+begin_src emacs-lisp
+  (setup toc-org
+    (:also-load org)
+    (:hook-into org-mode))
+#+end_src
+
 * References and Recommendations
 This configuration is written while referencing the following guix configurations:
 - [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
