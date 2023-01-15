@@ -550,6 +550,20 @@ I'm currently using =emacs-next= from Guix official channel.
     (default-value #f)
     (description #f)))
 #+end_src
+
+I and my Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a channel!
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-module (hiecaq packages emacs-xyz)
+    #:use-module (guix packages)
+    #:use-module (guix git-download)
+    #:use-module (guix build-system emacs)
+    #:use-module (gnu packages)
+    #:use-module ((gnu packages emacs-xyz) #:prefix upstream:)
+    #:use-module ((guix licenses) #:prefix license:))
+#+end_src
+
+NOTE: the hash for git-based packages is got by following [[https://guix.gnu.org/cookbook/en/html_node/Extended-example.html][Guix Cookbook instructions]].
+
 ** Early Initialization
 :PROPERTIES:
 :header-args:emacs-lisp: :tangle "build/early-init.el"
@@ -882,12 +896,18 @@ References:
 - [[https://github.com/noctuid/evil-guide][evil-guide]] by noctuid
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
+   'home-emacs-evil
    home-profile-service-type
    (specifications->packages
-     (list
-      "emacs-evil"
-      "emacs-evil-collection")))
+    (list
+     "emacs-goto-chg"
+     "emacs-evil"
+     "emacs-evil-collection"
+     "emacs-evil-surround"
+     "emacs-evil-replace-with-register"
+     "emacs-evil-easymotion"
+     "emacs-evil-snipe"
+     "emacs-evil-commentary")))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -916,6 +936,136 @@ References:
     (evil-collection-init))
 #+end_src
 
+**** Evil Surround
+[[https://github.com/emacs-evil/evil-surround][evil-surround]] defines operators that change/add/delete delimiters around a text object.
+I found that its key bindings conflict with =evil-snipe= a lot, so I remap them to =m=, which stands for markers.
+#+begin_src emacs-lisp
+  (setup evil-surround
+    (:with-state (operator visual)
+      (:unbind "s" "S" "g S"))
+    (:with-state (normal operator)
+      (:bind "m" #'evil-surround-edit
+             "M" #'evil-Surround-edit))
+    (:with-state visual
+      (:bind "m" #'evil-surround-region
+             "M" #'evil-Surround-region))
+    (:also-load evil)
+    (global-evil-surround-mode 1))
+#+end_src
+
+**** Evil Replace With Register
+[[https://github.com/Dewdrops/evil-ReplaceWithRegister][evil-replace-with-register]] defines a =rplace= operator.
+#+begin_src emacs-lisp
+  (setup (:require evil-replace-with-register)
+    (:global (:with-state (normal visual)
+               (:bind "_" #'evil-replace-with-register))))
+#+end_src
+
+**** Evil Snipe
+[[https://github.com/hlissner/evil-snipe][evil-snipe]] is a Evil port of Vim's [[https://github.com/rhysd/clever-f.vim][clever-f]] and [[https://github.com/justinmk/vim-sneak][vim-sneak]]. It currently does not support separating the scope for =f/F/t/T= from for =s/S=, which is a little bit annoying.
+
+There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-scope~, so I forked it. Once the PR is merged, I'll switch back to the upstream version.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-evil-snipe
+    (let ((commit "3ad53b8da0dd23093a3f2f0e5c13ecdb08ba8efa")
+          (last-release-version "2.0.8") ;; from the el file version header
+          (revision "0")
+          (url "https://github.com/hiecaq/evil-snipe"))
+      (package
+       (name "emacs-evil-snipe")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url url)
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0fk9nl0h1j1ig6pvb4aix3injxi2jyw9djixchxf4aky11znivgj"))))
+       (inputs
+        (list upstream:emacs-evil))
+       (build-system emacs-build-system)
+       (home-page url)
+       (synopsis "2-char searching ala vim-sneak & vim-seek, for evil-mode")
+       (description "This library It provides 2-character motions for quickly
+  (and more accurately) jumping around text, compared to evil's built-in
+  f/F/t/T motions, incrementally highlighting candidate targets as you type.")
+       (license license:expat))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require evil-snipe)
+    (:with-map evil-snipe-local-mode-map
+      (:with-state (normal motion operator visual)
+        (:unbind "s" "S" "z" "Z" "x" "X")
+        (:bind "s" #'evil-snipe-s
+               "S" #'evil-snipe-S))
+      (:with-state (operator visual)
+        (:bind "g s" #'evil-snipe-x
+               "g S" #'evil-snipe-X)))
+    (:with-function turn-off-evil-snipe-override-mode (:hook-into magit-mode))
+    (:option evil-snipe-scope 'visible
+             evil-snipe-repeat-scope 'whole-visible
+             evil-snipe-spillover-scope 'whole-buffer)
+    (evil-snipe-mode 1)
+    (evil-snipe-override-mode 1))
+#+end_src
+
+**** Evil Easymotion
+[[https://github.com/PythonNut/evil-easymotion][evil-easymotion]] is a Evil port of Vim's, well, =easymotion=, which basically works in a way that instead of numbering how many jumps needed, by prefixing motions with a leader key, we use visual hint to go to the place we want. I hadn't tried =easymotion= during my Vim era though, but I like it now. It also provides integration with [[*evil-snipe][evil-snipe]].
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-evil-easymotion
+    (let ((commit "f96c2ed38ddc07908db7c3c11bcd6285a3e8c2e9")
+          (last-release-version "20160228") ;; from the el file version header
+          (revision "0")
+          (url "https://github.com/PythonNut/evil-easymotion"))
+      (package
+       (name "emacs-evil-easymotion")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url url)
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0xsva9bnlfwfmccm38qh3yvn4jr9za5rxqn4pwxbmhnx4rk47cch"))))
+       (inputs
+        (list upstream:emacs-evil upstream:emacs-avy))
+       (build-system emacs-build-system)
+       (home-page url)
+       (synopsis "A port of vim easymotion to Emacs' evil-mode")
+       (description "This package gives Lokaltog/vim-easymotion a
+  streak of malevolence.")
+       (license license:gpl3+))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require evil-easymotion)
+    (:also-load evil)
+    (:with-map evil-snipe-parent-transient-map
+      (:bind "SPC" (evilem-create 'evil-snipe-repeat
+                                  :bind ((evil-snipe-scope 'buffer)
+                                         (evil-snipe-enable-highlight)
+                                         (evil-snipe-enable-incremental-highlight)))))
+    (:with-map my-leader-map
+      (:bind "j" (evilem-create 'next-line)
+               "k" (evilem-create 'previous-line)
+               "n" #'evilem-motion-search-previous
+               "N" #'evilem-motion-search-next)))
+#+end_src
+
+**** Evil Commentary
+[[https://github.com/linktohack/evil-commentary][evil-commentary]] defines operators for commenting.
+#+begin_src emacs-lisp
+  (setup evil-commentary
+    (:also-load evil)
+    (evil-commentary-mode 1))
+#+end_src
 *** God mode
 [[https://github.com/emacsorphanage/god-mode][god-mode]] provides a minor mode in which modifier keys of key bindings are handled sepecially: =C-= is not needed any more, =M-= is implied with a single key, etc.
 #+begin_src scheme
@@ -969,13 +1119,36 @@ References:
 
 *** Ace Window
 [[https://github.com/abo-abo/ace-window][ace-window]] is helpful to do things the "embark" way: pick a window, then decide what to do with it.
+
+Its package definition in the Guix official channel is for the "latest" release version, which is as old as 2014. So I makes a variation to use the master branch HEAD at the time of writing.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-ace-window-next
+    (let ((commit "77115afc1b0b9f633084cf7479c767988106c196")
+          (last-release-version "0.10.0")
+          (revision "0"))
+      (package
+       (inherit upstream:emacs-ace-window)
+       (name "emacs-ace-window-next")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/abo-abo/ace-window")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1l6rp92q4crahx9nq7s6zxqyw7ccrhkl95v70vxra7zndqpqwsbq")))))))
+#+end_src
+
 #+begin_src scheme
-  (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-ace-window")))
+    (simple-service
+     'home-emacs-ace-window
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-ace-window-next")))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1014,6 +1187,11 @@ References:
                     "<remap> <other-window>" #'ace-window)))
 #+end_src
 
+=ace-window= has its =posframe= integration now (which is the main reason why I need more recent commits), which use it to show the keys in the centers of buffers.
+#+begin_src emacs-lisp
+  (setup ace-window-posframe
+    (ace-window-posframe-mode 1))
+#+end_src
 *** Spell Checking
 See the [[info:emacs#Spelling][documentation]] for details.
 
@@ -1051,6 +1229,49 @@ The default UI for ~ispell~ is quite hard to use, and there is a package [[https
     (:needs "aspell")
     (:also-load flyspell)
     (:global (:bind "<remap> <ispell-word>" #'flyspell-correct-wrapper)))
+#+end_src
+
+*** Topsy
+[[https://github.com/alphapapa/topsy.el][topsy]] shows a sticky header at the top of the window, displaying which function is the one that extends to the lines before the top of the displayed buffer.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-topsy
+    (let ((commit "8ae0976dfdbe4461c33ed44cf1dedc2c903b0bb0")
+          (last-release-version "0.1-pre") ;; from the el file version header
+          (revision "0")
+          (url "https://github.com/alphapapa/topsy.el"))
+      (package
+       (name "emacs-topsy")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url url)
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "032i1prl2v5w4l37zjlqam7063s56nk61nj5l3ypmxp98yz9nrq8"))))
+       (build-system emacs-build-system)
+       (home-page url)
+       (synopsis "Simple sticky header showing definition beyond top of window")
+       (description "This library shows a sticky header at the top of the window.
+  The header shows which definition the top line of the window is within. ")
+       (license license:gpl3))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup topsy
+    (:hook-into prog-mode))
+#+end_src
+
+#+begin_src scheme
+    (simple-service
+     'home-emacs-topsy
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-topsy")))
 #+end_src
 
 *** Orderless
@@ -1252,6 +1473,13 @@ Reference:
     (:with-map my-leader-map (:bind "u" #'vundo)))
 #+end_src
 
+*** Hideshow
+[[info:emacs#Hideshow][hideshow]] is Emacs' built-in code folding package.
+#+begin_src emacs-lisp
+  (setup hideshow
+    (:with-mode hs-minor-mode (:hook-into prog-mode)))
+#+end_src
+
 *** electric-pair-mode
 =electric-pair-mode= is a built-in package that auto insert the left bracket/parentheses when we type the left one. It also skip the right bracket/parentheses if we type it. This behavior might be familiar to many IDE users.
 #+begin_src emacs-lisp
@@ -1287,7 +1515,7 @@ Reference:
 [[https://github.com/magit/magit][magit]] is an Emacs interface to git, which provides not only commands to call but also a full GUI-like wrapper around git.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
+   'home-emacs-magit
    home-profile-service-type
    (list
     (specification->package
@@ -1303,6 +1531,27 @@ Reference:
 #+end_src
 
 Its Evil integration is now a part of evil-collection.
+
+*** Org Mode
+From its website
+#+begin_quote
+Org mode is for keeping notes, maintaining TODO lists, planning projects, and authoring documents with a fast and effective plain-text system.
+#+end_quote
+this is only a facial overall summary of what [[https://orgmode.org][org-mode]] is usually used for. It is so powerful that It is one of the reasons I switched from Neovim to Emacs.
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-org
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-org")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup org
+    (:hook visual-line-mode variable-pitch-mode))
+#+end_src
 * References and Recommendations
 This configuration is written while referencing the following guix configurations:
 - [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
