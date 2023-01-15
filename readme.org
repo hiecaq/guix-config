@@ -740,6 +740,11 @@ TODO: I should split this out later.
     :debug '(form)
     `(unless (executable-find ,executable)
        ,(setup-quit)))
+
+  (defsetup :enable ()
+    "Enable the current mode."
+    :debug '(form)
+    `(,(setup-get 'mode) 1))
 #+end_src
 
 *** Some Sane Configurations
@@ -846,14 +851,14 @@ TODO: this should not require help.
 [[info:emacs#File Conveniences][recentf]] is an Emacs built-in minor mode that saves recent file list.
 #+begin_src emacs-lisp
   (setup recentf
-    (recentf-mode 1))
+    (:enable))
 #+end_src
 
 *** Save History
 [[help:savehist-mode][savehist]] is an Emacs built-in minor mode that save minibuffer histories to a file.
 #+begin_src emacs-lisp
   (setup savehist
-    (savehist-mode 1))
+    (:enable))
 #+end_src
 
 ***  COMMENT Save Place
@@ -879,7 +884,7 @@ TODO: this should not require help.
 
 #+begin_src emacs-lisp
   (setup editorconfig
-    (editorconfig-mode 1))
+    (:enable))
 #+end_src
 
 *** Subword
@@ -1001,7 +1006,7 @@ References:
       (:unbind "C-SPC")
       (:bind "C-SPC" #'my-leader-key))
     (:require evil)
-    (evil-mode 1))
+    (:enable))
 
   (setup evil-collection
     (:option evil-collection-setup-minibuffer t)
@@ -1023,7 +1028,8 @@ I found that its key bindings conflict with =evil-snipe= a lot, so I remap them 
       (:bind "m" #'evil-surround-region
              "M" #'evil-Surround-region))
     (:also-load evil)
-    (global-evil-surround-mode 1))
+    (:with-mode global-evil-surround-mode
+      (:enable)))
 #+end_src
 
 **** Evil Replace With Register
@@ -1082,8 +1088,9 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
     (:option evil-snipe-scope 'visible
              evil-snipe-repeat-scope 'whole-visible
              evil-snipe-spillover-scope 'whole-buffer)
-    (evil-snipe-mode 1)
-    (evil-snipe-override-mode 1))
+    (:enable)
+    (:with-mode evil-snipe-override-mode
+      (:enable)))
 #+end_src
 
 **** Evil Easymotion
@@ -1137,7 +1144,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
 #+begin_src emacs-lisp
   (setup evil-commentary
     (:also-load evil)
-    (evil-commentary-mode 1))
+    (:enable))
 #+end_src
 *** God mode
 [[https://github.com/emacsorphanage/god-mode][god-mode]] provides a minor mode in which modifier keys of key bindings are handled sepecially: =C-= is not needed any more, =M-= is implied with a single key, etc.
@@ -1176,7 +1183,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
   (setup (:require which-key)
     (:option which-key-show-transient-maps t)
     (which-key-enable-god-mode-support)
-    (which-key-mode 1))
+    (:enable))
 #+end_src
 
 *** Posframe
@@ -1263,7 +1270,7 @@ Its package definition in the Guix official channel is for the "latest" release 
 =ace-window= has its =posframe= integration now (which is the main reason why I need more recent commits), which use it to show the keys in the centers of buffers.
 #+begin_src emacs-lisp
   (setup ace-window-posframe
-    (ace-window-posframe-mode 1))
+    (:enable))
 #+end_src
 *** Spell Checking
 See the [[info:emacs#Spelling][documentation]] for details.
@@ -1399,7 +1406,7 @@ The default UI for ~ispell~ is quite hard to use, and there is a package [[https
 
 #+begin_src emacs-lisp
   (setup (:require vertico)
-    (vertico-mode 1))
+    (:enable))
 #+end_src
 
 *** Marginalia
@@ -1415,7 +1422,7 @@ The default UI for ~ispell~ is quite hard to use, and there is a package [[https
 
 #+begin_src emacs-lisp
   (setup (:require marginalia)
-    (marginalia-mode 1))
+    (:enable))
 #+end_src
 
 *** Consult
@@ -1523,10 +1530,10 @@ Reference:
       "Enable Corfu in the minibuffer if Vertico/Mct are not active."
       (unless (or (bound-and-true-p mct--active)
                   (bound-and-true-p vertico--input))
-        (corfu-mode 1)))
+        (:enable)))
     (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)
     (:require corfu)
-    (global-corfu-mode +1))
+    (:with-mode global-corfu-mode (:enable)))
 #+end_src
 
 
