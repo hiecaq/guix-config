@@ -735,6 +735,17 @@ TODO: I should split this out later.
        (global `(keymap-global-unset ,key :remove))
        (t `(keymap-unset ,map ,key :remove)))))
 
+  (defsetup :rebind (old-command new-command)
+    "Bind NEW-COMMAND to OLD-COMMAND in current map,
+  and optionally for current evil states."
+    :after-loaded t
+    :debug '(form sexp)
+    :repeatable t
+    :ensure (func func)
+    (let ((old-command-string
+           (cadr (delete "#'" (split-string (format "%s" old-command) "#'")))))
+      `(:bind ,(format "<remap> <%s>" old-command-string) ,new-command)))
+
   (defsetup :needs (executable)
     "If EXECUTABLE is not in the path, stop here."
     :debug '(form)
@@ -1263,8 +1274,8 @@ Its package definition in the Guix official channel is for the "latest" release 
                                  (?T aw-transpose-frame "Transpose Frame")
                                  ;; ?i ?r ?t are used by hyperbole.el
                                  (?? aw-show-dispatch-help)))
-    (:global (:bind "<remap> <evil-window-next>" #'ace-window
-                    "<remap> <other-window>" #'ace-window)))
+    (:global (:rebind #'evil-window-next #'ace-window
+                      #'other-window  #'ace-window)))
 #+end_src
 
 =ace-window= has its =posframe= integration now (which is the main reason why I need more recent commits), which use it to show the keys in the centers of buffers.
@@ -1308,7 +1319,7 @@ The default UI for ~ispell~ is quite hard to use, and there is a package [[https
   (setup (:require flyspell-correct)
     (:needs "aspell")
     (:also-load flyspell)
-    (:global (:bind "<remap> <ispell-word>" #'flyspell-correct-wrapper)))
+    (:global (:rebind #'ispell-word #'flyspell-correct-wrapper)))
 #+end_src
 
 *** Topsy
