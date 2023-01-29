@@ -703,7 +703,6 @@ TODO: I should split this out later.
     :after-loaded t
     :debug '(form sexp)
     :repeatable t
-    :ensure (nil func)
     (let* ((map (setup-get 'map))
            (global (or (not map) (eq map 'global) (eq map 'global-map)))
            (state (ignore-errors (setup-get 'state))))
@@ -1444,6 +1443,7 @@ The default UI for ~ispell~ is quite hard to use, and there is a package [[https
                                            my-orderless-initialism-prefix
                                            my-orderless-flex-prefix)))
 #+end_src
+
 *** Vertico
 [[https://github.com/minad/vertico][vertico]] "provides a performant and minimalistic vertical completion UI based on the default completion system."
 #+begin_src scheme
@@ -1663,6 +1663,17 @@ Reference:
 #+end_src
 
 Its Evil integration is now a part of evil-collection.
+
+*** Project
+Since Emacs 28, the built-in =project.el= implements most functionalities needed for project management, which makes [[https://github.com/bbatsov/projectile][projectile]] unnecessary.
+#+begin_src emacs-lisp
+  (setup (:require project)
+    (:option project-switch-use-entire-map t
+             project-list-file (exdg-state "project-list.el"))
+    (:with-map my-leader-map (:bind "p" project-prefix-map))
+    (:with-map project-prefix-map
+      (:bind "m" #'magit-project-status)))
+#+end_src
 
 *** Org Mode
 From its website
