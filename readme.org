@@ -1821,6 +1821,32 @@ References:
     (:hook-into org-mode))
 #+end_src
 
+**** Personal Knowledge Management
+I believe strongly that [[https://en.wikipedia.org/wiki/Personal_information_management][PIM]] as its adjective "personal" implies, is something that varies from individuals to individuals. That is, there is no such "universal best practice" for everyone. Thus, what we really need is a highly customizable framework to build our own variation. Luckily, org mode fits into this ground.
+
+I use a personal-hacked variation of [[https://en.wikipedia.org/wiki/Zettelkasten][Zettelkasten]].
+
+Reference:
+- How To Take Smart Notes by Sönke Ahrens
+- [[https://blog.jethro.dev/posts/how_to_take_smart_notes_org/][How To Take Smart Notes With Org-mode]] by Jethro Kuan, the author of org-roam
+
+***** Org Id
+Enable tracking org heading links using globally unique UIDs. This is a must-have even without =org-roam=, because org mode won't fix the broken links when you refile/archive some subtrees to a different file.
+
+#+begin_src emacs-lisp
+  (setup org-id
+    (:option org-id-track-globally t
+             org-id-link-to-org-use-id 'create-if-interactive
+             org-id-locations-file (exdg-state "org-id-locations.el")))
+#+end_src
+
+***** Custom Links
+Here is an attempt to implement [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link-tags]].
+#+begin_src emacs-lisp
+  (setup ol
+    (org-link-set-parameters "related" :follow #'org-id-open))
+#+end_src
+
 **** Style and Faces
 This part of code is basically grabbed from [[https://zzamboni.org/post/beautifying-org-mode-in-emacs/][Beautifying Org Mode in Emacs]] by zzamboni.
 
