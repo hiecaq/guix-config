@@ -554,10 +554,13 @@ I'm currently using =emacs-next= from Guix official channel.
 I and my Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a channel!
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-module (hiecaq packages emacs-xyz)
+    #:use-module (guix utils)
     #:use-module (guix packages)
     #:use-module (guix git-download)
+    #:use-module (guix build utils)
     #:use-module (guix build-system emacs)
     #:use-module (gnu packages)
+    #:use-module ((gnu packages emacs) #:prefix upstream:)
     #:use-module ((gnu packages emacs-xyz) #:prefix upstream:)
     #:use-module ((guix licenses) #:prefix license:))
 #+end_src
@@ -1111,7 +1114,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
          (sha256
           (base32
            "0fk9nl0h1j1ig6pvb4aix3injxi2jyw9djixchxf4aky11znivgj"))))
-       (inputs
+       (propagated-inputs
         (list upstream:emacs-evil))
        (build-system emacs-build-system)
        (home-page url)
@@ -1162,7 +1165,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
          (sha256
           (base32
            "0xsva9bnlfwfmccm38qh3yvn4jr9za5rxqn4pwxbmhnx4rk47cch"))))
-       (inputs
+       (propagated-inputs
         (list upstream:emacs-evil upstream:emacs-avy))
        (build-system emacs-build-system)
        (home-page url)
@@ -1900,6 +1903,81 @@ Here is an attempt to implement [[https://org-roam.discourse.group/t/add-link-ta
 #+begin_src emacs-lisp
   (setup ol
     (org-link-set-parameters "related" :follow #'org-id-open))
+#+end_src
+
+***** Org Roam
+[[https://www.orgroam.com/][org-roam]] basically does 2 things:
+1. Use a sqlite database to cache everything that is getting slow as notes scaling up
+2. Using this database to display "backlinks" for a note, a fancy word standing for the links that point to the current note.
+This means that, giving that org-roam is quite stable now, we can use the database to do many crazy things!
+
+Again the packaged version in Guix official packages is quite old, so here is the git HEAD version. I also clear up the =propagated-inputs= list a little bit, especially by adding a simple hack to remove the redundant dependency on the old =emacs-sqlite=. Similar to =emacsql-sqlite-built-in=, it requires Emacs 29 to compile.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-org-roam-next
+    (let ((commit "74422df546a515bc984c2f3d3a681c09d6f43916")
+          (last-release-version "2.2.2")
+          (revision "0"))
+      (package
+        (inherit upstream:emacs-org-roam)
+        (name "emacs-org-roam-next")
+        (version (git-version last-release-version revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/org-roam/org-roam")
+                 (commit commit)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32
+             "0vhl69y6yk2zzfixjdwr8vxl2k921h0syshk5123r1nm9jp3i1s9"))))
+        (propagated-inputs
+         (list upstream:emacs-dash
+               upstream:emacs-magit
+               upstream:emacs-org
+               emacs-emacsql-sqlite-builtin))
+        (arguments
+         (append
+          (list #:emacs upstream:emacs-next)
+          (substitute-keyword-arguments (package-arguments upstream:emacs-org-roam)
+            ((#:phases phases)
+             `(modify-phases ,phases
+                (add-after 'patch-exec-paths 'drop-emacsql-sqlite-dependency
+                  (lambda _
+                    (substitute* "org-roam.el"
+                      (("\\(require 'emacsql-sqlite\\)") ""))
+                    #t))))))))))
+#+end_src
+
+#+begin_src scheme
+    (simple-service
+     'home-emacs-org-roam
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-org-roam-next")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup org-roam
+    (:option org-roam-database-connector 'sqlite-builtin
+             org-roam-db-location (exdg-data "org/org-roam.db")
+             org-roam-protocol-store-links nil
+             org-roam-directory (expand-file-name "notes" (xdg-user-dir "DOCUMENTS"))
+             org-roam-node-display-template (concat "${hierarchy:*} " (propertize "${tags:10}" 'face 'org-tag)))
+    ;; from https://github.com/org-roam/org-roam/issues/1565
+    (with-eval-after-load 'org-roam-node
+      (cl-defmethod org-roam-node-hierarchy ((node org-roam-node))
+        "Return the hierarchy for the node."
+        (let ((title (org-roam-node-title node))
+              (olp (org-roam-node-olp node))
+              (level (org-roam-node-level node))
+              (filetitle (org-roam-node-file-title node)))
+          (concat
+           (when (> level 0) (concat filetitle " > "))
+           (when (> level 1) (concat (string-join olp " > ") " > "))
+           title))))
+    (:with-mode org-roam-db-autosync-mode (:enable)))
 #+end_src
 
 **** Style and Faces
