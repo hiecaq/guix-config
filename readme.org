@@ -826,6 +826,16 @@ TODO: this should not require help.
     (:global (:unbind "C-h C-h")))
 #+end_src
 
+*** Xdg
+I add a ~xdg-log-home~ getter definition. This is technically not part of the standard, but Guix has this environment variable defined, so why not?
+#+begin_src emacs-lisp
+  (setup (:require xdg)
+    (unless (functionp #'xdg-log-home)
+      (defun xdg-log-home ()
+        "Return the base directory for user-specific log data."
+        (xdg--dir-home "XDG_LOG_HOME" "~/.local/log"))))
+#+end_src
+
 *** No Littering
 [[https://github.com/emacscollective/no-littering][no-littering]] helps put emacs directory clean, sorting package-created files and directories into reasonable directories. One thing it misses is the distinguishing between permanent data and temporary data. I used to fork it to provide this distinguishing, but it turns out to be too troublesome to maintain. Now I simply consider this as a "fallback" solution. Later on for the variables from packages I really use I'll overwrite them manually.
 #+begin_src scheme
@@ -839,6 +849,23 @@ TODO: this should not require help.
 
 #+begin_src emacs-lisp
   (setup (:require no-littering))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defmacro def-exdg-home-dir (xdg-name)
+    (list 'progn
+          `(defvar ,(intern (format "exdg-%s-dir" xdg-name))
+             (expand-file-name (convert-standard-filename "emacs/") (,(intern (format "xdg-%s-home" xdg-name)))))
+          `(defun ,(intern (format "exdg-%s" xdg-name)) (file)
+             (expand-file-name (convert-standard-filename file) ,(intern (format "exdg-%s-dir" xdg-name))))))
+
+  (def-exdg-home-dir config)
+  (def-exdg-home-dir cache)
+  (def-exdg-home-dir data)
+  (def-exdg-home-dir state)
+  (def-exdg-home-dir log)
+
+  (setq exdg-config-dir (expand-file-name "config/" user-emacs-directory))
 #+end_src
 
 *** Modus Themes
@@ -862,6 +889,7 @@ TODO: this should not require help.
 [[info:emacs#File Conveniences][recentf]] is an Emacs built-in minor mode that saves recent file list.
 #+begin_src emacs-lisp
   (setup recentf
+    (:option recentf-save-file (exdg-state "recentf-save.el"))
     (:enable))
 #+end_src
 
@@ -869,6 +897,7 @@ TODO: this should not require help.
 [[help:savehist-mode][savehist]] is an Emacs built-in minor mode that save minibuffer histories to a file.
 #+begin_src emacs-lisp
   (setup savehist
+    (:option savehist-file (exdg-state "savehist.el"))
     (:enable))
 #+end_src
 
@@ -978,6 +1007,15 @@ The configs here is basically modified a little bit from [[https://protesilaos.c
     (:with-function highlight-parentheses-minibuffer-setup
       (:hook-into minibuffer-setup)))
 #+end_src
+
+*** Transient
+#+begin_src emacs-lisp
+  (setup transient
+    (:option transient-history-file (exdg-state "transient/history.el")
+             transient-levels-file (exdg-state "transient/levels.el")
+             transient-values-file (exdg-state "transient/values.el")))
+#+end_src
+
 *** Evil
 It's name tells everything: the Extensible Vi Layer for Emacs, [[https://github.com/emacs-evil/evil][Evil]]. It works pretty well as a Vim simulation, much better than VsCode's or Intellij's. Besides, it is charming combination of Vim's model-based editing with Emacs' keymap system, to some extent, as a personal opinion, better than the native Vim on the model-based editing system.
 
@@ -1157,6 +1195,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
     (:also-load evil)
     (:enable))
 #+end_src
+
 *** God mode
 [[https://github.com/emacsorphanage/god-mode][god-mode]] provides a minor mode in which modifier keys of key bindings are handled sepecially: =C-= is not needed any more, =M-= is implied with a single key, etc.
 #+begin_src scheme
@@ -1283,6 +1322,7 @@ Its package definition in the Guix official channel is for the "latest" release 
   (setup ace-window-posframe
     (:enable))
 #+end_src
+
 *** Spell Checking
 See the [[info:emacs#Spelling][documentation]] for details.
 
@@ -1517,7 +1557,8 @@ Reference:
 #+begin_src emacs-lisp
   (setup (:require embark-consult))
 #+end_src
-*** corfu
+
+*** Corfu
 [[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
 #+begin_src scheme
   (simple-service
