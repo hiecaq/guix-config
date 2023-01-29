@@ -1688,12 +1688,129 @@ this is only a facial overall summary of what [[https://orgmode.org][org-mode]] 
    home-profile-service-type
    (specifications->packages
     (list "emacs-org"
+          "emacs-evil-org"
           "emacs-toc-org")))
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb yes
   (setup org
+    <<org-setup>>
     (:hook visual-line-mode variable-pitch-mode))
+#+end_src
+
+**** General Settings
+Turn on =org-indent=, aka clean view by default:
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-startup-indented t)
+#+end_src
+
+Enforce to-do dependencies (i.e. children block their parent)
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-enforce-todo-dependencies t)
+#+end_src
+
+When the cursor is on the headline, =c-a= =c-e= will stop after the leading stars and before the tags, respectively. Likewise, =c-k= will only delete up to the tags. Moreover, =evil-org= respects these settings.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-special-ctrl-a/e t)
+  (:option org-special-ctrl-k t)
+#+end_src
+
+Prevent =M-RET= from splitting the line if the line is a headline or an item.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-M-RET-may-split-line '((default . nil)))
+#+end_src
+
+Update =#+last_modified= every time an org file is saved.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (defun my-org-autoupdate-timestamp ()
+    (setq-local time-stamp-active t
+                time-stamp-start "#\\+last_modified:[ \t]*"
+                time-stamp-end "$"
+                time-stamp-format "\[%Y-%02m-%02d %3a %02H:%02M\]")
+    (add-hook 'before-save-hook #'time-stamp nil t))
+  (:hook my-org-autoupdate-timestamp)
+#+end_src
+
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-persist-directory (exdg-cache "org-persist"))
+#+end_src
+**** Task Management
+I generally follow the GTD way as my task management system.
+reference:
++ [[https://hamberg.no/gtd/][GTD in 15 minutes – A Pragmatic Guide to Getting Things Done]] by Erlend Hamberg
++ [[http://www.members.optusnet.com.au/~charles57/GTD/][Emacs, org-mode and Getting Things Done (GTD)]] by Charles Cave
++ [[http://doc.norang.ca/org-mode.html][Org Mode - Organize Your Life In Plain Text!]] by Bernt Hansen
+
+***** Tasks and Logs
+Todo state keywords. The todo state is simple:
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-todo-keywords
+           '((sequence "TODO(t!)" "NEXT(e!)" "WAIT(w@/@)" "|" "DONE(d@)")
+             ("|" "CANCELED(c@)")
+             ("|" "MEETING(m)")
+             ("|" "PHONE(p)")))
+#+end_src
+
+Log into a =LOGBOOK= drawer so that things are folded when we want to read about outcome descriptions
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-log-into-drawer t)
+#+end_src
+
+When refiling, log down a timestamp:
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-log-refile t)
+#+end_src
+
+I found that usually I have something to say when I closing a task, for example a link to the reproduction note. Thus I'd like to have closing note by default.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-log-done 'note)
+#+end_src
+
+Put newer note at the top:
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-reverse-note-order t)
+#+end_src
+
+***** Effort Measurement and Time Cost Estimates
+Org mode provides the feature to estimate effort and track time spent on a task.
+
+First, if something somehow has a =0:00= duration, don't count it.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-clock-out-remove-zero-time-clocks t)
+#+end_src
+
+Clock out when a task is =DONE= or =CANNCELED=
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-clock-out-when-done t)
+#+end_src
+
+Sometimes, I forget to clock out before rebooting or shutting down. Org Clock provides the feature to continue the previous unfinished task when Emacs restarts, which can be handy in this case.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-clock-persist t
+           org-clock-persist-file (exdg-state "org-clock-persist.el"))
+#+end_src
+
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+    (org-clock-persistence-insinuate))
+#+end_src
+
+**** Literate Programming
+References:
++ [[https://orgmode.org/worg/org-contrib/babel/intro.html][Babel: Introduction]] in worg/org-contrib
++ [[https://orgmode.org/manual/Working-with-Source-Code.html#Working-with-Source-Code][Working with Source Code]] from =org-mode='s manual
++ [[https://howardism.org/Technical/Emacs/literate-programming-tutorial.html][Introduction to Literate Programming]] by Howard Abrams
+
+**** Evil Org
+[[https://github.com/Somelauw/evil-org-mode][evil-org]] is org mode's evil integration. It provides not simply keybindings, but also text objects.
+#+begin_src emacs-lisp
+  (setup (:require evil-org)
+    (:also-load org evil-org-agenda)
+    (:hook-into org-mode)
+    (evil-org-set-key-theme)
+    (evil-org-agenda-set-keys)
+    (:with-map org-mode-map
+      (:with-state motion (:bind "RET" #'org-open-at-point))))
 #+end_src
 
 **** Toc Org
@@ -1702,6 +1819,16 @@ this is only a facial overall summary of what [[https://orgmode.org][org-mode]] 
   (setup toc-org
     (:also-load org)
     (:hook-into org-mode))
+#+end_src
+
+**** Style and Faces
+This part of code is basically grabbed from [[https://zzamboni.org/post/beautifying-org-mode-in-emacs/][Beautifying Org Mode in Emacs]] by zzamboni.
+
+Hide ===, =~= and other emphasis markers, and fontify src block natively:
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-hide-emphasis-markers t
+           org-src-fontify-natively t
+           org-tags-column 0)
 #+end_src
 
 *** English
