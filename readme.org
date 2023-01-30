@@ -1982,6 +1982,16 @@ Again the packaged version in Guix official packages is quite old, so here is th
 
 ***** Bibliography
 There are quite a lot bibliographic packages, among which I use [[https://github.com/emacs-citar/citar][citar]].
+#+begin_src scheme
+  (simple-service
+   'home-emacs-citar
+   home-profile-service-type
+   (specifications->packages
+    (list
+     "emacs-citar-next"
+     "emacs-citar-org-roam-next")))
+#+end_src
+
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-citar-next
     (let ((commit "ea489eca7f5321b5ede1ea294abf47ecbc9f11ca")
@@ -2003,15 +2013,6 @@ There are quite a lot bibliographic packages, among which I use [[https://github
              "0lyirl5ynyikrwlvfga5y6qp2rxkm44xax6vy73aqpalhi95apa1")))))))
 #+end_src
 
-#+begin_src scheme
-  (simple-service
-   'home-emacs-citar
-   home-profile-service-type
-   (specifications->packages
-    (list
-     "emacs-citar-next")))
-#+end_src
-
 #+begin_src emacs-lisp
   (setup citar
     (:option
@@ -2029,6 +2030,38 @@ It comes with =embark= integration, where ~citar-embark-mode~ is a global mode t
     (:option citar-at-point-function #'embark-act)
     (:enable))
 #+end_src
+
+=citar= comes with its own =org-roam= integration as a [[https://github.com/emacs-citar/citar-org-roam][separate package]]:
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-citar-org-roam-next
+    (let ((commit "2ae351d15e0847a4aed06e7f5d472dd41d15bea0")
+          (last-release-version "0.3")
+          (revision "0"))
+      (package
+       (inherit upstream:emacs-citar-org-roam)
+       (name "emacs-citar-org-roam-next")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/emacs-citar/citar-org-roam")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0zvwc3853pv8hz29858v5yp52k5qzhlj8v6v4zvd4k3zyalcik5w"))))
+       (propagated-inputs (list emacs-org-roam-next emacs-citar-next))
+       (arguments
+        `(#:emacs ,upstream:emacs-next)))))
+#+end_src
+
+As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-sources~, making the related configuration unnecessary.
+#+begin_src emacs-lisp
+  (setup citar-org-roam
+    (:enable))
+#+end_src
+TODO: What's the point of ~citar-library-paths~?
 
 **** Style and Faces
 This part of code is basically grabbed from [[https://zzamboni.org/post/beautifying-org-mode-in-emacs/][Beautifying Org Mode in Emacs]] by zzamboni.
