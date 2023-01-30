@@ -1393,9 +1393,18 @@ The default UI for ~ispell~ is quite hard to use, and there is a package [[https
        (license license:gpl3))))
 #+end_src
 
+Although =topsy= recommends to use =org-sticky-header= instead, this snippet for org-mode is good enough for me:
 #+begin_src emacs-lisp
   (setup topsy
-    (:hook-into prog-mode))
+    (with-eval-after-load 'topsy
+      (:option (prepend topsy-mode-functions)
+              '(org-mode . (lambda ()
+                              (save-excursion
+                                  (goto-char (window-start))
+                                  (when (org-at-heading-p)
+                                  (forward-line -1))
+                                  (org-get-heading))))))
+    (:hook-into prog-mode org-mode))
 #+end_src
 
 #+begin_src scheme
