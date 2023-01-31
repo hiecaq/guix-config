@@ -1363,15 +1363,37 @@ Emacs comes with a spell checking wrapper...
 
 **** Flyspell Correct
 The default UI for ~ispell~ is quite hard to use, and there is a package [[https://github.com/d12frosted/flyspell-correct][flyspell-correct]] that makes use of the ~completing-read~ interface to make things much more usable.
+
+Note that the version in official Guix Package Channel is =0.6.1=, which was 3 years ago. It is kind of broken on my site, so I'll use the master HEAD version instead:
 #+begin_src scheme
   (simple-service
    'home-emacs-flyspell-correct
    home-profile-service-type
    (list
     (specification->package
-     "emacs-flyspell-correct")))
+     "emacs-flyspell-correct-next")))
 #+end_src
 
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-flyspell-correct-next
+    (let ((commit "7d7b6b01188bd28e20a13736ac9f36c3367bd16e")
+          (last-release-version "0.6.1")
+          (revision "0"))
+      (package
+       (inherit upstream:emacs-flyspell-correct)
+       (name "emacs-flyspell-correct-next")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/d12frosted/flyspell-correct")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1b6h3wjmxg9d1d3mfvw6fsgkr1w0d14zxllv9jb5cscl5lq8rbmm")))))))
+#+end_src
 #+begin_src emacs-lisp
   (setup (:require flyspell-correct)
     (:needs "aspell")
