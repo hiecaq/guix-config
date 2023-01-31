@@ -386,6 +386,7 @@ And the aliases that I'm using:
   alias l.="ls -lah"
   alias gc="git commit -v"
 #+end_src
+
 * Fonts
 :PROPERTIES:
 :header-args:scheme: :tangle "build/hiecaq/home/fonts.scm"
@@ -1692,6 +1693,15 @@ Reference:
     (:hook #'my-aggressive-indent-after-change))
 #+end_src
 
+*** Eshell
+I plan on switching to =eshell= as my main shell. Here are some references:
+- [[https://web.archive.org/web/20201111230155/https://ambrevar.xyz/emacs-eshell/][Eshell as a main shell (web archived)]] by Pierre Neidhardt
+- [[https://emacs-china.org/t/topic/5362][Discussion on Tweaking Eshell]]  in Emacs China (in Chinese)
+- [[https://www.masteringemacs.org/article/complete-guide-mastering-eshell][Mastering Eshell]] by Mickey Petersen
+- [[https://github.com/condy0919/emacs-newbie/blob/master/introduction-to-builtin-modes.md#eshell][Introductions to Emacs Builtin Mode Features]] from =emacs-newbie= (in Chinese)
+- [[https://www.emacswiki.org/emacs/CategoryEshell][Eshell Category]] on Emacs Wiki
+- [[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html][Eshell's Offical Manual]]
+
 *** Magit
 [[https://github.com/magit/magit][magit]] is an Emacs interface to git, which provides not only commands to call but also a full GUI-like wrapper around git.
 #+begin_src scheme
@@ -1838,6 +1848,7 @@ Update =#+last_modified= every time an org file is saved.
 #+begin_src emacs-lisp :tangle no :noweb-ref org-setup
   (:option org-persist-directory (exdg-cache "org-persist"))
 #+end_src
+
 **** Task Management
 I generally follow the GTD way as my task management system.
 reference:
@@ -2108,6 +2119,8 @@ As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-
     (:enable))
 #+end_src
 TODO: What's the point of ~citar-library-paths~?
+
+One great feature of =citar-org-roam= is that [[https://github.com/org-roam/org-roam/issues/2207][we can have multiple notes per reference key]]. This makes it possible to split very long literature notes for textbooks into separate files (or just headings), per chapter for example.
 
 **** Style and Faces
 This part of code is basically grabbed from [[https://zzamboni.org/post/beautifying-org-mode-in-emacs/][Beautifying Org Mode in Emacs]] by zzamboni.
