@@ -1217,7 +1217,22 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
         (:with-state (normal visual motion)
           (:bind "SPC" #'god-execute-with-current-bindings))
       (:with-state (insert emacs motion)
-        (:bind "C-<espace>" #'god-execute-with-current-bindings))))
+        (:bind "C-<espace>" #'god-execute-with-current-bindings)))
+    (defun my-god-mode-lookup-key-sequence (&optional key key-string-so-far)
+      "Retry with literal KEY when the non-literal attempt failed."
+      (interactive)
+      (let ((sanitized-key
+             (god-mode-sanitized-key-string
+              (or key (read-event key-string-so-far)))))
+        (condition-case nil
+            (god-mode-lookup-command
+             (god-key-string-after-consuming-key sanitized-key key-string-so-far))
+          (error (when key-string-so-far
+                   (setq god-literal-sequence t)
+                   (god-mode-lookup-command
+                    (god-key-string-after-consuming-key sanitized-key key-string-so-far)))))))
+
+    (advice-add #'god-mode-lookup-key-sequence :override #'my-god-mode-lookup-key-sequence))
 #+end_src
 
 *** Which key
