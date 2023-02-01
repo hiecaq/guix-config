@@ -1803,7 +1803,8 @@ this is only a facial overall summary of what [[https://orgmode.org][org-mode]] 
    (specifications->packages
     (list "emacs-org"
           "emacs-evil-org"
-          "emacs-toc-org")))
+          "emacs-toc-org"
+          "emacs-org-appear-next")))
 #+end_src
 
 #+begin_src emacs-lisp :noweb yes
@@ -1936,6 +1937,47 @@ References:
     (:hook-into org-mode))
 #+end_src
 
+**** Org Appear
+[[https://github.com/awth13/org-appear][org-appear]] is a minor mode that "toggle visibility of hidden Org mode element parts upon entering and leaving an element", and it works with Evil very well.
+
+Its package definition in the Guix Official Channel is for the "latest" release version, which is as old as January 2022. So I makes a variation to use the master branch HEAD at the time of writing.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-org-appear-next
+    (let ((commit "eb9f9db40aa529fe4b977235d86494b115281d17")
+          (last-release-version "0.3.0")
+          (revision "0"))
+      (package
+       (inherit upstream:emacs-org-appear)
+       (name "emacs-org-appear-next")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/awth13/org-appear")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1hawkx6sgh52bg7rj22x148hx8hby276xmqks3kxyzvrxzi8yav9")))))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup org-appear
+    (:option org-appear-trigger 'manual
+             org-appear-autolinks t
+             org-appear-autosubmarkers t
+             org-appear-autoentities t)
+    (defun my-org-appear-setup ()
+      (cond (org-appear-mode
+             (add-hook 'evil-normal-state-exit-hook #'org-appear-manual-start nil t)
+             (add-hook 'evil-normal-state-entry-hook #'org-appear-manual-stop nil t))
+            (t
+             (remove-hook 'evil-normal-state-exit-hook #'org-appear-manual-start t)
+             (remove-hook 'evil-normal-state-entry-hook #'org-appear-manual-stop t))))
+    (:hook-into org-mode)
+    (:hook #'my-org-appear-setup))
+#+end_src
 **** Personal Knowledge Management
 I believe strongly that [[https://en.wikipedia.org/wiki/Personal_information_management][PIM]] as its adjective "personal" implies, is something that varies from individuals to individuals. That is, there is no such "universal best practice" for everyone. Thus, what we really need is a highly customizable framework to build our own variation. Luckily, org mode fits into this ground.
 
