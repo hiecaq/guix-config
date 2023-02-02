@@ -1540,6 +1540,7 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 #+begin_src emacs-lisp
   (setup (:require consult)
     (:option consult-preview-key "\C-j"
+             xref-search-program 'ripgrep
              xref-show-definitions-function #'consult-xref
              xref-show-xrefs-function #'consult-xref)
     (:with-map my-leader-map
@@ -1660,6 +1661,26 @@ Reference:
 #+begin_src emacs-lisp
   (setup hideshow
     (:with-mode hs-minor-mode (:hook-into prog-mode)))
+#+end_src
+
+*** Pulse
+=pulse= is a built-in package that transiently highlights a region (current cursor line, for example). Its callbacks can be added to post jump hooks, so that the jumps are easier to follow.
+#+begin_src emacs-lisp
+  (setup pulse
+    (:with-function pulse-momentary-highlight-one-line
+      (:hook-into consult-after-jump-hook imenu-after-jump-hook))
+    (defun my-pulse-momentary-highlight-one-line ()
+      "Momentary highlight one line if the window buffer changed."
+      (when-let* ((old-window (old-selected-window))
+                  (_ (window-valid-p old-window))
+                  (old-buffer (with-selected-window old-window (window-buffer)))
+                  (new-window (selected-window))
+                  (_ (window-valid-p new-window))
+                  (new-buffer (with-selected-window new-window (window-buffer)))
+                  (_ (not (eq old-buffer new-buffer))))
+        (pulse-momentary-highlight-one-line)))
+    (:with-function my-pulse-momentary-highlight-one-line
+      (:hook-into window-state-change-hook)))
 #+end_src
 
 *** electric-pair-mode
