@@ -822,6 +822,35 @@ One extra thing: Emacs comes with a customization interface, which supports sett
     (:option custom-file null-device))
 #+end_src
 
+*** Universal Argument
+I am using [[https://www.kaufmann.no/roland/dvorak/][Programmer Dvorak (DVP)]], which swaps digits and special symbols. This makes typing numbers generally inconvenient. The idea behind this change is that we should define ~const~ variables to hold these numbers to reduce the chances we need to actually type numbers. However, Emacs (and Evil) use numbers to repeat commands, a situation that we still need typing digits directly. This is improved by the following tweak.
+
+=C-u= basically invokes the ~unversal-argument-map~ transient map, so we can remap the digit row's symbols to actual digits. Also I add a binding to insert current universal argument's number.
+#+begin_src emacs-lisp
+  (setup simple
+    (defmacro my-digit-argument (digit)
+      "Return the command that inputs the given
+  digit as universal argument."
+      `(lambda (arg)
+         (interactive "P")
+         (let ((last-command-event ,(+ digit ?0)))
+           (digit-argument arg))))
+    (:with-map universal-argument-map
+      (:bind "[" (my-digit-argument 7)
+             "{" (my-digit-argument 5)
+             "}" (my-digit-argument 3)
+             "(" (my-digit-argument 1)
+             "=" (my-digit-argument 9)
+             "*" (my-digit-argument 0)
+             ")" (my-digit-argument 2)
+             "+" (my-digit-argument 4)
+             "]" (my-digit-argument 6)
+             "!" (my-digit-argument 8)
+             "<CTRL-i>" (lambda (arg)
+                          (interactive "P")
+                          (insert (format "%s" arg))))))
+#+end_src
+
 *** Help
 TODO: this should not require help.
 #+begin_src emacs-lisp
