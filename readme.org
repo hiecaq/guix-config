@@ -1638,6 +1638,44 @@ Reference:
   (setup (:require embark-consult))
 #+end_src
 
+I find typing =embark-cycle-key= both slow (if there are MANY targets) and inconsistent (I need to keep an eye on what is the current target), so I come up with the following advice to make it use ~consult--read~ instead.
+
+The way to use it is simply by typing =embark-cycle-key= as usual, or set the universal argument before doing ~embark-act~. In either case, a consult session will be brought up, and we can select targets by their types in it. Once a target is picked, the embark target list will be rotated until the selected target is at front.
+#+begin_src emacs-lisp
+  (setup embark-consult
+    (defun my-consult-embark--target-candidate (cand)
+      (let* ((type (plist-get cand :type))
+             (type-string (format "%-20s" (symbol-name type)))
+             (target (plist-get cand :target))
+             (type (propertize type-string 'consult-embark-target target)))
+        (cons type cand)))
+
+    (defun my-consult-embark--target-read (targets)
+      (let* ((targets (cl-mapcar #'my-consult-embark--target-candidate targets))
+             (target (consult--read
+                      targets
+                      :prompt "Target: "
+                      :require-match t
+                      :annotate (lambda (tgt)
+                                  (let* ((target (get-pos-property 0 'consult-embark-target tgt)))
+                                    (embark--truncate-target target)))
+                      :lookup #'consult--lookup-cdr)))
+        target))
+
+    (defun my-embark--rotate-modify-k (args)
+      (pcase-let ((`(,targets ,k) args))
+        (list targets
+              (if-let (((cdr targets)) ;; len >= 2
+                       ((plistp (car targets))) ;; is target list
+                       ((not (embark--action-repeatable-p this-command))) ;; is not auto rotate after repeat
+                       (target (my-consult-embark--target-read targets))
+                       (step (cl-position target targets)))
+                  step
+                k))))
+    (advice-add #'embark--rotate :filter-args #'my-embark--rotate-modify-k))
+#+end_src
+TODO: I'm thinking about binding =c-u embark-act= directly,
+
 *** Corfu
 [[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
 #+begin_src scheme
@@ -2028,6 +2066,7 @@ Its package definition in the Guix Official Channel is for the "latest" release 
     (:hook-into org-mode)
     (:hook #'my-org-appear-setup))
 #+end_src
+
 **** Personal Knowledge Management
 I believe strongly that [[https://en.wikipedia.org/wiki/Personal_information_management][PIM]] as its adjective "personal" implies, is something that varies from individuals to individuals. That is, there is no such "universal best practice" for everyone. Thus, what we really need is a highly customizable framework to build our own variation. Luckily, org mode fits into this ground.
 
