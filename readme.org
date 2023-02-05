@@ -851,6 +851,17 @@ I am using [[https://www.kaufmann.no/roland/dvorak/][Programmer Dvorak (DVP)]], 
                           (insert (format "%s" arg))))))
 #+end_src
 
+Also here is a helper macro for binding commands. I personally do not like using universal argument at all.
+#+begin_src emacs-lisp
+  (defmacro my-with-universal-argument (cmd)
+    "Wrap the given CMD with a lambda that set universal argument before
+    interactively calling CMD."
+    `(lambda ()
+       (interactive)
+       (let ((current-prefix-arg '(4)))
+         (call-interactively ,cmd))))
+#+end_src
+
 *** Help
 TODO: this should not require help.
 #+begin_src emacs-lisp
@@ -1084,8 +1095,9 @@ References:
       (interactive)
       (set-transient-map my-leader-map))
     (:global
-      (:unbind "C-SPC")
-      (:bind "C-SPC" #'my-leader-key))
+        (:unbind "C-SPC")
+      ;; (:bind "C-SPC" #'my-leader-key)
+      (:bind "C-SPC" (my-with-universal-argument #'embark-act)))
     (:require evil)
     (:enable))
 
@@ -1568,25 +1580,35 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 
 #+begin_src emacs-lisp
   (setup (:require consult)
-    (:option consult-preview-key "\C-j"
+    (:option consult-preview-key "C-j"
              xref-search-program 'ripgrep
              xref-show-definitions-function #'consult-xref
              xref-show-xrefs-function #'consult-xref)
-    (:with-map my-leader-map
+    (defmacro my-ignore-arg (fn)
+      "Define a wrapper for an interactive function that ignores its input.
+  Unlike `defun',this guarantees to return the defined function symbol."
+      (let* ((fn-value (eval fn))
+             (old-name (symbol-name fn-value))
+             (new-name (concat "my-ignore-arg-" old-name))
+             (doc (documentation fn-value)))
+        `(progn (defun ,(intern new-name) ()
+                  ,doc
+                  (interactive)
+                  (call-interactively ,fn))
+                #',(intern new-name))))
+    (defvar-keymap my-global-consult-map)
+    (:with-map my-global-consult-map
       (:bind
-       "h b" #'consult-buffer
-       "h s" (lambda ()
-               (interactive)
-               (let ((current-prefix-arg '(4)))
-                 (call-interactively #'consult-ripgrep)))
-       "h l" #'consult-flymake
-       "h f" #'consult-find
-       "h F" #'consult-locate
-       "h i" #'consult-imenu
-       "h o" #'consult-outline
-       "h m" #'consult-minor-mode-menu
-       "h x" #'consult-mode-command
-       "h k" #'consult-man)))
+       ;; "s" (my-with-universal-argument #'consult-ripgrep)
+       "f" (my-ignore-arg #'consult-find)
+       "b" (my-ignore-arg #'consult-buffer)
+       "l" (my-ignore-arg #'consult-flymake)
+       "F" (my-ignore-arg #'consult-locate)
+       "i" (my-ignore-arg #'consult-imenu)
+       "o" (my-ignore-arg #'consult-outline)
+       "m" (my-ignore-arg #'consult-minor-mode-menu)
+       "x" (my-ignore-arg #'consult-mode-command)
+       "k" (my-ignore-arg #'consult-man))))
 #+end_src
 
 *** Embark
@@ -1645,20 +1667,22 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
   (setup embark-consult
     (defun my-consult-embark--target-candidate (cand)
       (let* ((type (plist-get cand :type))
-             (type-string (format "%-20s" (symbol-name type)))
+             (type-string (symbol-name type))
              (target (plist-get cand :target))
              (type (propertize type-string 'consult-embark-target target)))
         (cons type cand)))
 
     (defun my-consult-embark--target-read (targets)
       (let* ((targets (cl-mapcar #'my-consult-embark--target-candidate targets))
+             (indent (apply #'+ (cl-mapcar (lambda (target) (length (car target))) targets)))
+             (align (propertize " " 'display `(space :align-to (+ left ,indent))))
              (target (consult--read
                       targets
                       :prompt "Target: "
                       :require-match t
                       :annotate (lambda (tgt)
-                                  (let* ((target (get-pos-property 0 'consult-embark-target tgt)))
-                                    (embark--truncate-target target)))
+                                  (let ((target (get-pos-property 0 'consult-embark-target tgt)))
+                                    (concat align (embark--truncate-target target))))
                       :lookup #'consult--lookup-cdr)))
         target))
 
@@ -1675,6 +1699,55 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
     (advice-add #'embark--rotate :filter-args #'my-embark--rotate-modify-k))
 #+end_src
 TODO: I'm thinking about binding =c-u embark-act= directly,
+
+#+begin_src emacs-lisp
+  (defun embark-target-global ()
+    (cons 'global ""))
+  (add-hook 'embark-target-finders #'embark-target-global 100)
+  (add-to-list 'embark-keymap-alist '(global . my-global-consult-map))
+  (map-keymap
+   (lambda (_key cmd)
+     (cl-pushnew 'embark--allow-edit
+                 (alist-get cmd embark-target-injection-hooks)))
+   my-global-consult-map)
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun embark-target-this-buffer ()
+    (when-let ((buffer (buffer-name)))
+      (cons 'this-buffer buffer)))
+
+  (add-hook 'embark-target-finders #'embark-target-this-buffer 98)
+
+  (add-to-list 'embark-keymap-alist '(this-buffer . embark-buffer-map))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun embark-target-this-file ()
+    (when-let ((file (buffer-file-name)))
+      (cons 'this-file file)))
+
+  (add-hook 'embark-target-finders #'embark-target-this-file 98)
+
+  (defvar-keymap this-file-map
+    :doc "Commands to act on current file or buffer."
+    "l" #'load-file
+    "b" #'byte-compile-file
+    "S" #'sudo-find-file
+    "r" #'rename-file-and-buffer
+    "d" #'diff-buffer-with-file
+    "=" #'ediff-buffers
+    "C-=" #'ediff-files
+    "!" #'shell-command
+    "&" #'async-shell-command
+    "x" #'embark-open-externally
+    "c" #'copy-file
+    "|" #'embark-shell-command-on-buffer
+    "g" #'revert-buffer
+    "u" #'vundo)
+
+  (add-to-list 'embark-keymap-alist '(this-file . this-file-map))
+#+end_src
 
 *** Corfu
 [[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
