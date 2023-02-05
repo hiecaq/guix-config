@@ -2087,10 +2087,92 @@ Enable tracking org heading links using globally unique UIDs. This is a must-hav
 #+end_src
 
 ***** Custom Links
-Here is an attempt to implement [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link-tags]].
+=lfile= looks up the link by querying =plocate= database, which is a pre-indexed DB for local files.
+Based on [[https://karl-voit.at/2022/02/10/lfile/][blog post]] from [[https://github.com/novoid][Karl Voit]].
 #+begin_src emacs-lisp
   (setup ol
-    (org-link-set-parameters "related" :follow #'org-id-open))
+    (defun my-handle-lfile-link (opener querystring)
+      ;; get a list of hits
+      (let ((queryresults (split-string
+                           (s-trim
+                            (shell-command-to-string
+                             (concat
+                              "plocate --existing "
+                              querystring
+                              " "
+                              )))
+                           "\n" t)))
+        ;; check length of list (number of lines)
+        (cond
+         ((= 0 (length queryresults))
+          ;; edge case: empty query result
+          (message "Sorry, no results found for query: %s" querystring))
+         ((= 1 (length queryresults))
+          ;; exactly one hit:
+          (funcall opener (car queryresults))
+          )
+         (t
+          ;; in any other case:
+          (alert (format "Sorry, multiple results found for query: %s" querystring))
+          ;; FIXXME: ask user to select among multiple hits.
+          )
+         )))
+    (org-link-set-parameters
+     "lfile"
+     :follow (lambda (filename) (my-handle-lfile-link #'consult-file-externally filename))
+     :help-echo "Opens the file located via \"locate\" with your default application"
+     ))
+#+end_src
+
+Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in-org-roam-v2/1504][is]] [[https://org-roam.discourse.group/t/link-categorization/2486][an]] [[https://org-roam.discourse.group/t/custom-roam-style-link/39/57][attempt]] [[https://forum.zettelkasten.de/discussion/comment/4318/#Comment_4318][to]] [[https://forum.zettelkasten.de/discussion/573/idea-for-categorizing-theory-models-definitions-arguments-and-facts][implement]] [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link]] [[https://org-roam.discourse.group/t/the-case-for-custom-link-types/][Tags]].
+#+begin_src emacs-lisp
+  (setup ol
+    (defvar my-org-id-link-special-defs '(("related" :follow #'org-id-open :face 'org-tag
+                                           :help-echo "Related to the given topic.")
+                                          ("follow" :follow #'org-id-open :face 'org-tag
+                                           :help-echo "Is a Follow-up of the given note.")
+                                          ("under" :follow #'org-id-open :face 'org-tag
+                                           :help-echo "Is a sub-topic given note.")
+                                          ("translate" :follow #'org-id-open :face 'org-tag
+                                           :help-echo "Is a translation of the given note.")))
+    (dolist (def my-org-id-link-special-defs)
+      (apply #'org-link-set-parameters def))
+    (defun my-org-id-link--ctor- (type desc)
+      (propertize type 'desc desc))
+    (defun my-org-id-link--ctor (def)
+      (let* ((type (car def))
+             (rest (cdr def))
+             (desc (plist-get rest :help-echo)))
+        (my-org-id-link--ctor- type desc)))
+    (defvar my-org-id-link--types `(,(my-org-id-link--ctor- "id" "Normal org-roam link.")
+                                    ,@(cl-mapcar #'my-org-id-link--ctor my-org-id-link-special-defs)))
+    (defun my-org-id-link-type-read (&optional prompt)
+      (let ((align (propertize " " 'display '(space :align-to (+ left 20)))))
+        (consult--read
+         my-org-id-link--types
+         :prompt (or prompt "Types: ")
+         :annotate (lambda (target) (concat align (get-pos-property 0 'desc target)))
+         :require-match t)))
+    (defun my-org-link-modify-type ()
+      "Modify the type of the org id link at point."
+      (interactive)
+      (when-let (((org-in-regexp org-link-any-re))
+                 (remove (list (match-beginning 0) (match-end 0)))
+                 (target (or (match-string-no-properties 2)
+                             (match-string-no-properties 0)))
+                 (desc (match-string-no-properties 3))
+                 (type-regex (rx bol (group (+ alnum)) ":"))
+                 ((string-match type-regex target))
+                 (old-type (match-string-no-properties 1 target))
+                 (old-type-fancy (propertize old-type 'face 'org-tag))
+                 (prompt (format "Modify from %s: " old-type-fancy))
+                 (type-rep (my-org-id-link-type-read prompt))
+                 (target (concat type-rep (string-remove-prefix old-type target))))
+        (apply #'delete-region remove)
+        (org-insert-link nil target desc)))
+    (:with-map embark-org-link-map
+      (:bind "m" #'my-org-link-modify-type))
+    (:option (prepend embark-target-injection-hooks) '(my-org-link-modify-type embark--allow-edit embark--ignore-target)))
 #+end_src
 
 ***** Org Roam
@@ -2137,13 +2219,39 @@ Again the packaged version in Guix official packages is quite old, so here is th
                     #t))))))))))
 #+end_src
 
+And a third-party =consult= integration:
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-consult-org-roam-next
+    (let ((commit "3c2701ee72130591f9e8c48a9d54e544c304003b")
+          (last-release-version "0.1")
+          (revision "0"))
+      (package
+        (inherit upstream:emacs-consult-org-roam)
+        (name "emacs-consult-org-roam-next")
+        (version (git-version last-release-version revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/jgru/consult-org-roam")
+                 (commit commit)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32
+             "1kn7shcdy6n6xzwbg954nbwvwifc0r82dl0lnxhh8rg4d6xwwgq2"))))
+        (propagated-inputs (list upstream:emacs-f upstream:emacs-consult emacs-org-roam-next))
+        (arguments
+         `(#:emacs ,upstream:emacs-next)))))
+#+end_src
+
 #+begin_src scheme
-    (simple-service
-     'home-emacs-org-roam
-     home-profile-service-type
-     (list
-      (specification->package
-       "emacs-org-roam-next")))
+  (simple-service
+   'home-emacs-org-roam
+   home-profile-service-type
+   (specifications->packages
+    (list
+     "emacs-org-roam-next"
+     "emacs-consult-org-roam-next")))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2165,7 +2273,96 @@ Again the packaged version in Guix official packages is quite old, so here is th
            (when (> level 0) (concat filetitle " > "))
            (when (> level 1) (concat (string-join olp " > ") " > "))
            title))))
-    (:with-mode org-roam-db-autosync-mode (:enable)))
+    (:with-mode org-roam-db-autosync-mode (:enable))
+    (defun my-org-roam-node-find ()
+      (interactive)
+      (org-roam-node-find nil nil #'consult-org-roam--node-file-p)))
+
+  (setup consult-org-roam
+    (:option consult-org-roam-grep-func #'consult-ripgrep)
+    (:enable))
+
+  (defun my-org-roam-node-this-file (&optional assert)
+    (save-excursion
+      (goto-char (point-min))
+      (org-roam-node-at-point assert)))
+
+  (defun my-org-roam-buffer-display-dedicated (node)
+    "Launch NODE dedicated Org-roam buffer.
+  Unlike the persistent `org-roam-buffer', the contents of this
+  buffer won't be automatically changed and will be held in place.
+
+  In interactive calls prompt to select NODE, unless called with
+  `universal-argument', in which case NODE will be set to
+  `my-org-roam-node-this-file'."
+    (interactive
+     (list (if current-prefix-arg
+               (my-org-roam-node-this-file 'assert)
+             (org-roam-node-read nil #'consult-org-roam--node-file-p nil 'require-match))))
+    (org-roam-buffer-display-dedicated node))
+
+  (defun my-org-roam-buffer-persistent-redisplay ()
+    "Recompute contents of the persistent `org-roam-buffer'.
+  Has no effect when there's no `my-org-roam-node-this-file'."
+    (when-let ((node (my-org-roam-node-this-file)))
+      (unless (equal node org-roam-buffer-current-node)
+        (setq org-roam-buffer-current-node node
+              org-roam-buffer-current-directory org-roam-directory)
+        (with-current-buffer (get-buffer-create org-roam-buffer)
+          (org-roam-buffer-render-contents)
+          (add-hook 'kill-buffer-hook #'org-roam-buffer--persistent-cleanup-h nil t)))))
+
+  (advice-add #'org-roam-buffer-persistent-redisplay :override #'my-org-roam-buffer-persistent-redisplay)
+
+  (cl-defun my-org-roam-backlinks-get (node &key type)
+    "Return the backlinks for NODE.
+
+   When UNIQUE is nil, show all positions where references are found.
+   When UNIQUE is t, limit to unique sources."
+    (let* ((sql [:select [links:source links:dest links:pos links:properties]
+                         :from links
+                         :inner-join nodes
+                         :on (= links:dest nodes:id)
+                         :where (= nodes:file $s1)
+                         :and (= links:type $s2)])
+           (backlinks (org-roam-db-query sql (org-roam-node-file node) type)))
+      (cl-loop for backlink in backlinks
+               collect (pcase-let ((`(,source-id ,dest-id ,pos ,properties) backlink))
+                         (org-roam-populate
+                          (org-roam-backlink-create
+                           :source-node (org-roam-node-create :id source-id)
+                           :target-node (org-roam-node-create :id dest-id)
+                           :point pos
+                           :properties properties))))))
+
+  (cl-defun my-org-roam-backlinks-section (node &key heading type (show-backlink-p nil))
+    "The backlinks section for NODE.
+
+  When UNIQUE is nil, show all positions where references are found.
+  When UNIQUE is t, limit to unique sources.
+
+  When SHOW-BACKLINK-P is not null, only show backlinks for which
+  this predicate is not nil."
+    (when-let ((backlinks (seq-sort #'org-roam-backlinks-sort (my-org-roam-backlinks-get node :type type))))
+      (magit-insert-section ((,intern (concat "org-roam-backlinks-" type)))
+        (magit-insert-heading heading)
+        (dolist (backlink backlinks)
+          (when (or (null show-backlink-p)
+                    (and (not (null show-backlink-p))
+                         (funcall show-backlink-p backlink)))
+            (org-roam-node-insert-section
+             :source-node (org-roam-backlink-source-node backlink)
+             :point (org-roam-backlink-point backlink)
+             :properties (org-roam-backlink-properties backlink))))
+        (insert ?\n))))
+
+  (setopt org-roam-mode-sections
+          '((my-org-roam-backlinks-section :type "translate" :heading "Translated to:")
+            (my-org-roam-backlinks-section :type "under" :heading "Super-topic Of:")
+            (my-org-roam-backlinks-section :type "follow" :heading "Followed By:")
+            (my-org-roam-backlinks-section :type "id" :heading "Backlinks:")
+            org-roam-reflinks-section
+            (my-org-roam-backlinks-section :type "related" :heading "Related:")))
 #+end_src
 
 ***** Bibliography
