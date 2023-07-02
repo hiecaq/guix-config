@@ -1855,10 +1855,14 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
 
 *** Eshell
 I plan on switching to =eshell= as my main shell. Here are some references:
+- [[https://howardism.org/Technical/Emacs/eshell-why.html][Why Use Eshell?]] by Howard Abrams
 - [[https://web.archive.org/web/20201111230155/https://ambrevar.xyz/emacs-eshell/][Eshell as a main shell (web archived)]] by Pierre Neidhardt
-- [[https://emacs-china.org/t/topic/5362][Discussion on Tweaking Eshell]]  in Emacs China (in Chinese)
+- [[https://famme.sk/blog/how-about-eshell.html][BASH, ZSH, FISH. How about Eshell?]] from TRITON FAMME
+- [[https://emacs-china.org/t/topic/5362][Discussion on Tweaking Eshell]]  on Emacs China (in Chinese)
 - [[https://www.masteringemacs.org/article/complete-guide-mastering-eshell][Mastering Eshell]] by Mickey Petersen
 - [[https://github.com/condy0919/emacs-newbie/blob/master/introduction-to-builtin-modes.md#eshell][Introductions to Emacs Builtin Mode Features]] from =emacs-newbie= (in Chinese)
+- [[https://emacs.stackexchange.com/questions/75369/use-hs-minor-mode-where-its-not-supported][Use =hs-minor-mode= Where It's Not Supported]] asked on Emacs Stack Exchange
+- [[https://blog.liangzan.net/blog/2012/12/12/customizing-your-emacs-eshell-prompt/][Customizing Your Emacs Eshell Prompt]] by Liang Zan
 - [[https://www.emacswiki.org/emacs/CategoryEshell][Eshell Category]] on Emacs Wiki
 - [[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html][Eshell's Offical Manual]]
 
@@ -1956,6 +1960,9 @@ Org mode is for keeping notes, maintaining TODO lists, planning projects, and au
 #+end_quote
 this is only a facial overall summary of what [[https://orgmode.org][org-mode]] is usually used for. It is so powerful that It is one of the reasons I switched from Neovim to Emacs.
 
+Useful References:
+- [[https://alphapapa.github.io/org-almanac/][org-almanac]], an "awesome"-ish list of what people are using Org Mode for.
+
 #+begin_src scheme
   (simple-service
    'home-emacs-org
@@ -2012,10 +2019,6 @@ Update =#+last_modified= every time an org file is saved.
 
 **** Task Management
 I generally follow the GTD way as my task management system.
-reference:
-+ [[https://hamberg.no/gtd/][GTD in 15 minutes – A Pragmatic Guide to Getting Things Done]] by Erlend Hamberg
-+ [[http://www.members.optusnet.com.au/~charles57/GTD/][Emacs, org-mode and Getting Things Done (GTD)]] by Charles Cave
-+ [[http://doc.norang.ca/org-mode.html][Org Mode - Organize Your Life In Plain Text!]] by Bernt Hansen
 
 ***** Tasks and Logs
 Todo state keywords. The todo state is simple:
@@ -2144,13 +2147,8 @@ I believe strongly that [[https://en.wikipedia.org/wiki/Personal_information_man
 
 I use a personal-hacked variation of [[https://en.wikipedia.org/wiki/Zettelkasten][Zettelkasten]].
 
-Reference:
-- How To Take Smart Notes by Sönke Ahrens
-- [[https://blog.jethro.dev/posts/how_to_take_smart_notes_org/][How To Take Smart Notes With Org-mode]] by Jethro Kuan, the author of org-roam
-
 ***** Org Id
 Enable tracking org heading links using globally unique UIDs. This is a must-have even without =org-roam=, because org mode won't fix the broken links when you refile/archive some subtrees to a different file.
-
 #+begin_src emacs-lisp
   (setup org-id
     (:option org-id-track-globally t
@@ -2196,7 +2194,7 @@ Based on [[https://karl-voit.at/2022/02/10/lfile/][blog post]] from [[https://gi
      ))
 #+end_src
 
-Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in-org-roam-v2/1504][is]] [[https://org-roam.discourse.group/t/link-categorization/2486][an]] [[https://org-roam.discourse.group/t/custom-roam-style-link/39/57][attempt]] [[https://forum.zettelkasten.de/discussion/comment/4318/#Comment_4318][to]] [[https://forum.zettelkasten.de/discussion/573/idea-for-categorizing-theory-models-definitions-arguments-and-facts][implement]] [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link]] [[https://org-roam.discourse.group/t/the-case-for-custom-link-types/][Tags]].
+Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in-org-roam-v2/1504][is]] [[https://org-roam.discourse.group/t/link-categorization/2486][an]] [[https://org-roam.discourse.group/t/custom-roam-style-link/39/57][attempt]] [[https://forum.zettelkasten.de/discussion/887/thinking-about-metadata][to]] [[https://forum.zettelkasten.de/discussion/573/idea-for-categorizing-theory-models-definitions-arguments-and-facts][implement]] [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link]] [[https://org-roam.discourse.group/t/the-case-for-custom-link-types/][Tags]].
 #+begin_src emacs-lisp
   (setup ol
     (defvar my-org-id-link-special-defs '(("related" :follow org-id-open :face 'org-tag
@@ -2248,10 +2246,10 @@ Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in
 #+end_src
 
 ***** Org Roam
-[[https://www.orgroam.com/][org-roam]] basically does 2 things:
+[[https://www.orgroam.com/][org-roam]] basically [[https://blog.jethro.dev/posts/org_roam_v2/][does]] [[https://www.orgroam.com/manual.html#Org_002droam_0027s-Design-Principle][2 things]]:
 1. Use a sqlite database to cache everything that is getting slow as notes scaling up
 2. Using this database to display "backlinks" for a note, a fancy word standing for the links that point to the current note.
-This means that, giving that org-roam is quite stable now, we can use the database to do many crazy things!
+This means that, giving that org-roam is quite stable now, we can use the database to do [[https://github.com/org-roam/org-roam/wiki/User-contributed-Tricks][many crazy things]]!
 
 Again the packaged version in Guix official packages is quite old, so here is the git HEAD version. I also clear up the =propagated-inputs= list a little bit, especially by adding a simple hack to remove the redundant dependency on the old =emacs-sqlite=. Similar to =emacsql-sqlite-built-in=, it requires Emacs 29 to compile.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
