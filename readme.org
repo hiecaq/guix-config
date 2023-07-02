@@ -801,19 +801,21 @@ General programming set up:
 When Emacs writes buffers to files, by the high-level sense it replace the existing file with the content in the buffer. The buffer itself can be backuped, so that if Emacs crashes before the writing, the dirty content can be recovered. How it replaces the content is configurable, and I want to always prefer copying the existing file and then writing the buffer on top of the existing file. See [[help:make-backup-files][help]] for details.
 #+begin_src emacs-lisp
   (setup files
+    (:option make-backup-files nil)
     (:option backup-by-copying t))
 #+end_src
 
 Always use =y-or-p= over =yes-or-no=:
 #+begin_src emacs-lisp
   (setup emacs
-    (:option use-short-answers t))
+    (:option use-short-answers t
+             y-or-n-p-use-read-key t))
 #+end_src
 
 I don't want Emacs to auto-recenter when scrolling off-the-screen:
 #+begin_src emacs-lisp
   (setup emacs
-    (:option scroll-conservatively 100))
+    (:option scroll-conservatively 101))
 #+end_src
 
 One extra thing: Emacs comes with a customization interface, which supports setting via function calls too (good!) and saves the results in a file (bad!). This snippet set the storage to =/dev/null=:
@@ -1530,6 +1532,46 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
              xref-search-program 'ripgrep
              xref-show-definitions-function #'consult-xref
              xref-show-xrefs-function #'consult-xref)
+    ;; from https://github.com/minad/consult/wiki#consult-ripgrep-or-line-counsel-grep-or-swiper-equivalent
+    (defcustom my-consult-ripgrep-or-line-limit 300000
+      "Buffer size threshold for `my-consult-ripgrep-or-line'.
+  When the number of characters in a buffer exceeds this threshold,
+  `consult-ripgrep' will be used instead of `consult-line'."
+      :type 'integer)
+
+    (defun my-consult-ripgrep-or-line ()
+      "Call `consult-line' for small buffers or `consult-ripgrep' for large files."
+      (interactive)
+      (if (or (not buffer-file-name)
+              (buffer-narrowed-p)
+              (ignore-errors
+                (file-remote-p buffer-file-name))
+              (jka-compr-get-compression-info buffer-file-name)
+              (<= (buffer-size)
+                  (/ my-consult-ripgrep-or-line-limit
+                     (if (eq major-mode 'org-mode) 4 1))))
+          (consult-line)
+        (when (file-writable-p buffer-file-name)
+          (save-buffer))
+        (let ((consult-ripgrep-command
+               (concat "rg "
+                       "--null "
+                       "--line-buffered "
+                       "--color=ansi "
+                       "--max-columns=250 "
+                       "--no-heading "
+                       "--line-number "
+                       ;; adding these to default
+                       "--smart-case "
+                       "--hidden "
+                       "--max-columns-preview "
+                       ;; add back filename to get parsing to work
+                       "--with-filename "
+                       ;; defaults
+                       "-e ARG OPTS "
+                       (shell-quote-argument buffer-file-name))))
+          (consult-ripgrep))))
+
     (defmacro my-ignore-arg (fn)
       "Define a wrapper for an interactive function that ignores its input.
   Unlike `defun',this guarantees to return the defined function symbol."
@@ -1554,7 +1596,8 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
        "o" (my-ignore-arg #'consult-outline)
        "m" (my-ignore-arg #'consult-minor-mode-menu)
        "x" (my-ignore-arg #'consult-mode-command)
-       "k" (my-ignore-arg #'consult-man))))
+       "k" (my-ignore-arg #'consult-man)
+       "l" (my-ignore-arg #'my-consult-ripgrep-or-line))))
 #+end_src
 
 *** Embark
@@ -1673,7 +1716,7 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
     (when-let ((file (buffer-file-name)))
       (cons 'this-file file)))
 
-  (add-hook 'embark-target-finders #'embark-target-this-file 98)
+  (add-hook 'embark-target-finders #'embark-target-this-file 97)
 
   (defvar-keymap this-file-map
     :doc "Commands to act on current file or buffer."
@@ -1795,7 +1838,7 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
       (cond (aggressive-indent-mode
              (add-hook 'evil-normal-state-entry-hook #'aggressive-indent--process-changed-list-and-indent nil t))
             (t
-             (remove-hook 'evil-normal-state-entry-hook #'aggressive-indent--process-changed-list-and-indent nil t))))
+             (remove-hook 'evil-normal-state-entry-hook #'aggressive-indent--process-changed-list-and-indent t))))
     (:hook #'my-aggressive-indent-after-change))
 #+end_src
 
@@ -1841,7 +1884,29 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
              project-list-file (exdg-state "project-list.el"))
     (:with-map my-leader-map (:bind "p" project-prefix-map))
     (:with-map project-prefix-map
-      (:bind "m" #'magit-project-status)))
+      (:bind "m" #'magit-project-status
+             "g" (my-ignore-arg #'consult-ripgrep))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun embark-target-project ()
+    (cons 'project
+          (if-let ((project (project-current nil))
+                   (project-name (project-name project)))
+              project-name
+            "<unknown>")))
+
+  (add-hook 'embark-target-finders #'embark-target-project 99)
+
+  (add-to-list 'embark-keymap-alist '(project . project-prefix-map))
+
+  (map-keymap
+   (lambda (_key cmd)
+     (cl-pushnew 'embark--allow-edit
+                 (alist-get cmd embark-target-injection-hooks))
+     (cl-pushnew 'embark--ignore-target
+                 (alist-get cmd embark-target-injection-hooks)))
+   project-prefix-map)
 #+end_src
 
 *** Emacsql
