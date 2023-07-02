@@ -2153,6 +2153,7 @@ Enable tracking org heading links using globally unique UIDs. This is a must-hav
   (setup org-id
     (:option org-id-track-globally t
              org-id-link-to-org-use-id 'create-if-interactive
+             org-id-ts-format "%Y%m%dT%H%M%SM%3N"
              org-id-locations-file (exdg-state "org-id-locations.el")))
 #+end_src
 
@@ -2327,10 +2328,14 @@ And a third-party =consult= integration:
 #+begin_src emacs-lisp
   (setup org-roam
     (:option org-roam-database-connector 'sqlite-builtin
-             org-roam-db-location (exdg-data "org/org-roam.db")
+             org-roam-db-location (exdg-state "org-roam.db")
              org-roam-protocol-store-links nil
              org-roam-directory (expand-file-name "notes" (xdg-user-dir "DOCUMENTS"))
-             org-roam-node-display-template (concat "${hierarchy:*} " (propertize "${tags:10}" 'face 'org-tag)))
+             org-roam-node-display-template (concat "${hierarchy:*} " (propertize "${tags:10}" 'face 'org-tag))
+             org-roam-capture-templates '(("d" "default" plain "%?"
+                                           :target (file+head  "%(format-time-string org-id-ts-format).org"
+                                                               "#+title: %(titlecase--string \"${title}\" titlecase-style)\n#+date: %U\n#+last_modified: %U\n")
+                                           :unnarrowed t)))
     ;; from https://github.com/org-roam/org-roam/issues/1565
     (with-eval-after-load 'org-roam-node
       (cl-defmethod org-roam-node-hierarchy ((node org-roam-node))
@@ -2436,6 +2441,63 @@ And a third-party =consult= integration:
 #+end_src
 
 ***** Bibliography
+#+begin_src emacs-lisp
+  (defvar my-global-bibliography
+    (list (expand-file-name "notes/refs.bib" (xdg-user-dir "DOCUMENTS")))
+    "A list to global bib files.")
+#+end_src
+
+****** ebib
+[[https://github.com/joostkremers/ebib][Ebib]] is technically not related to org-mode in most aspects. It is a front-end to BibTeX/BibLaTeX files.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-ebib
+   home-profile-service-type
+   (specifications->packages
+    (list
+     "emacs-ebib")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup ebib
+    (:option ebib-bibtex-dialect 'biblatex
+             ebib-preload-bib-files my-global-bibliography
+             ebib-use-timestamp t
+             ebib-file-search-dirs (list (expand-file-name "resources" (xdg-user-dir "DOCUMENTS")))
+             ;; (remove ebib-hidden-fields) "isbn"
+             ))
+
+  (defun my--ebib-overwrite-current-entry-field-value (field value)
+    (when value
+      (ebib-set-field-value field value
+                            (ebib--get-key-at-point)
+                            ebib--cur-db 'overwrite nil)
+      (ebib--set-modified t ebib--cur-db)
+      (ebib--maybe-update-entry-buffer)))
+
+  (defun my-fetch-ebook-metadata-by-isbn (isbn)
+    "This requires calibre's `fetch-ebook-metadata' in path to work."
+    (interactive "s")
+    (require 'dom)
+    (let* ((opf (with-temp-buffer
+                  (call-process "fetch-ebook-metadata" nil '(t nil) nil "-i" isbn "-o")
+                  (delete-matching-lines (rx "Using proxies:" whitespace) (point-min) (point-max))
+                  (libxml-parse-xml-region (point-min) (point-max))))
+           (title (dom-text (dom-by-tag opf 'title)))
+           (author (dom-text (dom-by-tag opf 'creator)))
+           (date (dom-text (dom-by-tag opf 'date)))
+           (publisher (dom-text (dom-by-tag opf 'publisher)))
+           (isbn (dom-text
+                  (cl-find-if
+                   (lambda (node) (string= (dom-attr node 'scheme) "ISBN"))
+                   (dom-by-tag opf 'identifier)))))
+      (my--ebib-overwrite-current-entry-field-value "title" title)
+      (my--ebib-overwrite-current-entry-field-value "date" date)
+      (my--ebib-overwrite-current-entry-field-value "author" author)
+      (my--ebib-overwrite-current-entry-field-value "publisher" publisher)
+      (my--ebib-overwrite-current-entry-field-value "isbn" isbn)))
+#+end_src
+****** citar
 There are quite a lot bibliographic packages, among which I use [[https://github.com/emacs-citar/citar][citar]].
 #+begin_src scheme
   (simple-service
@@ -2471,12 +2533,11 @@ There are quite a lot bibliographic packages, among which I use [[https://github
 #+begin_src emacs-lisp
   (setup citar
     (:option
-     org-cite-global-bibliography (list (expand-file-name "calibre.bib" (xdg-user-dir "DOCUMENTS")))
+     org-cite-global-bibliography my-global-bibliography
      org-cite-insert-processor 'citar
      org-cite-follow-processor 'citar
      org-cite-activate-processor 'citar
-     citar-bibliography org-cite-global-bibliography
-     citar-file-parser-functions '(citar-file--parser-triplet)))
+     citar-bibliography my-global-bibliography))
 #+end_src
 
 It comes with =embark= integration, where ~citar-embark-mode~ is a global mode that introduce the target and actions, and ~citar-at-point-function~ (the callback called by =org-cite= in ~org-open-at-point~) can also be set to use =embark=. As I understand it, it is meaningless to set ~citar-at-point-function~ this way without turning on ~citar-embark-mode~, since all embark can do is to provides actions to recognized targets.
@@ -2500,7 +2561,25 @@ It comes with =embark= integration, where ~citar-embark-mode~ is a global mode t
 As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-sources~, making the related configuration unnecessary.
 #+begin_src emacs-lisp
   (setup citar-org-roam
-    (:enable))
+    (defun my-citar-org-roam--create-capture-note (citekey entry)
+      "Open or create org-roam node for CITEKEY and ENTRY."
+      ;; adapted from https://jethrokuan.github.io/org-roam-guide/#orgc48eb0d
+      (let ((title (citar-format--entry
+                    citar-org-roam-note-title-template entry)))
+        (org-roam-capture-
+         :templates
+         '(("r" "reference" plain "%?" :if-new
+            (file+head
+             "%(format-time-string org-id-ts-format).org"
+             "#+title: ${title}\n#+date: %U\n#+last_modified: %U\n")
+            :immediate-finish t
+            :unnarrowed t))
+         :info (list :citekey citekey)
+         :node (org-roam-node-create :title title)
+         :props '(:finalize find-file))
+        (org-roam-ref-add (concat "@" citekey))))
+    (:enable)
+    (advice-add #'citar-org-roam--create-capture-note :override #'my-citar-org-roam--create-capture-note))
 #+end_src
 TODO: What's the point of ~citar-library-paths~?
 
@@ -2512,6 +2591,7 @@ This part of code is basically grabbed from [[https://zzamboni.org/post/beautify
 Hide ===, =~= and other emphasis markers, and fontify src block natively:
 #+begin_src emacs-lisp :tangle no :noweb-ref org-setup
   (:option org-hide-emphasis-markers t
+           org-use-sub-superscripts '{}
            org-src-fontify-natively t
            org-tags-column 0)
 #+end_src
