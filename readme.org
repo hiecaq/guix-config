@@ -1631,7 +1631,7 @@ Reference:
   (setup (:require embark)
     ;; Optionally replace the key help with a completing-read interface
     (:option prefix-help-command #'embark-prefix-help-command)
-    (:option embark-cycle-key (kbd "C-'"))
+    (:option embark-cycle-key "C-'")
 
     ;; adapted from https://karthinks.com/software/fifteen-ways-to-use-embark/
     (defmacro my-embark-ace-action (fn)
@@ -1778,7 +1778,6 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
     (:require corfu)
     (:with-mode global-corfu-mode (:enable)))
 #+end_src
-
 
 *** Visual Undo
 [[https://github.com/casouri/vundo][vundo]] is basically a less-buggy [[https://www.dr-qubit.org/undo-tree.html][undo-tree]] that supports Emacs 28's new ~undo-redo~.
