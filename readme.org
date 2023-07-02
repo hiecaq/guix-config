@@ -1075,7 +1075,6 @@ References:
      "emacs-evil-collection"
      "emacs-evil-surround"
      "emacs-evil-replace-with-register"
-     "emacs-evil-easymotion"
      "emacs-evil-snipe"
      "emacs-evil-commentary")))
 #+end_src
@@ -1169,67 +1168,14 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
 
 #+begin_src emacs-lisp
   (setup (:require evil-snipe)
-    (:with-map evil-snipe-local-mode-map
-      (:with-state (normal motion operator visual)
-        (:unbind "s" "S" "z" "Z" "x" "X")
-        (:bind "s" #'evil-snipe-s
-               "S" #'evil-snipe-S))
-      (:with-state (operator visual)
-        (:bind "g s" #'evil-snipe-x
-               "g S" #'evil-snipe-X)))
     (:with-function turn-off-evil-snipe-override-mode (:hook-into magit-mode))
-    (:option evil-snipe-scope 'visible
-             evil-snipe-repeat-scope 'whole-visible
-             evil-snipe-spillover-scope 'whole-buffer)
-    (:enable)
+    (:option evil-snipe-repeat-scope 'whole-line)
+    (:with-map evil-snipe-override-mode-map
+      (:with-state (normal motion operator visual)
+        (:bind "s" #'evil-avy-goto-char-2
+               "S" #'evil-avy-goto-char-2)))
     (:with-mode evil-snipe-override-mode
       (:enable)))
-#+end_src
-
-**** Evil Easymotion
-[[https://github.com/PythonNut/evil-easymotion][evil-easymotion]] is a Evil port of Vim's, well, =easymotion=, which basically works in a way that instead of numbering how many jumps needed, by prefixing motions with a leader key, we use visual hint to go to the place we want. I hadn't tried =easymotion= during my Vim era though, but I like it now. It also provides integration with [[*evil-snipe][evil-snipe]].
-#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
-  (define-public emacs-evil-easymotion
-    (let ((commit "f96c2ed38ddc07908db7c3c11bcd6285a3e8c2e9")
-          (last-release-version "20160228") ;; from the el file version header
-          (revision "0")
-          (url "https://github.com/PythonNut/evil-easymotion"))
-      (package
-       (name "emacs-evil-easymotion")
-       (version (git-version last-release-version revision commit))
-       (source
-        (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url url)
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32
-           "0xsva9bnlfwfmccm38qh3yvn4jr9za5rxqn4pwxbmhnx4rk47cch"))))
-       (propagated-inputs
-        (list upstream:emacs-evil upstream:emacs-avy))
-       (build-system emacs-build-system)
-       (home-page url)
-       (synopsis "A port of vim easymotion to Emacs' evil-mode")
-       (description "This package gives Lokaltog/vim-easymotion a
-  streak of malevolence.")
-       (license license:gpl3+))))
-#+end_src
-
-#+begin_src emacs-lisp
-  (setup (:require evil-easymotion)
-    (:also-load evil)
-    (:with-map evil-snipe-parent-transient-map
-      (:bind "SPC" (evilem-create 'evil-snipe-repeat
-                                  :bind ((evil-snipe-scope 'buffer)
-                                         (evil-snipe-enable-highlight)
-                                         (evil-snipe-enable-incremental-highlight)))))
-    (:with-map my-leader-map
-      (:bind "j" (evilem-create 'next-line)
-               "k" (evilem-create 'previous-line)
-               "n" #'evilem-motion-search-previous
-               "N" #'evilem-motion-search-next)))
 #+end_src
 
 **** Evil Commentary
