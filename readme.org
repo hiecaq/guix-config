@@ -1898,7 +1898,7 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
 [[https://github.com/magit/emacsql][emacsql]] is "a high-level Emacs Lisp RDBMS front-end", which provides a consistent facade for different sqlite integration implementations. There is one tagged version in Guix package upstream, but it is too old for my need (and it comes with too many unnecessary dependencies), see below.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-emacsql-minimal
-    (let ((commit "e1baaf2f874df7f9259a8ecca978e03d3ddae5b5")
+    (let ((commit "64012261f65fcdd7ea137d1973ef051af1dced42")
           (last-release-version "3.1.1.50-git") ;; from the file header
           (revision "0")
           (url "https://github.com/magit/emacsql"))
@@ -1914,10 +1914,10 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "0dvqs1jg5zqn0i3r67sn1a40h5rm961q9vxvmqxbgvdhkjvip8fn"))))
+             "1x9r0pg2dv6n8dn1lwrvs9xfkxskr5pgw0sigspfqj3ycbpyz1ks"))))
         (build-system emacs-build-system)
         (arguments
-         '(#:include '("emacsql.el" "emacsql-compiler.el")))
+         '(#:include '("emacsql.el" "emacsql-compiler.el" "emacsql-sqlite-common.el")))
         (home-page url)
         (synopsis "A high-level Emacs Lisp RDBMS front-end")
         (description "EmacSQL is a high-level Emacs Lisp front-end for
@@ -2256,7 +2256,7 @@ This means that, giving that org-roam is quite stable now, we can use the databa
 Again the packaged version in Guix official packages is quite old, so here is the git HEAD version. I also clear up the =propagated-inputs= list a little bit, especially by adding a simple hack to remove the redundant dependency on the old =emacs-sqlite=. Similar to =emacsql-sqlite-built-in=, it requires Emacs 29 to compile.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-next
-    (let ((commit "74422df546a515bc984c2f3d3a681c09d6f43916")
+    (let ((commit "5c06471c3a11348342719fd9011486455adeb701")
           (last-release-version "2.2.2")
           (revision "0"))
       (package
@@ -2272,7 +2272,7 @@ Again the packaged version in Guix official packages is quite old, so here is th
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "0vhl69y6yk2zzfixjdwr8vxl2k921h0syshk5123r1nm9jp3i1s9"))))
+             "1bd52f3pdj5hq0vr5y53g870s35ir3n5ms2d9y6q74xhbi1lj871"))))
         (propagated-inputs
          (list upstream:emacs-dash
                upstream:emacs-magit
@@ -2294,7 +2294,7 @@ Again the packaged version in Guix official packages is quite old, so here is th
 And a third-party =consult= integration:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-consult-org-roam-next
-    (let ((commit "3c2701ee72130591f9e8c48a9d54e544c304003b")
+    (let ((commit "2ca42a1c1641a29f1447d35be01bd1fda368a9e2")
           (last-release-version "0.1")
           (revision "0"))
       (package
@@ -2310,7 +2310,7 @@ And a third-party =consult= integration:
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "1kn7shcdy6n6xzwbg954nbwvwifc0r82dl0lnxhh8rg4d6xwwgq2"))))
+             "142fra7wap6dfwd4c82j7z3nk1yw78slrwhjx6vkiql8ylbiw5fi"))))
         (propagated-inputs (list upstream:emacs-f upstream:emacs-consult emacs-org-roam-next))
         (arguments
          `(#:emacs ,upstream:emacs-next)))))
@@ -2451,7 +2451,7 @@ There are quite a lot bibliographic packages, among which I use [[https://github
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-citar-next
-    (let ((commit "ea489eca7f5321b5ede1ea294abf47ecbc9f11ca")
+    (let ((commit "747d9083e07b57209f652949f4807ef9cec541da")
           (last-release-version "1.0")
           (revision "0"))
       (package
@@ -2467,7 +2467,7 @@ There are quite a lot bibliographic packages, among which I use [[https://github
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "0lyirl5ynyikrwlvfga5y6qp2rxkm44xax6vy73aqpalhi95apa1")))))))
+             "1j3pc139zhxq39n3m810190xpy4spjipilwcmqikym5am4p8d9gv")))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2491,26 +2491,12 @@ It comes with =embark= integration, where ~citar-embark-mode~ is a global mode t
 =citar= comes with its own =org-roam= integration as a [[https://github.com/emacs-citar/citar-org-roam][separate package]]:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-citar-org-roam-next
-    (let ((commit "2ae351d15e0847a4aed06e7f5d472dd41d15bea0")
-          (last-release-version "0.3")
-          (revision "0"))
-      (package
-       (inherit upstream:emacs-citar-org-roam)
-       (name "emacs-citar-org-roam-next")
-       (version (git-version last-release-version revision commit))
-       (source
-        (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url "https://github.com/emacs-citar/citar-org-roam")
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32
-           "0zvwc3853pv8hz29858v5yp52k5qzhlj8v6v4zvd4k3zyalcik5w"))))
-       (propagated-inputs (list emacs-org-roam-next emacs-citar-next))
-       (arguments
-        `(#:emacs ,upstream:emacs-next)))))
+    (package
+     (inherit upstream:emacs-citar-org-roam)
+     (name "emacs-citar-org-roam-next")
+     (propagated-inputs (list emacs-org-roam-next emacs-citar-next))
+     (arguments
+      `(#:emacs ,upstream:emacs-next))))
 #+end_src
 
 As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-sources~, making the related configuration unnecessary.
