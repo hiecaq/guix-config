@@ -1471,9 +1471,14 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
     (my-orderless--dispatch-prefix-def "-" 'orderless-prefixes)
     (my-orderless--dispatch-prefix-def "'" 'orderless-initialism)
     (my-orderless--dispatch-prefix-def ";" 'orderless-flex)
+
+    (with-eval-after-load 'orderless
+      (orderless-define-completion-style orderless-only-initialism
+        (orderless-matching-styles '(orderless-initialism))))
     (:option orderless-component-separator 'orderless-escapable-split-on-space
              completion-styles '(orderless basic)
-             completion-category-overrides '((file (styles basic partial-completion)))
+             completion-category-overrides '((file (styles basic partial-completion))
+                                             (embark-target (styles orderless-only-initialism)))
              orderless-matching-styles '(orderless-regexp)
              orderless-style-dispatchers '(my-orderless-regexp-prefix
                                            my-orderless-literal-prefix
@@ -1669,6 +1674,7 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
                       targets
                       :prompt "Target: "
                       :require-match t
+                      :category 'embark-target
                       :annotate (lambda (tgt)
                                   (let ((target (get-pos-property 0 'consult-embark-target tgt)))
                                     (concat align (embark--truncate-target target))))
