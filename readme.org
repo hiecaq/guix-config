@@ -15,6 +15,11 @@
 - [[#shells][Shells]]
   - [[#zsh][Zsh]]
   - [[#tools][Tools]]
+    - [[#certificates][Certificates]]
+    - [[#bat][bat]]
+    - [[#exa][exa]]
+    - [[#ripgrep][ripgrep]]
+    - [[#fd][fd]]
   - [[#aliases][Aliases]]
 - [[#fonts][Fonts]]
 - [[#references-and-recommendations][References and Recommendations]]
@@ -312,6 +317,28 @@ And its configuration
 :header-args:scheme: :noweb-ref shell-service
 :END:
 There are many tools that enhance the command line user experience.
+*** Certificates
+See the [[https://guix.gnu.org/manual/en/html_node/X_002e509-Certificates.html][Guix documentation]] for details on the CA settings. TODO: Maybe this should be in a higher-level heading?
+#+begin_src scheme
+  (service
+   (service-type
+    (name 'home-certs)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list
+               (specification->package
+                "nss-certs"))))
+      (service-extension
+       home-environment-variables-service-type
+       (const '(("SSL_CERT_DIR" . "$HOME/.guix-home/profile/etc/ssl/certs")
+                ("SSL_CERT_FILE" . "$SSL_CERT_DIR/ca-certificates.crt")
+                ("GIT_SSL_CAINFO" . "$SSL_CERT_FILE")
+                ("CURL_CA_BUNDLE" . "$SSL_CERT_FILE"))))))
+    (default-value #f)
+    (description #f)))
+#+end_src
 *** bat
 Add [[https://github.com/sharkdp/bat][bat]], which is a =cat= clone with colors.
 #+begin_src scheme
