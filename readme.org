@@ -530,6 +530,7 @@ this module simply provides a single service that install the fonts needed.
 * Emacs
 :PROPERTIES:
 :header-args:emacs-lisp: :tangle "build/init.el"
+:header-args:lisp-data: :tangle "build/templates.eld"
 :header-args:scheme: :noweb-ref emacs-service
 :END:
 TODO: I'm still not sure if I should put some config as big as Emacs' in this file.
@@ -569,7 +570,8 @@ I'm currently using =emacs-next= from Guix official channel.
       (service-extension
        home-xdg-configuration-files-service-type
        (const `(("emacs/init.el" ,(local-file "../../init.el"))
-                ("emacs/early-init.el" ,(local-file "../../early-init.el")))))
+                ("emacs/early-init.el" ,(local-file "../../early-init.el"))
+                ("emacs/config/templates.eld" ,(local-file "../../templates.eld")))))
       (service-extension
        home-environment-variables-service-type
        (const '(("EDITOR" . "emacsclient -a nvim -c")
@@ -1771,6 +1773,47 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
   (add-to-list 'embark-keymap-alist '(this-file . this-file-map))
 #+end_src
 
+*** Tempel
+[[https://github.com/minad/tempel][tempel]] is a "tiny template package for Emacs", using the built-in template package Tempo's syntax. I use it instead of famous [[https://github.com/joaotavora/yasnippet][YASnippet]] because
+- YASnippet seems unmaintained
+- YASnippet expansion with wrapping (i.e. wrapping region of text into the template) seems weird
+- Tempel uses syntax of built-in Tempo, which is sexp-like expressions.
+- With tempel, multiple templates can be defined within a single file, while YASnippet requires single template per file.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-tempel
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-tempel")))
+#+end_src
+
+The functions here come from tempel's README.
+#+begin_src emacs-lisp
+  (setup tempel
+    (defun tempel-include (elt)
+      (when (eq (car-safe elt) 'i)
+        (if-let (template (alist-get (cadr elt) (tempel--templates)))
+            (cons 'l template)
+          (message "Template %s not found" (cadr elt))
+          nil)))
+    (with-eval-after-load 'tempel
+      (:option (prepend tempel-user-elements) #'tempel-include))
+    (:option tempel-path (exdg-config "templates.eld"))
+    (defun tempel-setup-capf ()
+      (setq-local completion-at-point-functions
+                  (cons #'tempel-expand completion-at-point-functions)))
+    (:with-function tempel-setup-capf
+      (:hook-into conf-mode prog-mode text-mode)))
+#+end_src
+
+global templates
+#+begin_src lisp-data
+  fundamental-mode
+
+  (date (format-time-string "%Y-%m-%d"))
+#+end_src
+
 *** Corfu
 [[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
 #+begin_src scheme
@@ -2061,6 +2104,15 @@ Update =#+last_modified= every time an org file is saved.
   (:option org-persist-directory (exdg-cache "org-persist"))
 #+end_src
 
+Templates:
+#+begin_src lisp-data
+  org-mode
+
+  (begin "#+begin_" (s name) n> r> n "#+end_" name)
+  (elisp "#+begin_src emacs-lisp" n> r> n "#+end_src" :post (org-edit-src-code))
+  (scheme "#+begin_src scheme" n> r> n "#+end_src" :post (org-edit-src-code))
+  (id :post (org-roam-node-insert))
+#+end_src
 **** Task Management
 I generally follow the GTD way as my task management system.
 
