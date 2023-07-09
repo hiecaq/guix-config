@@ -1587,24 +1587,10 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
           (consult-line)
         (when (file-writable-p buffer-file-name)
           (save-buffer))
-        (let ((consult-ripgrep-command
-               (concat "rg "
-                       "--null "
-                       "--line-buffered "
-                       "--color=ansi "
-                       "--max-columns=250 "
-                       "--no-heading "
-                       "--line-number "
-                       ;; adding these to default
-                       "--smart-case "
-                       "--hidden "
-                       "--max-columns-preview "
-                       ;; add back filename to get parsing to work
-                       "--with-filename "
-                       ;; defaults
-                       "-e ARG OPTS "
-                       (shell-quote-argument buffer-file-name))))
-          (consult-ripgrep))))
+        (let ((consult-ripgrep-args
+               (concat consult-ripgrep-args
+                       " --hidden")))
+          (consult-ripgrep (list buffer-file-name)))))
 
     (defmacro my-ignore-arg (fn)
       "Define a wrapper for an interactive function that ignores its input.
