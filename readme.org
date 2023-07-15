@@ -1152,7 +1152,7 @@ References:
      evil-undo-system 'undo-redo ;; Use Emacs 28 new ~undo-redo~ as the undo-redo system
      evil-disable-insert-state-bindings t ;; I don't want to use Vim's insert mode bindings in insert state:
      evil-respect-visual-line-mode t ;; When =visual-line-mode= is set (especially in =org-mode=), I want Vim to behave as visual lines are normal lines (i.e. bind =j= to =gj= etc)
-     )
+     evil-search-module 'evil-search)
     (defvar-keymap my-leader-map)
     (defun my-leader-key ()
       (interactive)
@@ -1625,6 +1625,41 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
                        " --hidden")))
           (consult-ripgrep (list buffer-file-name)))))
 
+    (defmacro my-consult-with-no-sep (fn)
+      (let* ((fn-value (eval fn))
+             (old-name (symbol-name fn-value))
+             (new-name (concat old-name "-with-no-sep"))
+             (doc (documentation fn-value)))
+        `(progn (defun ,(intern new-name) ()
+                  ,doc
+                  (interactive)
+                  (require 'orderless)
+                  (let ((completion-styles '(orderless))
+                        (completion-category-defaults nil)
+                        (completion-category-overrides nil)
+                        (orderless-component-separator 'list))
+                    (call-interactively ,fn))
+                  #',(intern new-name)))))
+
+    ;; from https://github.com/minad/consult/issues/318#issuecomment-882067919
+    ;; with some tweaks
+    (defun my-consult-line-evil-history (&rest _)
+      "Add latest `consult-line' search pattern to the evil search history ring.
+  This only works with orderless and interprets the whole string as a single
+  component."
+      (when-let ((_ (bound-and-true-p evil-mode))
+                 (_ (eq evil-search-module 'evil-search))
+                 (hist (car consult--line-history))
+                 (orderless-component-separator 'list)
+                 (pattern (car (orderless-pattern-compiler hist))))
+        (evil-push-search-history pattern (eq evil-ex-search-direction 'forward))
+        (setq evil-ex-search-pattern (list pattern t t))
+        (when evil-ex-search-persistent-highlight
+          (evil-ex-search-activate-highlight evil-ex-search-pattern))))
+
+    (my-consult-with-no-sep #'my-consult-ripgrep-or-line)
+    (advice-add #'my-consult-ripgrep-or-line :after #'my-consult-line-evil-history)
+
     (defmacro my-ignore-arg (fn)
       "Define a wrapper for an interactive function that ignores its input.
   Unlike `defun',this guarantees to return the defined function symbol."
@@ -1650,7 +1685,22 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
        "m" (my-ignore-arg #'consult-minor-mode-menu)
        "x" (my-ignore-arg #'consult-mode-command)
        "k" (my-ignore-arg #'consult-man)
-       "l" (my-ignore-arg #'my-consult-ripgrep-or-line))))
+       "l" (my-ignore-arg #'my-consult-ripgrep-or-line)))
+
+    (defmacro my-evil-ex-search- (fn direction)
+      (let* ((fn-value (eval fn))
+             (dirs (symbol-name (eval direction)))
+             (new-name (concat "my-evil-ex-search-" dirs))
+             (doc (documentation fn-value)))
+        `(progn (defun ,(intern new-name) ()
+                  ,doc
+                  (interactive)
+                  (setq evil-ex-search-direction ,direction)
+                  (call-interactively ,fn))
+                #',(intern new-name))))
+
+    (:global (:rebind #'evil-ex-search-forward (my-evil-ex-search- #'my-consult-ripgrep-or-line-with-no-sep 'forward)
+                      #'evil-ex-search-backward (my-evil-ex-search- #'my-consult-ripgrep-or-line-with-no-sep 'backward))))
 #+end_src
 
 *** Embark
