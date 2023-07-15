@@ -1519,6 +1519,21 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 #+begin_src emacs-lisp
   (setup orderless
     (:option completion-category-defaults nil)
+    ;; see https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer
+    (defun +orderless--consult-suffix ()
+      "Regexp which matches the end of string with Consult tofu support."
+      (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
+          (format "[%c-%c]*$"
+                  consult--tofu-char
+                  (+ consult--tofu-char consult--tofu-range -1))
+        "$"))
+
+    (defun my-orderless-regexp (component)
+      "Match COMPONENT as a regexp. Fix the trailing dollar."
+      (if (string-suffix-p "$" component)
+          (orderless-regexp  (concat (substring component 0 -1) (+orderless--consult-suffix)))
+        (orderless-regexp component)))
+
     ;; see https://www.reddit.com/r/emacs/comments/ns5jfu/defmacro_and_nested_backquotes_confusion/
     (defmacro my-orderless--dispatch-prefix-def (prefix style)
       `(defun ,(intern (format "my-%s-prefix" (symbol-name (eval style)))) (pattern _index _total)
@@ -1527,7 +1542,7 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
            '(orderless-literal . ""))
           ((string-prefix-p ,prefix pattern)
            (cons ,style  (substring pattern 1))))))
-    (my-orderless--dispatch-prefix-def "$" 'orderless-regexp)
+    (my-orderless--dispatch-prefix-def "$" 'my-orderless-regexp)
     (my-orderless--dispatch-prefix-def "=" 'orderless-literal)
     (my-orderless--dispatch-prefix-def "!" 'orderless-without-literal)
     (my-orderless--dispatch-prefix-def "-" 'orderless-prefixes)
@@ -1541,8 +1556,8 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
              completion-styles '(orderless basic)
              completion-category-overrides '((file (styles basic partial-completion))
                                              (embark-target (styles orderless-only-initialism)))
-             orderless-matching-styles '(orderless-regexp)
-             orderless-style-dispatchers '(my-orderless-regexp-prefix
+             orderless-matching-styles '(my-orderless-regexp)
+             orderless-style-dispatchers '(my-my-orderless-regexp-prefix
                                            my-orderless-literal-prefix
                                            my-orderless-without-literal-prefix
                                            my-orderless-prefixes-prefix
