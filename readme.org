@@ -1338,6 +1338,29 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
      "emacs-posframe")))
 #+end_src
 
+*** Eldoc
+#+begin_src emacs-lisp
+  (setup eldoc
+    (:option eldoc-documentation-strategy
+             'eldoc-documentation-compose-eagerly))
+#+end_src
+
+[[https://github.com/casouri/eldoc-box][eldoc-box]] shows eldoc in a separate childframe instead of the crowded echo area.
+#+begin_src scheme
+    (simple-service
+     'home-emacs-eldoc-box
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-eldoc-box")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup eldoc-box
+    (:with-function eldoc-box-hover-mode
+      (:hook-into text-mode prog-mode)))
+#+end_src
+
 *** Ace Window
 [[https://github.com/abo-abo/ace-window][ace-window]] is helpful to do things the "embark" way: pick a window, then decide what to do with it.
 
