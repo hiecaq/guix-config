@@ -555,7 +555,7 @@ Add this module and its services:
   emacs:services
 #+end_src
 ** Basics
-I'm currently using =emacs-next= from Guix official channel.
+I'm currently using =emacs= from Guix official channel.
 #+begin_src scheme
   (service
    (service-type
@@ -566,7 +566,7 @@ I'm currently using =emacs-next= from Guix official channel.
        home-profile-service-type
        (const (list
                (specification->package
-                "emacs-next"))))
+                "emacs"))))
       (service-extension
        home-xdg-configuration-files-service-type
        (const `(("emacs/init.el" ,(local-file "../../init.el"))
@@ -2095,33 +2095,14 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
 [[https://github.com/magit/emacsql][emacsql]] is "a high-level Emacs Lisp RDBMS front-end", which provides a consistent facade for different sqlite integration implementations. There is one tagged version in Guix package upstream, but it is too old for my need (and it comes with too many unnecessary dependencies), see below.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-emacsql-minimal
-    (let ((commit "64012261f65fcdd7ea137d1973ef051af1dced42")
-          (last-release-version "3.1.1.50-git") ;; from the file header
-          (revision "0")
-          (url "https://github.com/magit/emacsql"))
-      (package
-        (name "emacs-emacsql-minimal")
-        (version (git-version last-release-version revision commit))
-        (source
-         (origin
-           (method git-fetch)
-           (uri (git-reference
-                 (url (string-append url ".git"))
-                 (commit commit)))
-           (file-name (git-file-name name version))
-           (sha256
-            (base32
-             "1x9r0pg2dv6n8dn1lwrvs9xfkxskr5pgw0sigspfqj3ycbpyz1ks"))))
-        (build-system emacs-build-system)
-        (arguments
-         '(#:include '("emacsql.el" "emacsql-compiler.el" "emacsql-sqlite-common.el")))
-        (home-page url)
-        (synopsis "A high-level Emacs Lisp RDBMS front-end")
-        (description "EmacSQL is a high-level Emacs Lisp front-end for
-  SQLite (primarily), PostgreSQL, MySQL, and potentially other SQL databases. On MELPA,
-  each of the backends is provided through separate packages: emacsql-sqlite,
-  emacsql-psql, emacsql-mysql. ")
-        (license license:unlicense))))
+    (package
+      (inherit upstream:emacs-emacsql)
+      (name "emacs-emacsql-minimal")
+      (inputs (list upstream:emacs-minimal))
+      (propagated-inputs (list))
+      (build-system emacs-build-system)
+      (arguments
+       '(#:include '("emacsql.el" "emacsql-compiler.el" "emacsql-sqlite-common.el")))))
 #+end_src
 
 =emacsql-sqlite-builtin=, on the other hand, is the built-in integration shipped with Emacs 29.  We have to use Emacs 29 to compile it, instead of =emacs-minimal=, to makes the build phase happy.
@@ -2133,8 +2114,7 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
       (propagated-inputs (list emacs-emacsql-minimal))
       (build-system emacs-build-system)
       (arguments
-       `(#:include '("emacsql-sqlite-builtin.el")
-         #:emacs ,upstream:emacs-next))))
+       `(#:include '("emacsql-sqlite-builtin.el")))))
 #+end_src
 
 #+begin_src scheme
@@ -2481,7 +2461,6 @@ Again the packaged version in Guix official packages is quite old, so here is th
                emacs-emacsql-sqlite-builtin))
         (arguments
          (append
-          (list #:emacs upstream:emacs-next)
           (substitute-keyword-arguments (package-arguments upstream:emacs-org-roam)
             ((#:phases phases)
              `(modify-phases ,phases
@@ -2512,9 +2491,7 @@ And a third-party =consult= integration:
            (sha256
             (base32
              "142fra7wap6dfwd4c82j7z3nk1yw78slrwhjx6vkiql8ylbiw5fi"))))
-        (propagated-inputs (list upstream:emacs-f upstream:emacs-consult emacs-org-roam-next))
-        (arguments
-         `(#:emacs ,upstream:emacs-next)))))
+        (propagated-inputs (list upstream:emacs-f upstream:emacs-consult emacs-org-roam-next)))))
 #+end_src
 
 #+begin_src scheme
@@ -2753,11 +2730,9 @@ It comes with =embark= integration, where ~citar-embark-mode~ is a global mode t
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-citar-org-roam-next
     (package
-     (inherit upstream:emacs-citar-org-roam)
-     (name "emacs-citar-org-roam-next")
-     (propagated-inputs (list emacs-org-roam-next emacs-citar-next))
-     (arguments
-      `(#:emacs ,upstream:emacs-next))))
+      (inherit upstream:emacs-citar-org-roam)
+      (name "emacs-citar-org-roam-next")
+      (propagated-inputs (list emacs-org-roam-next emacs-citar-next))))
 #+end_src
 
 As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-sources~, making the related configuration unnecessary.
