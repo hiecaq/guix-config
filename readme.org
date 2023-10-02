@@ -1448,6 +1448,7 @@ Note that the version in official Guix Package Channel is =0.6.1=, which was 3 y
      "emacs-flyspell-correct-next")))
 #+end_src
 
+I drop the unused dependencies. It is ridiculous to have to propagate =ivy=, =helm= and =popup= to use this package.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-flyspell-correct-next
     (let ((commit "7d7b6b01188bd28e20a13736ac9f36c3367bd16e")
@@ -1456,6 +1457,9 @@ Note that the version in official Guix Package Channel is =0.6.1=, which was 3 y
       (package
        (inherit upstream:emacs-flyspell-correct)
        (name "emacs-flyspell-correct-next")
+       (arguments
+        `(#:exclude '("flyspell-correct-.*\\.el")))
+       (propagated-inputs (list))
        (version (git-version last-release-version revision commit))
        (source
         (origin
@@ -1468,6 +1472,7 @@ Note that the version in official Guix Package Channel is =0.6.1=, which was 3 y
           (base32
            "1b6h3wjmxg9d1d3mfvw6fsgkr1w0d14zxllv9jb5cscl5lq8rbmm")))))))
 #+end_src
+
 #+begin_src emacs-lisp
   (setup (:require flyspell-correct)
     (:needs "aspell")
