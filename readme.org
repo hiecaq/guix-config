@@ -1475,9 +1475,22 @@ I drop the unused dependencies. It is ridiculous to have to propagate =ivy=, =he
 
 #+begin_src emacs-lisp
   (setup (:require flyspell-correct)
-    (:needs "aspell")
+    (:needs "hunspell")
     (:also-load flyspell)
     (:global (:rebind #'ispell-word #'flyspell-correct-wrapper)))
+#+end_src
+
+*** Xref
+=xref= is an Emacs built-in cross referencing browsing package.
+#+begin_quote
+This file provides a somewhat generic infrastructure for cross referencing commands, in particular "find-definition".
+#+end_quote
+
+#+begin_src emacs-lisp
+  (setup xref
+    (:option xref-search-program 'ripgrep)
+    (:global (:with-state (normal)
+               (:bind "g r" #'xref-find-references))))
 #+end_src
 
 *** Topsy
@@ -1638,7 +1651,6 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 #+begin_src emacs-lisp
   (setup (:require consult)
     (:option consult-preview-key "C-j"
-             xref-search-program 'ripgrep
              xref-show-definitions-function #'consult-xref
              xref-show-xrefs-function #'consult-xref)
     ;; from https://github.com/minad/consult/wiki#consult-ripgrep-or-line-counsel-grep-or-swiper-equivalent
