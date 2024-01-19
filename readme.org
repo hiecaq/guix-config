@@ -2837,6 +2837,24 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
       (:bind "T" #'titlecase-region)))
 #+end_src
 
+*** Eat
+[[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
+#+begin_src scheme
+    (simple-service
+     'home-emacs-eat
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-eat")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup eat
+    (:option eshell-visual-commands nil
+             eshell-visual-subcommands nil
+             eshell-visual-options nil)
+    (eat-eshell-mode +1))
+#+end_src
 * References and Recommendations
 This configuration is written while referencing the following guix configurations:
 - [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
