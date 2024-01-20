@@ -17,7 +17,7 @@
   - [[#tools][Tools]]
     - [[#certificates][Certificates]]
     - [[#bat][bat]]
-    - [[#exa][exa]]
+    - [[#eza][eza]]
     - [[#ripgrep][ripgrep]]
     - [[#fd][fd]]
   - [[#aliases][Aliases]]
@@ -359,22 +359,22 @@ Add [[https://github.com/sharkdp/bat][bat]], which is a =cat= clone with colors.
     (description #f)))
 #+end_src
 
-*** exa
-Add [[https://github.com/ogham/exa][exa]], which is "a modern replacement for =ls=".
+*** eza
+[[https://github.com/eza-community/eza][eza]] is a community-revived fork of [[https://github.com/ogham/exa][exa]], which is "a modern replacement for =ls=".
 #+begin_src scheme
   (service
    (service-type
-    (name 'home-exa)
+    (name 'home-eza)
     (extensions
      (list
       (service-extension
        home-profile-service-type
        (const (list
                (specification->package
-                "exa"))))
+                "eza"))))
       (service-extension
        home-environment-variables-service-type
-       (const '(("EXA_COLORS" .
+       (const '(("EZA_COLORS" .
                  "*.zip=0:*.gz=0:*.rar=0:*.tar=0:*.7z=0:ex=31:di=244;1"))))))
     (default-value #f)
     (description #f)))
