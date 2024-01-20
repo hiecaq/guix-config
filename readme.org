@@ -529,7 +529,7 @@ this module simply provides a single service that install the fonts needed.
 
 * Emacs
 :PROPERTIES:
-:header-args:emacs-lisp: :tangle "build/init.el"
+:header-args:emacs-lisp: :lexical t :tangle "build/init.el"
 :header-args:lisp-data: :tangle "build/templates.eld"
 :header-args:scheme: :noweb-ref emacs-service
 :END:
@@ -599,7 +599,7 @@ NOTE: the hash for git-based packages is got by following [[https://guix.gnu.org
 
 ** Early Initialization
 :PROPERTIES:
-:header-args:emacs-lisp: :tangle "build/early-init.el"
+:header-args:emacs-lisp: :lexical t :tangle "build/early-init.el"
 :END:
 #+begin_src emacs-lisp :comments no
   ;;; early-init.el --- Configurations before package systems and UI systems -*- lexical-binding: t; buffer-read-only: t; eval: (auto-revert-mode 1) -*-
