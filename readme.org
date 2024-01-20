@@ -2071,6 +2071,8 @@ I plan on switching to =eshell= as my main shell. Here are some references:
 
 #+begin_src emacs-lisp
   (setup magit
+    (:bind "SPC" #'god-execute-with-current-bindings)
+    (:with-map magit-revision-mode-map (:bind "SPC" #'god-execute-with-current-bindings))
     (:option magit-display-buffer-function #'display-buffer
              magit-bury-buffer-function #'quit-window ;; play nice with shackle
              evil-collection-magit-use-z-for-folds t
