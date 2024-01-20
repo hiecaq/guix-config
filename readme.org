@@ -1420,14 +1420,14 @@ See the [[info:emacs#Spelling][documentation]] for details.
 Emacs comes with a spell checking wrapper...
 #+begin_src emacs-lisp
   (setup ispell
-    (:needs "aspell")
-    (:option ispell-program-name "aspell"))
+    (:needs "hunspell")
+    (:option ispell-program-name "hunspell"))
 #+end_src
 
 ... and an on-the-fly spell checker(which uses ~ispell~ as the backend).
 #+begin_src emacs-lisp
   (setup flyspell
-    (:needs "aspell")
+    (:needs "hunspell")
     ;; (general-unbind flyspell-mode-map "C-;")
     (:unbind "C-;")
     (:hook-into text-mode)
@@ -1444,6 +1444,10 @@ Note that the version in official Guix Package Channel is =0.6.1=, which was 3 y
    'home-emacs-flyspell-correct
    home-profile-service-type
    (list
+    (specification->package
+     "hunspell")
+    (specification->package
+     "hunspell-dict-en-us")
     (specification->package
      "emacs-flyspell-correct-next")))
 #+end_src
