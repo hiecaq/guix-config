@@ -858,26 +858,32 @@ I am using [[https://www.kaufmann.no/roland/dvorak/][Programmer Dvorak (DVP)]], 
 
 =C-u= basically invokes the ~unversal-argument-map~ transient map, so we can remap the digit row's symbols to actual digits. Also I add a binding to insert current universal argument's number.
 #+begin_src emacs-lisp
+  (defvar my-dvp-digit-row-alist
+    '((7 . "[")
+      (5 . "{")
+      (3 . "}")
+      (1 . "(")
+      (9 . "=")
+      (0 . "*")
+      (2 . ")")
+      (4 . "+")
+      (6 . "]")
+      (8 . "!"))
+    "`Higher' case characters to digits mapping on dvorak digit row")
+
   (setup simple
-    (defmacro my-digit-argument (digit)
+    (defun my-digit-argument (digit)
       "Return the command that inputs the given
   digit as universal argument."
-      `(lambda (arg)
-         (interactive "P")
-         (let ((last-command-event ,(+ digit ?0)))
-           (digit-argument arg))))
+      (lambda (arg)
+        (interactive "P")
+        (let ((last-command-event (+ digit ?0)))
+          (digit-argument arg))))
     (:with-map universal-argument-map
-      (:bind "[" (my-digit-argument 7)
-             "{" (my-digit-argument 5)
-             "}" (my-digit-argument 3)
-             "(" (my-digit-argument 1)
-             "=" (my-digit-argument 9)
-             "*" (my-digit-argument 0)
-             ")" (my-digit-argument 2)
-             "+" (my-digit-argument 4)
-             "]" (my-digit-argument 6)
-             "!" (my-digit-argument 8)
-             "<CTRL-i>" (lambda (arg)
+      (dolist (d (number-sequence 0 9))
+        (:bind (alist-get d my-dvp-digit-row-alist)
+               (my-digit-argument d)))
+      (:bind "<CTRL-i>" (lambda (arg)
                           (interactive "P")
                           (insert (format "%s" arg))))))
 #+end_src
