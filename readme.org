@@ -2850,6 +2850,91 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
       (:bind "T" #'titlecase-region)))
 #+end_src
 
+*** Rust
+#+begin_src scheme
+  (simple-service
+   'home-emacs-rust
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-eglot")
+    (specification->package
+     "emacs-rustic")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require rustic)
+    (:option rustic-lsp-client 'eglot))
+#+end_src
+
+*** Dhall
+#+begin_src scheme
+  (simple-service
+   'home-emacs-dhall
+   home-profile-service-type
+   (list
+    (specification->package
+     "dhall")
+    (specification->package
+     "emacs-dhall-mode-next")))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-dhall-mode-next
+    (let ((commit "87ab69fe765d87b3bb1604a306a8c44d6887681d")
+          (last-release-version "0.1.3")
+          (revision "0"))
+      (package
+       (inherit upstream:emacs-dhall-mode)
+       (name "emacs-dhall-mode-next")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/psibi/dhall-mode")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1h55bcn0csy7xacl6lqhr3vfva208rszjn15gsfq0pbwhx4n6zhx")))))))
+#+end_src
+
+*** Ron
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-ron-mode
+    (let ((commit "c5e0454b9916d6b73adc15dab8abbb0b0a68ea22")
+          (last-release-version "1.0.0") ;; from the .el's version
+          (revision "0")
+          (url "https://codeberg.org/Hutzdog/ron-mode"))
+      (package
+       (name "emacs-ron-mode")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url (string-append url ".git"))
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "132r5346m3li5n7v7fyzyg8sg3679apl7q4y57n5aq395s0q9wyn"))))
+       (build-system emacs-build-system)
+       (home-page url)
+       (synopsis "Ron-mode for Emacs")
+       (description "Syntax highlighting for Rusty Object Notation (RON).")
+       (license license:expat))))
+#+end_src
+
+#+begin_src scheme
+    (simple-service
+     'home-emacs-ron-mode
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-ron-mode")))
+#+end_src
 *** Eat
 [[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
 #+begin_src scheme
