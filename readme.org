@@ -1123,7 +1123,7 @@ References:
 I need some latest contributions to the =evil-collection= repository:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-collection-next
-    (let ((commit "286d69de179cf70c00963a998a4beb826b51414a")
+    (let ((commit "8c84f9bc89fe56e71b56519f886085ddcbc671cf")
           (last-release-version "0.0.9")
           (revision "0"))
       (package
@@ -1139,7 +1139,7 @@ I need some latest contributions to the =evil-collection= repository:
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "1a91n86arx99f6qf04h9ffj2adp5r4jb070znfy9l3w7m07b4564")))))))
+           "1m1lqldbp8xs8b5n6kz181w0lbdbgp1lllnfmw65y346xx0ycm7x")))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2305,7 +2305,7 @@ References:
 Its package definition in the Guix Official Channel is for the "latest" release version, which is as old as January 2022. So I makes a variation to use the master branch HEAD at the time of writing.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-appear-next
-    (let ((commit "eb9f9db40aa529fe4b977235d86494b115281d17")
+    (let ((commit "81eba5d7a5b74cdb1bad091d85667e836f16b997")
           (last-release-version "0.3.0")
           (revision "0"))
       (package
@@ -2321,7 +2321,7 @@ Its package definition in the Guix Official Channel is for the "latest" release 
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "1hawkx6sgh52bg7rj22x148hx8hby276xmqks3kxyzvrxzi8yav9")))))))
+           "1jh2rdp7rx1hnsfky5di1amz8rc5jf0qlc5ykr09m5f9fpz9m9x6")))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2454,7 +2454,7 @@ This means that, giving that org-roam is quite stable now, we can use the databa
 Again the packaged version in Guix official packages is quite old, so here is the git HEAD version. I also clear up the =propagated-inputs= list a little bit, especially by adding a simple hack to remove the redundant dependency on the old =emacs-sqlite=. Similar to =emacsql-sqlite-built-in=, it requires Emacs 29 to compile.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-next
-    (let ((commit "5c06471c3a11348342719fd9011486455adeb701")
+    (let ((commit "8667e441876cd2583fbf7282a65796ea149f0e5f")
           (last-release-version "2.2.2")
           (revision "0"))
       (package
@@ -2470,7 +2470,7 @@ Again the packaged version in Guix official packages is quite old, so here is th
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "1bd52f3pdj5hq0vr5y53g870s35ir3n5ms2d9y6q74xhbi1lj871"))))
+             "1j0xg09nzhm35pas622yhmxfx7fw9kch1kyrabg072j6hl83ahsw"))))
         (propagated-inputs
          (list upstream:emacs-dash
                upstream:emacs-magit
@@ -2491,7 +2491,7 @@ Again the packaged version in Guix official packages is quite old, so here is th
 And a third-party =consult= integration:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-consult-org-roam-next
-    (let ((commit "2ca42a1c1641a29f1447d35be01bd1fda368a9e2")
+    (let ((commit "8e5b60a61eee9d0582afd309bc4e70ca3b1054cb")
           (last-release-version "0.1")
           (revision "0"))
       (package
@@ -2507,7 +2507,7 @@ And a third-party =consult= integration:
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "142fra7wap6dfwd4c82j7z3nk1yw78slrwhjx6vkiql8ylbiw5fi"))))
+             "0hzc8kd52f2r5nrx5l3pbkj17mz2ms3715gq814k5iw2z9ir6ha3"))))
         (propagated-inputs (list upstream:emacs-f upstream:emacs-consult emacs-org-roam-next)))))
 #+end_src
 
@@ -2707,8 +2707,8 @@ There are quite a lot bibliographic packages, among which I use [[https://github
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-citar-next
-    (let ((commit "747d9083e07b57209f652949f4807ef9cec541da")
-          (last-release-version "1.0")
+    (let ((commit "885b86f6733fd70f42c32dd7791d3447f93db990")
+          (last-release-version "1.4.0")
           (revision "0"))
       (package
         (inherit upstream:emacs-citar)
@@ -2723,7 +2723,7 @@ There are quite a lot bibliographic packages, among which I use [[https://github
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "1j3pc139zhxq39n3m810190xpy4spjipilwcmqikym5am4p8d9gv")))))))
+             "1kzwllhcn77z6gsdxl6r1csv9nj64qbgznpy8r8kvnri3fl55w4h")))))))
 #+end_src
 
 #+begin_src emacs-lisp
