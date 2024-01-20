@@ -1198,7 +1198,7 @@ I found that its key bindings conflict with =evil-snipe= a lot, so I remap them 
 #+begin_src emacs-lisp
   (setup (:require evil-replace-with-register)
     (:global (:with-state (normal visual)
-               (:bind "_" #'evil-replace-with-register))))
+               (:bind "," #'evil-replace-with-register))))
 #+end_src
 
 **** Evil Snipe
@@ -1976,7 +1976,6 @@ global templates
     (:require corfu)
     (:with-mode global-corfu-mode (:enable)))
 #+end_src
-
 *** Visual Undo
 [[https://github.com/casouri/vundo][vundo]] is basically a less-buggy [[https://www.dr-qubit.org/undo-tree.html][undo-tree]] that supports Emacs 28's new ~undo-redo~.
 #+begin_src scheme
