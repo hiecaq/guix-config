@@ -13,7 +13,7 @@
   - [[#base-directories][Base Directories]]
   - [[#user-directories][User Directories]]
 - [[#shells][Shells]]
-  - [[#zsh][Zsh]]
+  - [[#fish][Fish]]
   - [[#tools][Tools]]
     - [[#certificates][Certificates]]
     - [[#bat][bat]]
@@ -196,6 +196,7 @@ As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-u
     #:use-module (gnu home services)
     #:use-module (guix channels)
     #:use-module (gnu home services guix)
+    #:use-module (gnu home services shells)
     #:use-module (gnu home-services shellutils)
     #:use-module (guix gexp)
     #:use-module (rde gexp)
@@ -227,8 +228,16 @@ Add this module and its services:
 #+begin_src scheme :tangle no :noweb-ref home-environment-service
   shell:services
 #+end_src
-
-** Zsh
+** Fish
+:PROPERTIES:
+:header-args:scheme: :noweb-ref shell-service
+:END:
+I use [[https://fishshell.com/][fish]] as a backup interactive-use-only shell.
+#+begin_src scheme
+  (service
+   home-fish-service-type)
+#+end_src
+** COMMENT Zsh
 :PROPERTIES:
 :header-args:scheme: :noweb-ref shell-service
 :END:
