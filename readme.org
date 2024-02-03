@@ -2766,6 +2766,7 @@ It comes with =embark= integration, where ~citar-embark-mode~ is a global mode t
 As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-sources~, making the related configuration unnecessary.
 #+begin_src emacs-lisp
   (setup citar-org-roam
+    (:option citar-org-roam-note-title-template "${author editor}: ${title}")
     (defun my-citar-org-roam--create-capture-note (citekey entry)
       "Open or create org-roam node for CITEKEY and ENTRY."
       ;; adapted from https://jethrokuan.github.io/org-roam-guide/#orgc48eb0d
