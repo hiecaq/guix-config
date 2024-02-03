@@ -3097,6 +3097,21 @@ Here is How =mu= is initialized. This needs to be run manually.
              eshell-visual-options nil)
     (eat-eshell-mode +1))
 #+end_src
+
+*** Dired
+=dired= is Emacs' built-in file explorer. It has a classic text-based UI that is so easy to use that many community-maintained packages follow its design principles.
+
+**** dired-rsync
+One thing that dired (with tramp) does it badly is copying files over network. For small files it is fine, for big files not only is it slow but also it blocks the whole Emacs while copying. [[https://github.com/stsquad/dired-rsync][dired-rsync]] to the rescue, which basically wraps [[https://rsync.samba.org/][rsync]] and does things asynchronously.
+#+begin_src scheme
+    (simple-service
+     'home-emacs-dired-rsync
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-dired-rsync")))
+#+end_src
+
 * References and Recommendations
 This configuration is written while referencing the following guix configurations:
 - [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
