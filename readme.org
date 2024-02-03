@@ -2935,6 +2935,76 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
       (specification->package
        "emacs-ron-mode")))
 #+end_src
+
+*** Email
+**** mu4e
+#+begin_src scheme
+  (service
+   (service-type
+    (name 'home-mu)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list
+               (specification->package
+                "isync")
+               (specification->package
+                "rss2email")
+               (specification->package
+                "msmtp")
+               (specification->package
+                "mu"))))
+      (service-extension
+       home-environment-variables-service-type
+       (const '(("XAPIAN_CJK_NGRAM" . "1"))))))
+    (default-value #f)
+    (description #f)))
+#+end_src
+***** Back-end Initialization
+Here is How =mu= is initialized. This needs to be run manually.
+#+begin_src sh :noweb yes
+  mu init --maildir=<<mu-maildir()>> '--my-address=/<<mu-my-address()>>/'
+#+end_src
+
+#+name: mu-maildir
+#+begin_src elisp :exports none
+  (expand-file-name "mails" (xdg-user-dir "DOCUMENTS"))
+#+end_src
+
+#+name: mu-my-address
+#+begin_src elisp :exports none
+  (rxt-elisp-to-pcre (rx (: (+ (any alnum ".")) "@" "hiecaq" "." "org")))
+#+end_src
+***** Front-end Settings
+#+begin_src emacs-lisp
+  (setup mu4e
+    (defun my-mu4e-trash-folder-dispatch (msg)
+      (if (and msg
+               (string= "/feed" (mu4e-message-field msg :maildir)))
+          "/trash-feed"
+        "/trash"))
+    (:option mu4e-sent-messages-behavior 'delete
+             mu4e-headers-auto-update nil
+             mu4e-trash-folder #'my-mu4e-trash-folder-dispatch
+             mu4e-headers-fields '((:human-date . 12)
+                                   (:flags . 6)
+                                   (:mailing-list . 10)
+                                   (:from-or-to . 22)
+                                   (:thread-subject))
+             message-kill-buffer-on-exit t
+             mail-user-agent 'mu4e-user-agent
+             read-mail-command 'mu4e
+             mu4e-compose-dont-reply-to-self t
+             mu4e-compose-format-flowed t
+             mu4e-search-include-related t
+             mu4e-change-filenames-when-moving t
+             user-mail-address "this@hiecaq.org"
+             user-full-name "hiecaq"
+             send-mail-function #'sendmail-send-it
+             sendmail-program (executable-find "msmtp")
+             mail-envelope-from 'header))
+#+end_src
 *** Eat
 [[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
 #+begin_src scheme
