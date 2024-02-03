@@ -985,6 +985,14 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
     (load-theme 'modus-vivendi :no-confirm))
 #+end_src
 
+*** Auto Save
+#+begin_src emacs-lisp
+  (setup files
+    (let ((autosave-dir (exdg-cache "auto-save/")))
+      (mkdir autosave-dir t)
+      (:option auto-save-file-name-transforms
+               `(("\\`/[^/]*\\([^/]*/\\)*\\([^/]*\\)\\'" ,(concat autosave-dir "\\2") t)))))
+#+end_src
 *** Recentf
 [[info:emacs#File Conveniences][recentf]] is an Emacs built-in minor mode that saves recent file list.
 #+begin_src emacs-lisp
