@@ -599,6 +599,7 @@ I and my Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: mak
     #:use-module (guix build utils)
     #:use-module (guix build-system emacs)
     #:use-module (gnu packages)
+    #:use-module ((gnu packages textutils) #:prefix upstream:) ;; for vale
     #:use-module ((gnu packages emacs) #:prefix upstream:)
     #:use-module ((gnu packages emacs-xyz) #:prefix upstream:)
     #:use-module ((guix licenses) #:prefix license:))
@@ -2812,6 +2813,49 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 #+end_src
 
 *** English
+**** Linting
+#+begin_src scheme
+    (simple-service
+     'home-emacs-titlecase
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-flymake-vale")))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-flymake-vale
+    (let ((commit "914f30177dec0310d1ecab1fb798f2b70a018f24")
+          (last-release-version "0.0.1")
+          (revision "0")
+          (url "https://github.com/tpeacock19/flymake-vale"))
+      (package
+       (name "emacs-flymake-vale")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url (string-append url ".git"))
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "1fi5z1fq9lq0z74v6w70pflh2d9wjfzl5km5jpsgv065y4b3rj3j"))))
+       (build-system emacs-build-system)
+       (home-page url)
+       (synopsis "Flymake support for Vale")
+       (description "Vale is a natural language linter.
+  So with flymake-vale you get on-the-fly natural language linting.")
+       (license license:gpl3+)
+       (propagated-inputs (list upstream:go-github-com-errata-ai-vale)))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup flymake-vale
+    (:with-function flymake-vale-load
+      (:hook-into text-mode)))
+#+end_src
 **** Capitalizing
 [[https://github.com/duckwork/titlecase.el][titlecase]] solves one of the hardest problem in (English) writing: capitalizing titles. its most impressing feature is that it supports many standard styles, like [[https://www.chicagomanualofstyle.org/book/ed17/part2/ch08/toc.html][Chicago]] and [[https://blog.apastyle.org/apastyle/capitalization/][APA]]. I mainly use it with embark.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
