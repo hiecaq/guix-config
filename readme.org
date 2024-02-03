@@ -1185,7 +1185,10 @@ I need some latest contributions to the =evil-collection= repository:
       ;; (:bind "C-SPC" #'my-leader-key)
       (:bind "C-SPC" (my-with-universal-argument #'embark-act)))
     (:require evil)
-    (:enable))
+    (:enable)
+    (:global
+        (:with-state (normal)
+          (:bind "<CTRL-i>" #'evil-jump-forward))))
 
   (setup evil-collection
     (:option evil-collection-setup-minibuffer t)
