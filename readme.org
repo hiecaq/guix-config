@@ -2914,6 +2914,16 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
       (:bind "T" #'titlecase-region)))
 #+end_src
 
+*** Haskell
+#+begin_src scheme
+    (simple-service
+     'home-emacs-haskell
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-haskell-mode")))
+#+end_src
+
 *** Rust
 #+begin_src scheme
   (simple-service
