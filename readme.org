@@ -3062,7 +3062,18 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 
 #+begin_src emacs-lisp
   (setup (:require rustic)
-    (:option rustic-lsp-client 'eglot))
+    (:option rustic-lsp-client 'eglot)
+    (defun my-rustic-fix-colors ()
+      (kill-local-variable 'compilation-message-face)
+      (kill-local-variable 'compilation-error-face)
+      (kill-local-variable 'compilation-warning-face)
+      (kill-local-variable 'compilation-info-face)
+      (kill-local-variable 'compilation-column-face)
+      (kill-local-variable 'compilation-line-face)
+      (kill-local-variable 'xterm-color-names-bright)
+      (kill-local-variable 'xterm-color-names))
+    (:with-function my-rustic-fix-colors
+      (:hook-into rustic-compilation-mode-hook rustic-cargo-spellcheck-mode-hook)))
 #+end_src
 
 *** Dhall
