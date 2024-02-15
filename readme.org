@@ -1270,7 +1270,8 @@ I need some latest contributions to the =evil-collection= repository:
        (:bind "<CTRL-i>" #'evil-jump-forward))))
 
   (setup evil-collection
-    (:option evil-collection-setup-minibuffer t)
+    (:option evil-collection-setup-minibuffer t
+             evil-collection-key-blacklist '("SPC" "C-SPC" "DEL"))
     (:require evil-collection)
     (evil-collection-init))
 #+end_src
