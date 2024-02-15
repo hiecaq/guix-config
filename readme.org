@@ -1,6 +1,6 @@
 # -*- org-use-property-inheritance: t; toc-org-max-depth: 4; org-confirm-babel-evaluate: nil; -*-
 #+title: hiecaq's guix configuration
-#+last_modified: [2024-02-03 Sat 15:52]
+#+last_modified: [2024-02-12 Mon 12:45]
 #+startup: indent
 #+property: header-args :comments org :results silent :mkdirp t
 
@@ -68,6 +68,7 @@
     - [[#consult][Consult]]
     - [[#embark][Embark]]
     - [[#tempel][Tempel]]
+      - [[#eglot-tempel][Eglot-tempel]]
     - [[#corfu][Corfu]]
     - [[#visual-undo][Visual Undo]]
     - [[#hideshow][Hideshow]]
@@ -288,11 +289,11 @@ TODO: I should split this out later.
       'extend-environment-variables
       home-environment-variables-service-type
       `(("PS1" . "$ ")
-        ("EDITOR" . "nvim")
-        ("VISUAL" . "nvim")
         ("MANPAGER" . "nvim +Man!")
         ("MANWIDTH" . "80")
-        ("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")))
+        ("QT_AUTO_SCREEN_SCALE_FACTOR" . "1")
+        ("RUSTUP_UPDATE_ROOT" . "https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup")
+        ("RUSTUP_DIST_SERVER" . "https://mirrors.tuna.tsinghua.edu.cn/rustup")))
      <<shell-service>>
      ))
 #+end_src
@@ -2006,7 +2007,7 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
 
 *** Tempel
 [[https://github.com/minad/tempel][tempel]] is a "tiny template package for Emacs", using the built-in template package Tempo's syntax. I use it instead of famous [[https://github.com/joaotavora/yasnippet][YASnippet]] because
-- YASnippet seems unmaintained
+- YASnippet seems unmaintained (update on 2024-02: it seems to be revived!)
 - YASnippet expansion with wrapping (i.e. wrapping region of text into the template) seems weird
 - Tempel uses syntax of built-in Tempo, which is sexp-like expressions.
 - With tempel, multiple templates can be defined within a single file, while YASnippet requires single template per file.
@@ -2015,8 +2016,8 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
    'home-emacs-tempel
    home-profile-service-type
    (list
-    (specification->package
-     "emacs-tempel")))
+    (specification->package "emacs-tempel")
+    (specification->package "emacs-eglot-tempel-next")))
 #+end_src
 
 The functions here come from tempel's README.
@@ -2035,7 +2036,12 @@ The functions here come from tempel's README.
       (setq-local completion-at-point-functions
                   (cons #'tempel-expand completion-at-point-functions)))
     (:with-function tempel-setup-capf
-      (:hook-into conf-mode prog-mode text-mode)))
+      (:hook-into conf-mode prog-mode text-mode))
+    (:with-map tempel-map
+      (:bind "M-a" #'tempel-beginning
+             "M-e" #'tempel-end
+             "M-p" #'tempel-previous
+             "M-n" #'tempel-next)))
 #+end_src
 
 global templates
@@ -2045,6 +2051,41 @@ global templates
   (date (format-time-string "%Y-%m-%d"))
 #+end_src
 
+**** Eglot-tempel
+Tempel itself, unlike YASnippet, does not support LSP snippet expansion out of the box.
+This feature is notably useful when you auto-complete a function name, in which case the argument list is the snippet.
+
+Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the name suggests, bridges eglot's snippet interface with tempel. There is also [[https://github.com/svaante/lsp-snippet][lsp-snippet]] that might worth checking later.
+
+The version in Guix official channel is as old as 2022, so again I declare a HEAD variation.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-eglot-tempel-next
+    (let ((commit "303c7c24e140121f8bc218249b6169d0471b77b8")
+          (last-release-version "0.5.0")
+          (revision "0"))
+      (package
+        (inherit upstream:emacs-eglot-tempel)
+        (name "emacs-eglot-tempel-next")
+        (version (git-version last-release-version revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/fejfighter/eglot-tempel")
+                 (commit commit)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32
+             "10scmnkvp2aid9a4bb26cvg8vag6plkrnpg96dylwm0g6rra19zp"))))
+        (arguments
+         (list #:tests? #false))
+        (native-inputs (list)))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup eglot-tempel
+    (:hook-into eglot-server-initialized-hook))
+#+end_src
 *** Corfu
 [[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
 #+begin_src scheme
@@ -2056,7 +2097,7 @@ global templates
      "emacs-corfu")))
 #+end_src
 
-#+begin_src emacs-lisp :noweb yes
+#+begin_src emacs-lisp
   (setup corfu
     (:option corfu-preview-current nil
              corfu-quit-at-boundary nil)
