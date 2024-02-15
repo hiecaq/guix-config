@@ -801,7 +801,6 @@ TODO: I should split this out later.
 
   (defsetup :global (&rest body)
     "Use the global keymap for the BODY. This is intended to be used with ':bind'."
-    :indent 1
     :debug '(sexp)
     (let (bodies)
       (push (setup-bind body (map 'global-map))
@@ -1259,14 +1258,16 @@ I need some latest contributions to the =evil-collection= repository:
       (interactive)
       (set-transient-map my-leader-map))
     (:global
-        (:unbind "C-SPC")
-      ;; (:bind "C-SPC" #'my-leader-key)
-      (:bind "C-SPC" (my-with-universal-argument #'embark-act)))
+     (:unbind "C-SPC")
+     ;; (:bind "C-SPC" #'my-leader-key)
+     (:bind "C-SPC" (my-with-universal-argument #'embark-act)))
     (:require evil)
     (:enable)
     (:global
-        (:with-state (normal)
-          (:bind "<CTRL-i>" #'evil-jump-forward))))
+     (:with-state (motion)
+       (:unbind "C-z"))
+     (:with-state (normal)
+       (:bind "<CTRL-i>" #'evil-jump-forward))))
 
   (setup evil-collection
     (:option evil-collection-setup-minibuffer t)
@@ -1886,7 +1887,7 @@ Reference:
   (setup (:require embark)
     ;; Optionally replace the key help with a completing-read interface
     (:option prefix-help-command #'embark-prefix-help-command)
-    (:option embark-cycle-key "C-'")
+    (:option embark-cycle-key "C-z")
 
     ;; adapted from https://karthinks.com/software/fifteen-ways-to-use-embark/
     (defmacro my-embark-ace-action (fn)
@@ -1901,7 +1902,7 @@ Reference:
     (my-embark-ace-action switch-to-buffer)
     (my-embark-ace-action bookmark-jump)
 
-    (:with-map minibuffer-local-map (:bind "C-'" #'embark-act))
+    (:with-map minibuffer-local-map (:bind "C-z" #'embark-act))
     (:global (:bind "C-h B" #'embark-bindings) ;; alternative for `describe-bindings'
       (:with-state (normal visual)
         (:bind "g a" #'embark-act
