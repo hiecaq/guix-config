@@ -2699,7 +2699,11 @@ And a third-party =consult= integration:
     (:with-mode org-roam-db-autosync-mode (:enable))
     (defun my-org-roam-node-find ()
       (interactive)
-      (org-roam-node-find nil nil #'consult-org-roam--node-file-p)))
+      (org-roam-node-find nil nil #'consult-org-roam--node-file-p))
+    (:with-map my-global-consult-map
+      (:bind "n" #'my-org-roam-node-find))
+    (:option (prepend embark-target-injection-hooks)
+             '(my-org-roam-node-find embark--allow-edit embark--ignore-target)))
 
   (setup consult-org-roam
     (:option consult-org-roam-grep-func #'consult-ripgrep)
