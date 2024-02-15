@@ -34,6 +34,7 @@
   - [[#main-configurations][Main Configurations]]
     - [[#setupel][setup.el]]
     - [[#some-sane-configurations][Some Sane Configurations]]
+    - [[#window-management][Window Management]]
     - [[#universal-argument][Universal Argument]]
     - [[#pcre][PCRE]]
     - [[#help][Help]]
@@ -938,6 +939,13 @@ One extra thing: Emacs comes with a customization interface, which supports sett
 #+begin_src emacs-lisp
   (setup cus-edit
     (:option custom-file null-device))
+#+end_src
+
+*** Window Management
+#+begin_src emacs-lisp
+  (setup window
+    (:option switch-to-buffer-obey-display-actions t
+             switch-to-buffer-in-dedicated-window 'pop))
 #+end_src
 
 *** Universal Argument
@@ -1905,12 +1913,21 @@ Reference:
 
     (:with-map minibuffer-local-map (:bind "C-z" #'embark-act))
     (:global (:bind "C-h B" #'embark-bindings) ;; alternative for `describe-bindings'
-      (:with-state (normal visual)
-        (:bind "g a" #'embark-act
-               "g A" #'embark-dwim)))
+             (:with-state (normal visual)
+               (:bind "g a" #'embark-act
+                      "g A" #'embark-dwim)))
     (:with-map embark-file-map (:bind "o" #'my-embark-ace-find-file))
     (:with-map embark-buffer-map (:bind "o" #'my-embark-ace-switch-to-buffer))
-    (:with-map embark-bookmark-map (:bind "o" #'my-embark-ace-bookmark-jump)))
+    (:with-map embark-bookmark-map (:bind "o" #'my-embark-ace-bookmark-jump))
+    ;; display embark action buffer at frame bottom
+    (:option (prepend display-buffer-alist)
+             `(,(rx "*Embark Actions*")
+               (display-buffer-in-direction)
+               (window . root)
+               (direction . below)
+               (window-height . fit-window-to-buffer)
+               (window-parameters . ((no-other-window . t)
+                                     (mode-line-format . none))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2817,7 +2834,7 @@ And a third-party =consult= integration:
              ebib-use-timestamp t
              ebib-file-search-dirs (list (expand-file-name "resources" (xdg-user-dir "DOCUMENTS")))
              ;; (remove ebib-hidden-fields) "isbn"
-             ))
+             ebib-layout 'index-only))
 
   (defun my--ebib-overwrite-current-entry-field-value (field value)
     (when value
