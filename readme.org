@@ -1272,14 +1272,14 @@ I need some latest contributions to the =evil-collection= repository:
     (:require evil)
     (:enable)
     (:global
-     (:with-state (motion)
+     (:with-state (motion insert)
        (:unbind "C-z"))
      (:with-state (normal)
        (:bind "<CTRL-i>" #'evil-jump-forward))))
 
   (setup evil-collection
     (:option evil-collection-setup-minibuffer t
-             evil-collection-key-blacklist '("SPC" "C-SPC" "DEL"))
+             evil-collection-key-blacklist '("SPC" "C-SPC" "DEL" "C-z"))
     (:require evil-collection)
     (evil-collection-init))
 #+end_src
@@ -2235,7 +2235,7 @@ I plan on switching to =eshell= as my main shell. Here are some references:
 #+begin_src emacs-lisp
   (setup magit
     (:bind "SPC" #'god-execute-with-current-bindings)
-    (:with-map magit-revision-mode-map (:bind "SPC" #'god-execute-with-current-bindings))
+    (:with-map (magit-revision-mode-map magit-section-mode-map magit-diff-mode-map) (:bind "SPC" #'god-execute-with-current-bindings))
     (:option magit-display-buffer-function #'display-buffer
              magit-bury-buffer-function #'quit-window ;; play nice with shackle
              evil-collection-magit-use-z-for-folds t
