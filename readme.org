@@ -2246,6 +2246,16 @@ I plan on switching to =eshell= as my main shell. Here are some references:
 - [[https://www.emacswiki.org/emacs/CategoryEshell][Eshell Category]] on Emacs Wiki
 - [[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html][Eshell's Offical Manual]]
 
+#+begin_src emacs-lisp
+  (setup eshell
+    (:option (prepend display-buffer-alist)
+             `(,(rx bos "*" (opt (1+ (or alnum "-")) "-") "eshell*")
+               display-buffer-in-side-window
+               (side . right)
+               (slot . 0)
+               (window-parameters . ((no-delete-other-windows . t)))
+               (window-width . 80))))
+#+end_src
 *** Magit
 [[https://github.com/magit/magit][magit]] is an Emacs interface to git, which provides not only commands to call but also a full GUI-like wrapper around git.
 #+begin_src scheme
@@ -2832,6 +2842,18 @@ And a third-party =consult= integration:
             (my-org-roam-backlinks-section :type "id" :heading "Backlinks:")
             org-roam-reflinks-section
             (my-org-roam-backlinks-section :type "related" :heading "Related:")))
+
+
+  ;; org roam buffer placement
+  (setup org-roam
+    (:unbind "SPC")
+    (:option (prepend display-buffer-alist)
+             '((derived-mode . org-roam-mode)
+               (display-buffer-reuse-mode-window display-buffer-in-side-window)
+               (side . right)
+               (slot . 0)
+               (window-parameters . ((no-delete-other-windows . t)))
+               (window-width . 80))))
 #+end_src
 
 ***** Bibliography
@@ -3105,6 +3127,12 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 #+begin_src emacs-lisp
   (setup (:require rustic)
     (:option rustic-lsp-client 'eglot)
+    (:option (prepend display-buffer-alist)
+             '((derived-mode . rustic-compilation-mode)
+               (display-buffer-reuse-mode-window display-buffer-in-side-window)
+               (side . right)
+               (slot . 0)
+               (window-width . 80)))
     (defun my-rustic-fix-colors ()
       (kill-local-variable 'compilation-message-face)
       (kill-local-variable 'compilation-error-face)
