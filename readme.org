@@ -945,7 +945,13 @@ One extra thing: Emacs comes with a customization interface, which supports sett
 #+begin_src emacs-lisp
   (setup window
     (:option switch-to-buffer-obey-display-actions t
-             switch-to-buffer-in-dedicated-window 'pop))
+             switch-to-buffer-in-dedicated-window 'pop
+             ;; left, top, right, bottom
+             window-sides-slots '(0 0 1 0))
+    (defun fit-window-to-buffer-horiz (window)
+      """Fit window to buffer horizontally. Suitable for `window-width'."""
+      (let ((fit-window-to-buffer-horizontally 'only))
+        (fit-window-to-buffer window))))
 #+end_src
 
 *** Universal Argument
@@ -1433,8 +1439,14 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
 *** Eldoc
 #+begin_src emacs-lisp
   (setup eldoc
-    (:option eldoc-documentation-strategy
-             'eldoc-documentation-compose-eagerly))
+    (:option eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly
+             (prepend display-buffer-alist) `(,(rx "*eldoc*")
+                                              (display-buffer-reuse-mode-window display-buffer-in-direction)
+                                              (direction . right)
+                                              (window-width . fit-window-to-buffer-horiz)
+                                              (body-function . select-window)
+                                              (dedicated . t)
+                                              (window-parameters . ((mode-line-format . none))))))
 #+end_src
 
 [[https://github.com/casouri/eldoc-box][eldoc-box]] shows eldoc in a separate childframe instead of the crowded echo area.
@@ -1449,8 +1461,21 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
 
 #+begin_src emacs-lisp
   (setup eldoc-box
+    (:option eldoc-box-clear-with-C-g t
+             eldoc-box-doc-separator
+             (concat "\n"
+                     (propertize " " 'face 'completions-group-separator
+                                 'display '(space :align-to right)))
+             eldoc-box-max-pixel-width 1600
+             eldoc-box-max-pixel-height 1400)
     (:with-function eldoc-box-hover-mode
-      (:hook-into text-mode prog-mode)))
+      (:hook-into text-mode prog-mode))
+
+    (defun my-eldoc-box-quit-frame-when-interactive (interactive)
+      """When manually open the doc buffer, close eldoc-box immediately."""
+      (when interactive
+        (eldoc-box-quit-frame)))
+    (advice-add #'eldoc-doc-buffer :before #'my-eldoc-box-quit-frame-when-interactive))
 #+end_src
 
 *** Ace Window
