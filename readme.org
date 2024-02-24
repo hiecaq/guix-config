@@ -80,6 +80,7 @@
     - [[#magit][Magit]]
     - [[#project][Project]]
     - [[#emacsql][Emacsql]]
+    - [[#epub][Epub]]
     - [[#org-mode][Org Mode]]
       - [[#general-settings][General Settings]]
       - [[#task-management][Task Management]]
@@ -2347,6 +2348,44 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
      "emacs-emacsql-sqlite-builtin")))
 #+end_src
 
+*** Epub
+Emacs' built-in  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Document-View.html][doc-view-mode]] is said to support Epub format, but I've never got it to work. [[https://depp.brause.cc/nov.el/][nov.el]] to the rescue.
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-nov-el-next
+    (let ((commit "cc31ce0356226c3a2128119b08de6107e38fdd17")
+          (last-release-version "0.4.0")
+          (revision "0"))
+      (package
+       (inherit upstream:emacs-nov-el)
+       (name "emacs-nov-el-next")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://depp.brause.cc/nov.el.git")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0k09dd0j8m8607dv61qm4q1jk9hvn39sxzk5ckcalafjanp7l0r6")))))))
+#+end_src
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-nov-el
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-nov-el-next")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup nov
+    (:option nov-save-place-file (exdg-state "nov-save-place.el")
+             (prepend auto-mode-alist) `(,(rx ".epub" eos) . nov-mode)))
+#+end_src
 *** Org Mode
 From its website
 #+begin_quote
