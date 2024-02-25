@@ -1797,7 +1797,8 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
   (setup (:require consult)
     (:option consult-preview-key "C-j"
              xref-show-definitions-function #'consult-xref
-             xref-show-xrefs-function #'consult-xref)
+             xref-show-xrefs-function #'consult-xref
+             consult-locate-args "locate --ignore-case --regex")
     ;; from https://github.com/minad/consult/wiki#consult-ripgrep-or-line-counsel-grep-or-swiper-equivalent
     (defcustom my-consult-ripgrep-or-line-limit 300000
       "Buffer size threshold for `my-consult-ripgrep-or-line'.
@@ -1815,7 +1816,7 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
               (jka-compr-get-compression-info buffer-file-name)
               (<= (buffer-size)
                   (/ my-consult-ripgrep-or-line-limit
-                     (if (eq major-mode 'org-mode) 4 1))))
+                     (if (eq major-mode 'org-mode) 2 1))))
           (consult-line)
         (when (file-writable-p buffer-file-name)
           (save-buffer))
@@ -1874,8 +1875,8 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
     (defvar-keymap my-global-consult-map)
     (:with-map my-global-consult-map
       (:bind
-       ;; "s" (my-with-universal-argument #'consult-ripgrep)
-       "f" (my-ignore-arg #'consult-find)
+       ;; "g" (my-with-universal-argument #'consult-ripgrep)
+       "f" (my-ignore-arg #'consult-fd)
        "b" (my-ignore-arg #'consult-buffer)
        "l" (my-ignore-arg #'consult-flymake)
        "F" (my-ignore-arg #'consult-locate)
