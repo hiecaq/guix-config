@@ -42,6 +42,7 @@
     - [[#no-littering][No Littering]]
     - [[#fonts-1][Fonts]]
     - [[#modus-themes][Modus Themes]]
+    - [[#midnight][Midnight]]
     - [[#auto-save][Auto Save]]
     - [[#recentf][Recentf]]
     - [[#save-history][Save History]]
@@ -1077,6 +1078,14 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
     (load-theme 'modus-vivendi :no-confirm))
 #+end_src
 
+*** Midnight
+=midnight= is Emacs' built-in cron-like service that run once during midnight each day. Its main purpose is to do same maintenance for the Emacs instance, such as cleaning very old unused buffers. It simply invokes ~midnight-hook~ (which contains ~#'clean-buffer-list~ by default) ~midnight-delay~ seconds after the midnight.
+
+#+begin_src emacs-lisp
+  (setup midnight
+    (:option midnight-delay (* 4 60 60))
+    (:enable))
+#+end_src
 *** Auto Save
 #+begin_src emacs-lisp
   (setup files
@@ -2807,8 +2816,10 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
 
 #+begin_src emacs-lisp
   (setup org-roam
+    (setq org-roam-db-gc-threshold (* 256 1024 1024)) ;; the type check is buggy
     (:option org-roam-database-connector 'sqlite-builtin
              org-roam-db-location (exdg-state "org-roam.db")
+             org-roam-db-update-on-save nil
              org-roam-protocol-store-links nil
              org-roam-directory (expand-file-name "notes" (xdg-user-dir "DOCUMENTS"))
              org-roam-node-display-template (concat "${hierarchy:*} " (propertize "${tags:10}" 'face 'org-tag))
@@ -2829,6 +2840,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
            (when (> level 1) (concat (string-join olp " > ") " > "))
            title))))
     (:with-mode org-roam-db-autosync-mode (:enable))
+    (:with-function org-roam-db-sync (:hook-into midnight-hook))
     (defun my-org-roam-node-find ()
       (interactive)
       (org-roam-node-find nil nil #'consult-org-roam--node-file-p))
