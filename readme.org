@@ -2462,6 +2462,11 @@ Update =#+last_modified= every time an org file is saved.
   (:option org-persist-directory (exdg-cache "org-persist"))
 #+end_src
 
+Org-mode defaults to "show everything" whenever a buffer is initially opened, which includes property drawers. I think the default was "show all", which unfold most things except properties, but the default was changed upstream at some point. But anyway, "show all" is the desired behavior for me, because using =org-roam= means there are properties that I have no interest in everywhere.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-startup-folded 'showall)
+#+end_src
+
 Templates:
 #+begin_src lisp-data
   org-mode
