@@ -948,9 +948,9 @@ One extra thing: Emacs comes with a customization interface, which supports sett
     (:option switch-to-buffer-obey-display-actions t
              switch-to-buffer-in-dedicated-window 'pop
              ;; left, top, right, bottom
-             window-sides-slots '(0 0 1 0))
+             window-sides-slots '(0 0 1 1))
     (defun fit-window-to-buffer-horiz (window)
-      """Fit window to buffer horizontally. Suitable for `window-width'."""
+      "Fit window to buffer horizontally. Suitable for `window-width'."
       (let ((fit-window-to-buffer-horizontally 'only))
         (fit-window-to-buffer window))))
 #+end_src
@@ -1426,6 +1426,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
     (:enable))
 #+end_src
 
+As a side note, which-key default configuration requires there to be at least 1 slot at the bottom in ~window-sides-slots~.
 *** Posframe
 [[https://github.com/tumashu/posframe][posframe]] pops a child-frame at point, connected to its root window's buffer.
 #+begin_src scheme
