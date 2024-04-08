@@ -3267,7 +3267,22 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
     (specification->package
      "emacs-eglot")
     (specification->package
-     "emacs-rustic")))
+     "emacs-rustic-minimal")))
+#+end_src
+
+Its package definition introduces =lsp-mode= and =flycheck=, so I defines a variant to drop them.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-rustic-minimal
+    (package
+      (inherit upstream:emacs-rustic)
+      (name "emacs-rustic-minimal")
+      (propagated-inputs
+       (modify-inputs (package-propagated-inputs upstream:emacs-rustic)
+         (delete "emacs-lsp-mode" "emacs-flycheck")))
+      (arguments
+       `(#:exclude (cons "rustic-flycheck\\.el" %default-exclude)
+         ,@(substitute-keyword-arguments (package-arguments upstream:emacs-rustic))))))
+
 #+end_src
 
 #+begin_src emacs-lisp
