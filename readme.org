@@ -1774,6 +1774,11 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 
 #+begin_src emacs-lisp
   (setup (:require vertico)
+    (:with-map vertico-map
+      (:rebind #'evil-goto-first-line #'vertico-first
+               #'evil-goto-line #'vertico-last
+               #'evil-scroll-page-down #'vertico-scroll-up
+               #'evil-scroll-page-up #'vertico-scroll-down))
     (:enable))
 #+end_src
 
