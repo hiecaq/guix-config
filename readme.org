@@ -98,6 +98,7 @@
     - [[#rust][Rust]]
     - [[#dhall][Dhall]]
     - [[#ron][Ron]]
+    - [[#dart][Dart]]
     - [[#email][Email]]
       - [[#mu4e][mu4e]]
     - [[#eat][Eat]]
@@ -3374,6 +3375,25 @@ Its package definition introduces =lsp-mode= and =flycheck=, so I defines a vari
      (list
       (specification->package
        "emacs-ron-mode")))
+#+end_src
+
+*** Dart
+#+begin_src scheme
+    (simple-service
+     'home-emacs-dart
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-dart-mode-minimal")))
+#+end_src
+
+It's weird that it introduces many unnecessary propagated inputs, so I make a variant to drop them.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-dart-mode-minimal
+    (package
+      (inherit upstream:emacs-dart-mode)
+      (name "emacs-dart-mode-minimal")
+      (propagated-inputs (list))))
 #+end_src
 
 *** Email
