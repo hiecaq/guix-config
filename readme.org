@@ -721,6 +721,10 @@ grabbed from [[https://emacsnotes.wordpress.com/2022/09/11/three-bonus-keys-c-i-
   (setq load-prefer-newer t)
 #+end_src
 
+#+begin_src emacs-lisp
+  (setq load-no-native t)
+#+end_src
+
 ** Main Configurations
 Init file header:
 #+begin_src emacs-lisp :comments no
