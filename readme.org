@@ -42,6 +42,7 @@
     - [[#no-littering][No Littering]]
     - [[#fonts-1][Fonts]]
     - [[#modus-themes][Modus Themes]]
+    - [[#mode-line][Mode Line]]
     - [[#midnight][Midnight]]
     - [[#auto-save][Auto Save]]
     - [[#recentf][Recentf]]
@@ -1083,6 +1084,67 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
     (load-theme 'modus-vivendi :no-confirm))
 #+end_src
 
+*** Mode Line
+#+begin_src emacs-lisp
+  (defvar-local my-mode-line-format nil
+    "My `mode-line-format', for easy toggle between the default version.")
+
+  (defun my-toggle-mode-line-format ()
+    (interactive)
+    (let* ((standard (eval (car (get 'mode-line-format 'standard-value))))
+           (new-format (if (eq standard (default-value 'mode-line-format))
+                           my-mode-line-format
+                         standard)))
+      (setq-default mode-line-format new-format)
+      (kill-local-variable 'mode-line-format)
+      (force-mode-line-update)))
+
+  (defun my-mode-line-recursion--indicator ()
+    (when-let (((mode-line-window-selected-p))
+               (depth (- (recursion-depth) (if (active-minibuffer-window) 1 0)))
+               ((> depth 0)))
+      (format "R%d" depth)))
+
+  (defvar-local my-mode-line-recursion-indicator
+      '(:eval (my-mode-line-recursion--indicator)))
+  (put 'my-mode-line-recursion-indicator 'risky-local-variable t)
+
+  (defvar-local my-mode-line-indicators (list my-mode-line-recursion-indicator
+                                              '(:eval (when (buffer-read-only) "RO "))
+                                              '(:eval (unless (string-equal (format-mode-line "%@") "-") "Remote "))
+                                              '(:eval (when (buffer-narrowed-p) '(:propertize "Narrow " face warning)))
+                                              '(:eval (when (window-dedicated-p) "Dedi "))
+                                              '(:eval (when (window-parameter (selected-window) 'window-side) "Side "))
+                                              '(current-input-method current-input-method-title)
+                                              '(god-local-mode "God ")
+                                              '(defining-kbd-macro "Def ")
+                                              '(flymake-mode flymake-mode-line-format)
+                                              '(:eval (when (buffer-modified-p) "M "))
+                                              '(:eval (unless (eq evil-state 'normal)
+                                                        (string-trim evil-mode-line-tag))))
+    "A list of mode line indicators that is displayed on active window.")
+
+  (put 'my-mode-line-indicators 'risky-local-variable t)
+
+  (setopt my-mode-line-format '("%e"
+                                mode-line-front-space
+                                nil ;; eshell
+                                (:eval (when (mode-line-window-selected-p)
+                                         (list my-mode-line-indicators
+                                               mode-line-misc-info)))
+
+                                mode-line-format-right-align
+
+                                mode-line-buffer-identification
+                                (vc-mode vc-mode)
+                                " "
+                                mode-name
+                                mode-line-end-spaces))
+
+  (setopt mode-line-buffer-identification (propertized-buffer-identification "%b"))
+  (setopt mode-line-format my-mode-line-format)
+#+end_src
+
 *** Midnight
 =midnight= is Emacs' built-in cron-like service that run once during midnight each day. Its main purpose is to do same maintenance for the Emacs instance, such as cleaning very old unused buffers. It simply invokes ~midnight-hook~ (which contains ~#'clean-buffer-list~ by default) ~midnight-delay~ seconds after the midnight.
 
@@ -1281,6 +1343,7 @@ I need some latest contributions to the =evil-collection= repository:
      evil-undo-system 'undo-redo ;; Use Emacs 28 new ~undo-redo~ as the undo-redo system
      evil-disable-insert-state-bindings t ;; I don't want to use Vim's insert mode bindings in insert state:
      evil-respect-visual-line-mode t ;; When =visual-line-mode= is set (especially in =org-mode=), I want Vim to behave as visual lines are normal lines (i.e. bind =j= to =gj= etc)
+     evil-mode-line-format nil
      evil-search-module 'evil-search)
     (defvar-keymap my-leader-map)
     (defun my-leader-key ()
