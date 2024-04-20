@@ -1110,7 +1110,8 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
   (put 'my-mode-line-recursion-indicator 'risky-local-variable t)
 
   (defvar-local my-mode-line-indicators (list my-mode-line-recursion-indicator
-                                              '(:eval (when (buffer-read-only) "RO "))
+                                              '(:eval (when find-file-literally "L "))
+                                              '(:eval (when buffer-read-only "RO "))
                                               '(:eval (unless (string-equal (format-mode-line "%@") "-") "Remote "))
                                               '(:eval (when (buffer-narrowed-p) '(:propertize "Narrow " face warning)))
                                               '(:eval (when (window-dedicated-p) "Dedi "))
