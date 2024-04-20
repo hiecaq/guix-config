@@ -3571,6 +3571,11 @@ One thing that dired (with tramp) does it badly is copying files over network. F
        "emacs-dired-rsync")))
 #+end_src
 
+#+begin_src emacs-lisp
+  (setup dired-rsync
+    (:option dired-rsync-options "-azs --info=progress2"))
+#+end_src
+
 * References and Recommendations
 This configuration is written while referencing the following guix configurations:
 - [[https://git.sr.ht/~akagi/guixrc][Aleksandr Vityazev's Guix Configuration]]
