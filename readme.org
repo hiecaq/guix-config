@@ -2161,7 +2161,8 @@ The functions here come from tempel's README.
           nil)))
     (with-eval-after-load 'tempel
       (:option (prepend tempel-user-elements) #'tempel-include))
-    (:option tempel-path (exdg-config "templates.eld"))
+    (:option tempel-path (exdg-config "templates.eld")
+             (append my-mode-line-indicators) '(tempel--active "Temp "))
     (defun tempel-setup-capf ()
       (setq-local completion-at-point-functions
                   (cons #'tempel-expand completion-at-point-functions)))
