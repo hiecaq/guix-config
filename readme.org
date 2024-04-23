@@ -101,6 +101,7 @@
     - [[#dhall][Dhall]]
     - [[#ron][Ron]]
     - [[#dart][Dart]]
+    - [[#plantuml][PlantUML]]
     - [[#email][Email]]
       - [[#mu4e][mu4e]]
     - [[#eat][Eat]]
@@ -3477,6 +3478,26 @@ It's weird that it introduces many unnecessary propagated inputs, so I make a va
       (inherit upstream:emacs-dart-mode)
       (name "emacs-dart-mode-minimal")
       (propagated-inputs (list))))
+#+end_src
+
+*** PlantUML
+#+begin_src scheme
+    (simple-service
+     'home-emacs-plantuml
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-plantuml-mode")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup ob-plantuml
+    (:require plantuml-mode)
+    (:option org-plantuml-jar-path plantuml-jar-path
+             org-plantuml-executable-path plantuml-executable-path
+             org-plantuml-exec-mode 'plantuml)
+    (with-eval-after-load 'org
+      (:option (prepend org-src-lang-modes) '("plantuml" . plantuml))))
 #+end_src
 
 *** Email
