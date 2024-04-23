@@ -95,6 +95,7 @@
     - [[#english][English]]
       - [[#linting][Linting]]
       - [[#capitalizing][Capitalizing]]
+    - [[#eglot][Eglot]]
     - [[#haskell][Haskell]]
     - [[#rust][Rust]]
     - [[#dhall][Dhall]]
@@ -3321,6 +3322,14 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
       (:bind "T" #'titlecase-line))
     (:with-map embark-region-map
       (:bind "T" #'titlecase-region)))
+#+end_src
+
+*** Eglot
+Eglot is Emacs' built-in LSP client.
+#+begin_src emacs-lisp
+  (setup eglot
+    (with-eval-after-load 'eglot
+      (set-face-attribute 'eglot-highlight-symbol-face nil :inherit 'highlight)))
 #+end_src
 
 *** Haskell
