@@ -3173,7 +3173,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
                             (ebib--get-key-at-point)
                             ebib--cur-db 'overwrite nil)
       (ebib--set-modified t ebib--cur-db)
-      (ebib--maybe-update-entry-buffer)))
+      (ebib--update-entry-buffer-keep-note)))
 
   (defun my-fetch-ebook-metadata-by-isbn (isbn)
     "This requires calibre's `fetch-ebook-metadata' in path to work."
