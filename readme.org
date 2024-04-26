@@ -1385,8 +1385,8 @@ I found that its key bindings conflict with =evil-snipe= a lot, so I remap them 
       (:bind "m" #'evil-surround-region
              "M" #'evil-Surround-region))
     (:also-load evil)
-    (:with-mode global-evil-surround-mode
-      (:enable)))
+    (:with-function turn-on-evil-surround-mode
+      (:hook-into prog-mode text-mode wdired-mode comint-mode eshell-mode minibuffer-setup)))
 #+end_src
 
 **** Evil Replace With Register
@@ -1894,8 +1894,18 @@ My orderless seperator is toggle-able. It defaults to ~orderless-escapable-split
      "emacs-vertico")))
 #+end_src
 
+By default, =C-b= allows the cursor to moves onto the prompt, which is not good because the prompt is read-only and many commands just don't work once you do that. On the README of vertico the author provides the following hack, utilizing ~cursor-intangible-mode~:
+#+begin_src emacs-lisp
+  (setup cursor-sensor
+    (:option minibuffer-prompt-properties
+             '(read-only t cursor-intangible t face minibuffer-prompt))
+    (:with-mode cursor-intangible-mode
+      (:hook-into minibuffer-setup)))
+#+end_src
+
 #+begin_src emacs-lisp
   (setup (:require vertico)
+    (:option enable-recursive-minibuffers t)
     (:with-map vertico-map
       (:rebind #'evil-goto-first-line #'vertico-first
                #'evil-goto-line #'vertico-last
@@ -2363,7 +2373,7 @@ The version in Guix official channel is as old as 2022, so again I declare a HEA
 #+begin_src emacs-lisp
   (setup elec-pair
     (:with-mode electric-pair-local-mode
-      (:hook-into emacs-lisp-mode scheme-mode)))
+      (:hook-into prog-mode minibuffer-setup)))
 #+end_src
 
 *** Aggresive Indent
