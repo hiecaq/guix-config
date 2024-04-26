@@ -1912,6 +1912,8 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
                #'evil-scroll-page-down #'vertico-scroll-up
                #'evil-scroll-page-up #'vertico-scroll-down)
       (:bind "C-'" #'my-orderless-seperator-toggle))
+    (:with-mode vertico-multiform-mode
+      (:enable))
     (:enable))
 #+end_src
 
@@ -2212,6 +2214,21 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
     "u" #'vundo)
 
   (add-to-list 'embark-keymap-alist '(this-file . this-file-map))
+#+end_src
+
+With ~embark-live~, a buffer is live-updating to show the candidates of the current completing-read, which means vertico's own view is redundant. Minad Provides [[https://github.com/minad/vertico/wiki#automatically-shrink-vertico-for-embark-live][the following solution]]. Note that this needs ~vertico-multiform-mode~.
+#+begin_src emacs-lisp
+  (setup embark
+    (defun +embark-live-vertico ()
+      "Shrink Vertico minibuffer when `embark-live' is active."
+      (when-let (win (and (string-prefix-p "*Embark Live" (buffer-name))
+                          (active-minibuffer-window)))
+        (with-selected-window win
+          (when (and (bound-and-true-p vertico--input)
+                     (fboundp 'vertico-multiform-unobtrusive))
+            (vertico-multiform-unobtrusive)))))
+    (:with-mode embark-collect-mode
+      (:hook +embark-live-vertico)))
 #+end_src
 
 *** Tempel
