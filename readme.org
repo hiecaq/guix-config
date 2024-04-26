@@ -1782,10 +1782,9 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
      "emacs-orderless")))
 #+end_src
 
+Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Steal from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]]:
 #+begin_src emacs-lisp
   (setup orderless
-    (:option completion-category-defaults nil)
-    ;; see https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer
     (defun +orderless--consult-suffix ()
       "Regexp which matches the end of string with Consult tofu support."
       (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
@@ -1794,41 +1793,94 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
                   (+ consult--tofu-char consult--tofu-range -1))
         "$"))
 
-    (defun my-orderless-regexp (component)
-      "Match COMPONENT as a regexp. Fix the trailing dollar."
-      (if (string-suffix-p "$" component)
-          (orderless-regexp  (concat (substring component 0 -1) (+orderless--consult-suffix)))
-        (orderless-regexp component)))
+    ;; Recognizes the following patterns:
+    ;; * .ext (file extension)
+    ;; * regexp$ (regexp matching at end)
+    (defun +orderless-consult-dispatch (word _index _total)
+      (cond
+       ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
+       ((string-suffix-p "$" word)
+        `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
+       ;; File extensions
+       ((and (or minibuffer-completing-file-name
+                 (derived-mode-p 'eshell-mode))
+             (string-match-p "\\`\\.." word))
+        `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix)))))))
+#+end_src
 
-    ;; see https://www.reddit.com/r/emacs/comments/ns5jfu/defmacro_and_nested_backquotes_confusion/
-    (defmacro my-orderless--dispatch-prefix-def (prefix style)
-      `(defun ,(intern (format "my-%s-prefix" (symbol-name (eval style)))) (pattern _index _total)
-         (cond
-          ((equal ,prefix pattern)
-           '(orderless-literal . ""))
-          ((string-prefix-p ,prefix pattern)
-           (cons ,style  (substring pattern 1))))))
-    (my-orderless--dispatch-prefix-def "$" 'my-orderless-regexp)
-    (my-orderless--dispatch-prefix-def "=" 'orderless-literal)
-    (my-orderless--dispatch-prefix-def "!" 'orderless-without-literal)
-    (my-orderless--dispatch-prefix-def "-" 'orderless-prefixes)
-    (my-orderless--dispatch-prefix-def "'" 'orderless-initialism)
-    (my-orderless--dispatch-prefix-def ";" 'orderless-flex)
+Sometimes it can be useful to use rx-notation directly.
+#+begin_src emacs-lisp
+  (setup orderless
+    (defun my-orderless-rx (component)
+      "Match a component as rx-notation."
+      (when-let ((m (ignore-errors (read-from-string component)))
+                 (form (car m))
+                 (regex (ignore-errors (rx-to-string form)))
+                 ((= (length component) (cdr m))))
+        regex)))
+#+end_src
 
+For a normal orderless matching, which is triggered when ~completion-styles~ triggers orderless, it use a chain of responsibility to decide which matcher to use. Essentially, matchers are either
+- grouped in dispatchers (listed in ~orderless-style-dispatchers~, each is also a chain of responsibility itself), or
+- listed directly in ~orderless-matching-styles~, which is basically the catch-all dispatcher at the end of the chain.
+#+begin_src emacs-lisp
+  (setup orderless
+    (:option orderless-style-dispatchers '(+orderless-consult-dispatch
+                                           orderless-kwd-dispatch
+                                           orderless-affix-dispatch)
+             orderless-matching-styles '(orderless-regexp)))
+#+end_src
+
+Affix dispatcher can be adjust by setting the ~orderless-affix-dispatch-alist~, which maps the single affix character to matcher.
+#+begin_src emacs-lisp
+  (setup orderless
+    (with-eval-after-load 'orderless
+      (:option (prepend orderless-affix-dispatch-alist) `(?_ . ,#'my-orderless-rx)
+               (prepend orderless-affix-dispatch-alist) `(?- . ,#'orderless-prefixes))))
+#+end_src
+
+Note that =file= no longer needs special treat for recent Emacs and Tramp, see [[https://github.com/minad/vertico?tab=readme-ov-file#tramp-hostname-and-username-completion][here]].
+
+Finally, define how the completion system actually works. Minad states in the above notes that
+#+begin_quote
+Note that ~completion-category-overrides~ is not really an override, but rather prepended to the default ~completion-styles~.
+#+end_quote
+
+#+begin_src emacs-lisp
+  (setup minibuffer
+    (:option completion-category-defaults nil)
+    (:option completion-styles '(orderless basic)
+             completion-category-overrides '((file (styles partial-completion)))))
+#+end_src
+
+We can also defines our own completion style as used in ~completion-styles~ etc, with the help of orderless.
+#+begin_src emacs-lisp
+  (setup orderless
     (with-eval-after-load 'orderless
       (orderless-define-completion-style orderless-only-initialism
-        (orderless-matching-styles '(orderless-initialism))))
-    (:option orderless-component-separator 'orderless-escapable-split-on-space
-             completion-styles '(orderless basic)
-             completion-category-overrides '((file (styles basic partial-completion))
-                                             (embark-target (styles orderless-only-initialism)))
-             orderless-matching-styles '(my-orderless-regexp)
-             orderless-style-dispatchers '(my-my-orderless-regexp-prefix
-                                           my-orderless-literal-prefix
-                                           my-orderless-without-literal-prefix
-                                           my-orderless-prefixes-prefix
-                                           my-orderless-initialism-prefix
-                                           my-orderless-flex-prefix)))
+        (orderless-matching-styles '(orderless-initialism)))))
+#+end_src
+
+My orderless seperator is toggle-able. It defaults to ~orderless-escapable-split-on-space~, but in cases it is possible to switch to use escaped space only. For example, it becomes handy when using ~my-orderless-rx~.
+#+begin_src emacs-lisp
+  (setup orderless
+    (defvar my-orderless-seperator-use-escaped-space nil
+      "Use escaped space in orderless component separation.")
+
+    (defun my-orderless-seperator-toggle ()
+      "Toggle the value of `my-orderless-seperator-use-escaped-space' locally"
+      (interactive)
+      (setq-local my-orderless-seperator-use-escaped-space
+                  (not my-orderless-seperator-use-escaped-space)))
+
+    (defun my-orderless-component-separator (string)
+      "Default to `orderless-escapable-split-on-space',
+  but switchable to based on literal spaces."
+      (if my-orderless-seperator-use-escaped-space
+          (split-string string  "\\\\ " t)
+        (orderless-escapable-split-on-space string)))
+
+    (:option orderless-component-separator #'my-orderless-component-separator))
 #+end_src
 
 *** Vertico
@@ -1848,7 +1900,8 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
       (:rebind #'evil-goto-first-line #'vertico-first
                #'evil-goto-line #'vertico-last
                #'evil-scroll-page-down #'vertico-scroll-up
-               #'evil-scroll-page-up #'vertico-scroll-down))
+               #'evil-scroll-page-up #'vertico-scroll-down)
+      (:bind "C-'" #'my-orderless-seperator-toggle))
     (:enable))
 #+end_src
 
@@ -1989,6 +2042,18 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
                       #'evil-ex-search-backward (my-evil-ex-search- #'my-consult-ripgrep-or-line-with-no-sep 'backward))))
 #+end_src
 
+For ~consult-grep~ families and ~consult-find~ families, it is possible to convert orderless patterns into their PCRE pattern inputs, as suggested by the [[https://github.com/minad/consult/wiki#use-orderless-as-pattern-compiler-for-consult-grepripgrepfind][Wiki]].
+#+begin_src emacs-lisp
+  (setup consult
+    (defun consult--orderless-regexp-compiler (input type &rest _config)
+      (setq input (orderless-pattern-compiler input))
+      (cons
+       (mapcar (lambda (r) (consult--convert-regexp r type)) input)
+       (lambda (str) (orderless--highlight input t str))))
+
+    (:option consult--regexp-compiler #'consult--orderless-regexp-compiler))
+#+end_src
+
 *** Embark
 [[https://github.com/oantolin/embark][embark]] is probably the most world-changing package in Emacs recently. It basically provides a just-in-time context-aware action list (quite like no-repeating hydra or which-key) in minibuffer on the =complete-read= candidate or on anything in the editing file.
 
@@ -2073,6 +2138,8 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
                                     (concat align (embark--truncate-target target))))
                       :lookup #'consult--lookup-cdr)))
         target))
+
+    (:option (prepend completion-category-overrides) '(embark-target (styles orderless-only-initialism)))
 
     (defun my-embark--rotate-modify-k (args)
       (pcase-let ((`(,targets ,k) args))
