@@ -1501,7 +1501,8 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
 
 #+begin_src emacs-lisp
   (setup (:require which-key)
-    (:option which-key-show-transient-maps t)
+    (:option which-key-show-transient-maps t
+             which-key-use-C-h-commands nil)
     (which-key-enable-god-mode-support)
     (:enable))
 #+end_src
