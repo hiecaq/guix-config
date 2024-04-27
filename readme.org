@@ -2187,7 +2187,13 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
 
   (add-hook 'embark-target-finders #'embark-target-this-buffer 98)
 
-  (add-to-list 'embark-keymap-alist '(this-buffer . embark-buffer-map))
+  (defvar-keymap this-buffer-map
+    :doc "Commands to act on current file."
+    :parent embark-buffer-map
+    "g" #'revert-buffer
+    "u" #'vundo)
+
+  (add-to-list 'embark-keymap-alist '(this-buffer . this-buffer-map))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2198,21 +2204,9 @@ TODO: I'm thinking about binding =c-u embark-act= directly,
   (add-hook 'embark-target-finders #'embark-target-this-file 97)
 
   (defvar-keymap this-file-map
-    :doc "Commands to act on current file or buffer."
-    "l" #'load-file
-    "b" #'byte-compile-file
-    "S" #'sudo-find-file
-    "r" #'rename-file-and-buffer
-    "d" #'diff-buffer-with-file
-    "=" #'ediff-buffers
-    "C-=" #'ediff-files
-    "!" #'shell-command
-    "&" #'async-shell-command
-    "x" #'embark-open-externally
-    "c" #'copy-file
-    "|" #'embark-shell-command-on-buffer
-    "g" #'revert-buffer
-    "u" #'vundo)
+    :doc "Commands to act on current file."
+    :parent embark-file-map
+    "g" #'revert-buffer)
 
   (add-to-list 'embark-keymap-alist '(this-file . this-file-map))
 #+end_src
