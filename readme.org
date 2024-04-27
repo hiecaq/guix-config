@@ -79,6 +79,7 @@
     - [[#electric-pair-mode][electric-pair-mode]]
     - [[#aggresive-indent][Aggresive Indent]]
     - [[#eshell][Eshell]]
+      - [[#fish-completion][fish-completion]]
     - [[#magit][Magit]]
     - [[#project][Project]]
     - [[#emacsql][Emacsql]]
@@ -2439,6 +2440,24 @@ I plan on switching to =eshell= as my main shell. Here are some references:
                (window-parameters . ((no-delete-other-windows . t)))
                (window-width . 80))))
 #+end_src
+
+**** fish-completion
+[[https://gitlab.com/Ambrevar/emacs-fish-completion][fish-completion]] is a cool package that empowers Eshell with auto-completion feature from the fish shell. This package even has the ability to fallback on auto-completion provided by bash shell, although I'm not using that right now.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-fish-completion
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-fish-completion")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup fish-completion
+    (:needs "fish")
+    (:hook-into eshell-mode))
+#+end_src
+
 *** Magit
 [[https://github.com/magit/magit][magit]] is an Emacs interface to git, which provides not only commands to call but also a full GUI-like wrapper around git.
 #+begin_src scheme
