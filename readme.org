@@ -932,7 +932,7 @@ When Emacs writes buffers to files, by the high-level sense it replace the exist
     (:option backup-by-copying t))
 #+end_src
 
-Always use =y-or-p= over =yes-or-no=:
+Always use =y-or-p= over =yes-or-no=, and use ~read-key~ instead of ~read-from-minibuffer~. The latter is helpful when using Embark.
 #+begin_src emacs-lisp
   (setup emacs
     (:option use-short-answers t
@@ -2028,16 +2028,16 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
     (:with-map my-global-consult-map
       (:bind
        ;; "g" (my-with-universal-argument #'consult-ripgrep)
-       "f" (my-ignore-arg #'consult-fd)
-       "b" (my-ignore-arg #'consult-buffer)
-       "l" (my-ignore-arg #'consult-flymake)
-       "F" (my-ignore-arg #'consult-locate)
-       "i" (my-ignore-arg #'consult-imenu)
-       "o" (my-ignore-arg #'consult-outline)
-       "m" (my-ignore-arg #'consult-minor-mode-menu)
-       "x" (my-ignore-arg #'consult-mode-command)
-       "k" (my-ignore-arg #'consult-man)
-       "l" (my-ignore-arg #'my-consult-ripgrep-or-line)))
+       "f" #'consult-fd
+       "b" #'consult-buffer
+       "l" #'consult-flymake
+       "F" #'consult-locate
+       "i" #'consult-imenu
+       "o" #'consult-outline
+       "m" #'consult-minor-mode-menu
+       "x" #'consult-mode-command
+       "k" #'consult-man
+       "l" #'my-consult-ripgrep-or-line))
 
     (defmacro my-evil-ex-search- (fn direction)
       (let* ((fn-value (eval fn))
@@ -2169,13 +2169,18 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
 TODO: I'm thinking about binding =c-u embark-act= directly,
 
 #+begin_src emacs-lisp
+  (cl-defun my-embark--ignore-target (&key action target &allow-other-keys)
+    "If the target is empty (introduced by global), do thing."
+    (when (string-empty-p target)
+      (embark--ignore-target)))
+
   (defun embark-target-global ()
     (cons 'global ""))
   (add-hook 'embark-target-finders #'embark-target-global 100)
   (add-to-list 'embark-keymap-alist '(global . my-global-consult-map))
   (map-keymap
    (lambda (_key cmd)
-     (cl-pushnew 'embark--allow-edit
+     (cl-pushnew 'my-embark--ignore-target
                  (alist-get cmd embark-target-injection-hooks)))
    my-global-consult-map)
 #+end_src
@@ -2483,8 +2488,6 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
 
   (map-keymap
    (lambda (_key cmd)
-     (cl-pushnew 'embark--allow-edit
-                 (alist-get cmd embark-target-injection-hooks))
      (cl-pushnew 'embark--ignore-target
                  (alist-get cmd embark-target-injection-hooks)))
    project-prefix-map)
@@ -2868,7 +2871,7 @@ Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in
         (org-insert-link nil target desc)))
     (:with-map embark-org-link-map
       (:bind "m" #'my-org-link-modify-type))
-    (:option (prepend embark-target-injection-hooks) '(my-org-link-modify-type embark--allow-edit embark--ignore-target)))
+    (:option (prepend embark-target-injection-hooks) '(my-org-link-modify-type embark--ignore-target)))
 #+end_src
 
 ***** Org Roam
@@ -3018,7 +3021,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
     (:with-map my-global-consult-map
       (:bind "n" #'my-org-roam-node-find))
     (:option (prepend embark-target-injection-hooks)
-             '(my-org-roam-node-find embark--allow-edit embark--ignore-target)))
+             '(my-org-roam-node-find my-embark--ignore-target)))
 
   (setup consult-org-roam
     (:option consult-org-roam-grep-func #'consult-ripgrep)
