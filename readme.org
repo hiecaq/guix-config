@@ -2090,27 +2090,11 @@ Reference:
     (:option prefix-help-command #'embark-prefix-help-command)
     (:option embark-cycle-key "C-z")
 
-    ;; adapted from https://karthinks.com/software/fifteen-ways-to-use-embark/
-    (defmacro my-embark-ace-action (fn)
-      `(defun ,(intern (concat "my-embark-ace-" (symbol-name fn))) ()
-         (interactive)
-         (with-demoted-errors "%s"
-           (require 'ace-window)
-           (let ((aw-dispatch-always t))
-             (aw-switch-to-window (aw-select nil))
-             (call-interactively (symbol-function ',fn))))))
-    (my-embark-ace-action find-file)
-    (my-embark-ace-action switch-to-buffer)
-    (my-embark-ace-action bookmark-jump)
-
     (:with-map minibuffer-local-map (:bind "C-z" #'embark-act))
     (:global (:bind "C-h B" #'embark-bindings) ;; alternative for `describe-bindings'
              (:with-state (normal visual)
                (:bind "g a" #'embark-act
-                      "g A" #'embark-dwim)))
-    (:with-map embark-file-map (:bind "o" #'my-embark-ace-find-file))
-    (:with-map embark-buffer-map (:bind "o" #'my-embark-ace-switch-to-buffer))
-    (:with-map embark-bookmark-map (:bind "o" #'my-embark-ace-bookmark-jump))
+                      "g A" #'my-embark-act-other-window)))
     ;; display embark action buffer at frame bottom
     (:option (prepend display-buffer-alist)
              `(,(rx "*Embark Actions*")
@@ -2230,6 +2214,44 @@ With ~embark-live~, a buffer is live-updating to show the candidates of the curr
             (vertico-multiform-unobtrusive)))))
     (:with-mode embark-collect-mode
       (:hook +embark-live-vertico)))
+#+end_src
+
+I found that very often I want the buffer opened by embark to be somewhere I assign. Adapted from [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Karthik Chikmagalur's hack]], I now have a way of picking the window (or splitting on-the-fly) by calling ~my-embark-act-other-window~.
+#+begin_src emacs-lisp
+  (setup embark
+    (defvar my-embark--action-ace-window-p nil
+      "Whether call `ace-window' before the action.")
+
+    (defvar my-embark--action-ace-window-blacklist (list
+                                                    #'describe-symbol
+                                                    #'apropos)
+      "Never call `ace-window' for these actions. These are the actions that pop windows
+  themselves, which should be fixed in other way later.")
+
+    (cl-defun my-embark--ace-window (&rest rest &key run action quit &allow-other-keys)
+      "call `ace-window' before the action."
+      (when (and my-embark--action-ace-window-p
+                 quit
+                 (not (embark--action-repeatable-p action))
+                 (not (memq action my-embark--action-ace-window-blacklist)))
+        (setq my-embark--action-ace-window-p nil)
+        (with-demoted-errors "%s"
+          (require 'ace-window)
+          (let ((aw-dispatch-always t))
+            (aw-switch-to-window (aw-select nil)))))
+      (apply run :action action :quit quit rest))
+
+    (defun my-embark-act-other-window (&optional arg)
+      "Perform the following action in ace window."
+      (interactive "P")
+      (let ((my-embark--action-ace-window-p t))
+        (embark-act arg)))
+
+    (cl-pushnew 'my-embark--ace-window
+                (alist-get :always embark-around-action-hooks))
+
+    (:with-map embark-general-map
+      (:bind "O" #'my-embark-act-other-window)))
 #+end_src
 
 *** Tempel
