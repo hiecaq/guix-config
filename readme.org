@@ -1873,7 +1873,8 @@ My orderless seperator is toggle-able. It defaults to ~orderless-escapable-split
       "Toggle the value of `my-orderless-seperator-use-escaped-space' locally"
       (interactive)
       (setq-local my-orderless-seperator-use-escaped-space
-                  (not my-orderless-seperator-use-escaped-space)))
+                  (not my-orderless-seperator-use-escaped-space))
+      (message "use-escaped-space: [%s]" my-orderless-seperator-use-escaped-space))
 
     (defun my-orderless-component-separator (string)
       "Default to `orderless-escapable-split-on-space',
@@ -2216,13 +2217,16 @@ With ~embark-live~, a buffer is live-updating to show the candidates of the curr
       (:hook +embark-live-vertico)))
 #+end_src
 
-I found that very often I want the buffer opened by embark to be somewhere I assign. Adapted from [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Karthik Chikmagalur's hack]], I now have a way of picking the window (or splitting on-the-fly) by calling ~my-embark-act-other-window~.
+I found that very often I want the buffer opened by embark to be somewhere I assign. Adapted from [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Karthik Chikmagalur's hack]], I now have a way of picking the window (or splitting on-the-fly) by calling ~my-embark-act-other-window~. For minibuffer things are a little bit complicated, and currently I'm using a toggle outside of Embark directly.
 #+begin_src emacs-lisp
   (setup embark
     (defvar my-embark--action-ace-window-p nil
       "Whether call `ace-window' before the action.")
 
     (defvar my-embark--action-ace-window-blacklist (list
+                                                    #'embark-done
+                                                    #'embark-cycle
+                                                    #'embark-toggle-quit
                                                     #'describe-symbol
                                                     #'apropos)
       "Never call `ace-window' for these actions. These are the actions that pop windows
@@ -2241,18 +2245,25 @@ I found that very often I want the buffer opened by embark to be somewhere I ass
             (aw-switch-to-window (aw-select nil)))))
       (apply run :action action :quit quit rest))
 
+    (cl-pushnew 'my-embark--ace-window
+                (alist-get :always embark-around-action-hooks))
+
     (defun my-embark-act-other-window (&optional arg)
       "Perform the following action in ace window."
       (interactive "P")
       (let ((my-embark--action-ace-window-p t))
         (embark-act arg)))
 
-    (cl-pushnew 'my-embark--ace-window
-                (alist-get :always embark-around-action-hooks))
+    (defun my-toggle-embark-ace-window ()
+      (interactive)
+      (when (minibufferp)
+        (setq my-embark--action-ace-window-p (not my-embark--action-ace-window-p))
+        (message "ace-window-p: [%s]" my-embark--action-ace-window-p)))
 
-    (:with-map embark-general-map
-      (:bind "O" #'my-embark-act-other-window)))
+    (:with-map vertico-map
+      (:bind "C-o" #'my-toggle-embark-ace-window)))
 #+end_src
+Note: Somehow only post-hooks can recognize ~(minibufferp)~.
 
 *** Tempel
 [[https://github.com/minad/tempel][tempel]] is a "tiny template package for Emacs", using the built-in template package Tempo's syntax. I use it instead of famous [[https://github.com/joaotavora/yasnippet][YASnippet]] because
