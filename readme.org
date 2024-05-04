@@ -3047,6 +3047,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
              org-roam-db-location (exdg-state "org-roam.db")
              org-roam-db-update-on-save nil
              org-roam-protocol-store-links nil
+             org-roam-link-auto-replace nil ;; no longer needed; cause hang
              org-roam-directory (expand-file-name "notes" (xdg-user-dir "DOCUMENTS"))
              org-roam-node-display-template (concat "${hierarchy:*} " (propertize "${tags:10}" 'face 'org-tag))
              org-roam-capture-templates '(("d" "default" plain "%?"
@@ -3189,6 +3190,8 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
       (org-roam-ql-defexpansion 'ft "Compare to `title' of a file node" #'my-org-roam-ql--expansion-ft)
       (org-roam-ql-defexpansion 'related "Related" #'my-org-roam-ql--expand-related)))
 #+end_src
+
+Side notes: org-roam has some issue with ~org-element--cache-sync~ that cause org-mode to hang on saving occasionally. I'm still trying to figure out why.
 
 ***** Bibliography
 #+begin_src emacs-lisp
