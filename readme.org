@@ -1218,7 +1218,7 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
 [[https://git.sr.ht/~tsdh/highlight-parentheses.el][highlight-parentheses]], well, highlights parentheses surrounding [[info:emacs#Point][point]].
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-highlight-parentheses
-    (let ((version "2.1.1")
+    (let ((version "2.2.2")
           (revision "0")
           (url "https://git.sr.ht/~tsdh/highlight-parentheses.el"))
       (package
@@ -1233,7 +1233,7 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
              (commit version)))
            (file-name (git-file-name name version))
            (sha256
-            (base32 "0ixjai9w9x4sm1lx9yljl58r7ydbbjlkb0a2pbv316l8qph8w44r"))))
+            (base32 "0wvhr5gzaxhn9lk36mrw9h4qpdax5kpbhqj44745nvd75g9awpld"))))
         (build-system emacs-build-system)
         (home-page url)
         (synopsis "Highlights parentheses surrounding point in Emacs")
@@ -1252,7 +1252,7 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
      "emacs-highlight-parentheses")))
 #+end_src
 
-The configs here is basically modified a little bit from [[https://protesilaos.com/emacs/modus-themes#h:24bab397-dcb2-421d-aa6e-ec5bd622b913][Note on highlight-parentheses.el]] in Modus Themes documentation.
+The configs here is basically from [[https://protesilaos.com/emacs/modus-themes#h:24bab397-dcb2-421d-aa6e-ec5bd622b913][Note on highlight-parentheses.el]] in Modus Themes documentation, modified a little bit.
 #+begin_src emacs-lisp
   (setup highlight-parentheses
     (defvar my-highlight-parentheses-use-background t
@@ -1319,8 +1319,8 @@ References:
 I need some latest contributions to the =evil-collection= repository:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-collection-next
-    (let ((commit "8c84f9bc89fe56e71b56519f886085ddcbc671cf")
-          (last-release-version "0.0.9")
+    (let ((commit "5886bab852dc9e31959e70384d535473e44504ad")
+          (last-release-version "0.0.10")
           (revision "0"))
       (package
        (inherit upstream:emacs-evil-collection)
@@ -1335,7 +1335,7 @@ I need some latest contributions to the =evil-collection= repository:
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "1m1lqldbp8xs8b5n6kz181w0lbdbgp1lllnfmw65y346xx0ycm7x")))))))
+           "0dz9dkmxm4j2r2nilgxwgvsgbm531rrsiszzx480zrmqybdsziq6")))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2995,8 +2995,8 @@ And a third-party =consult= integration:
 And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]], which has a query syntax and feature set similar to [[https://github.com/alphapapa/org-ql][org-ql]] (It starts as a "spin-off" from org-ql I think, see [[https://github.com/alphapapa/org-ql/issues/303][this]] and [[https://github.com/alphapapa/org-ql/issues/354][this]]). Basically it turns a s-exp query into a series of SQL queries to the org-roam database.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-ql
-    (let ((commit "2bd7c59ce1216b5d76e2a067be2f25807cd4d831")
-          (last-release-version "0.1") ;; from the tags in git repo; .el's version is incorrect
+    (let ((commit "f628fef081394f159f196f4350132aecb3edb8cc")
+          (last-release-version "0.2")
           (revision "1")
           (url "https://github.com/ahmed-shariff/org-roam-ql"))
       (package
@@ -3011,7 +3011,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "05cjwqqsflw42mgz4ca1l73z35jwv3y1nlba4spwbsmp3p2nigls"))))
+           "1ssxvy6y79f035whk9b8jg1vqsy6vymgq9yrzbxv06g5vsggvlh5"))))
        (build-system emacs-build-system)
        (propagated-inputs
         (list upstream:emacs-magit
