@@ -2078,7 +2078,7 @@ Reference:
 
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
+   'home-emacs-embark
    home-profile-service-type
    (list
     (specification->package
@@ -2090,7 +2090,10 @@ Reference:
     ;; Optionally replace the key help with a completing-read interface
     (:option prefix-help-command #'embark-prefix-help-command)
     (:option embark-cycle-key "C-z")
-
+    (:option (remove embark-indicators)
+             'embark-mixed-indicator
+             (prepend embark-indicators)
+             'embark-minimal-indicator)
     (:with-map minibuffer-local-map (:bind "C-z" #'embark-act))
     (:global (:bind "C-h B" #'embark-bindings) ;; alternative for `describe-bindings'
              (:with-state (normal visual)
