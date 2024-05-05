@@ -212,7 +212,11 @@ Set the locales as recommended in [[https://guix.gnu.org/manual/en/html_node/App
 :PROPERTIES:
 :header-args:scheme: :noweb-ref guix-channel
 :END:
+
+*** COMMENT RDE
 [[https://git.sr.ht/~abcdw/rde][rde]] is a "developers and power user friendly GNU/Linux distribution based on GNU Guix package manager", which can be used as a channel directly. In this way, I can use the helper procedures that it defines.
+
+I no longer need functionality belongs to rde, but I keep it here for future reference.
 #+begin_src scheme
   (channel
    (name 'rde)
@@ -284,9 +288,7 @@ As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-u
     #:use-module (gnu home services guix)
     #:use-module (gnu home services shells)
     #:use-module (gnu home-services shellutils)
-    #:use-module (guix gexp)
-    #:use-module (rde gexp)
-    #:use-module (rde home services shells))
+    #:use-module (guix gexp))
 #+end_src
 
 TODO: I should split this out later.
