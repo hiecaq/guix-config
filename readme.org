@@ -2130,7 +2130,7 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
 
     (defun my-consult-embark--target-read (targets)
       (let* ((targets (cl-mapcar #'my-consult-embark--target-candidate targets))
-             (indent (apply #'+ (cl-mapcar (lambda (target) (length (car target))) targets)))
+             (indent (+ 2 (apply #'max (cl-mapcar (lambda (target) (length (car target))) targets))))
              (align (propertize " " 'display `(space :align-to (+ left ,indent))))
              (target (consult--read
                       targets
@@ -2974,29 +2974,6 @@ Again the packaged version in Guix official packages is quite old, so here is th
                     #t))))))))))
 #+end_src
 
-And a third-party =consult= integration:
-#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
-  (define-public emacs-consult-org-roam-next
-    (let ((commit "8e5b60a61eee9d0582afd309bc4e70ca3b1054cb")
-          (last-release-version "0.1")
-          (revision "0"))
-      (package
-        (inherit upstream:emacs-consult-org-roam)
-        (name "emacs-consult-org-roam-next")
-        (version (git-version last-release-version revision commit))
-        (source
-         (origin
-           (method git-fetch)
-           (uri (git-reference
-                 (url "https://github.com/jgru/consult-org-roam")
-                 (commit commit)))
-           (file-name (git-file-name name version))
-           (sha256
-            (base32
-             "0hzc8kd52f2r5nrx5l3pbkj17mz2ms3715gq814k5iw2z9ir6ha3"))))
-        (propagated-inputs (list upstream:emacs-f upstream:emacs-consult emacs-org-roam-next)))))
-#+end_src
-
 And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]], which has a query syntax and feature set similar to [[https://github.com/alphapapa/org-ql][org-ql]] (It starts as a "spin-off" from org-ql I think, see [[https://github.com/alphapapa/org-ql/issues/303][this]] and [[https://github.com/alphapapa/org-ql/issues/354][this]]). Basically it turns a s-exp query into a series of SQL queries to the org-roam database.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-ql
@@ -3041,8 +3018,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
    (specifications->packages
     (list
      "emacs-org-roam-next"
-     "emacs-org-roam-ql"
-     "emacs-consult-org-roam-next")))
+     "emacs-org-roam-ql")))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3073,17 +3049,14 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
            title))))
     (:with-mode org-roam-db-autosync-mode (:enable))
     (:with-function org-roam-db-sync (:hook-into midnight-hook))
-    (defun my-org-roam-node-find ()
-      (interactive)
-      (org-roam-node-find nil nil #'consult-org-roam--node-file-p))
+    (defun my-org-roam--node-file-p (node)
+      "Return if node is top-level."
+      (= (org-roam-node-level node) 0))
+
     (:with-map my-global-consult-map
       (:bind "n" #'my-org-roam-node-find))
     (:option (prepend embark-target-injection-hooks)
              '(my-org-roam-node-find my-embark--ignore-target)))
-
-  (setup consult-org-roam
-    (:option consult-org-roam-grep-func #'consult-ripgrep)
-    (:enable))
 
   (defun my-org-roam-node-this-file (&optional assert)
     (save-excursion
@@ -3101,7 +3074,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
     (interactive
      (list (if current-prefix-arg
                (my-org-roam-node-this-file 'assert)
-             (org-roam-node-read nil #'consult-org-roam--node-file-p nil 'require-match))))
+             (org-roam-node-read nil #'my-org-roam--node-file-p nil 'require-match))))
     (org-roam-buffer-display-dedicated node))
 
   (defun my-org-roam-buffer-persistent-redisplay ()
@@ -3181,6 +3154,30 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
                (window-width . 80))))
 #+end_src
 
+Add consult source:
+#+begin_src emacs-lisp
+  (setup org-roam
+    (defvar consult--source-org-roam
+      (list :name     "Notes"
+            :category 'org-roam-buffer
+            :narrow   ?o
+            :face     'consult-buffer
+            :history  'buffer-name-history
+            :state    #'consult--buffer-state
+            :annotate
+            (lambda (buffer)
+              (with-current-buffer buffer
+                (org-roam-node-file-title
+                 (my-org-roam-node-this-file 'assert))))
+            :items
+            (lambda ()
+              (consult--buffer-query :mode 'org-mode
+                                     :predicate #'org-roam-buffer-p
+                                     :as #'consult--buffer-pair))))
+    (with-eval-after-load 'consult
+      (:option (append consult-buffer-sources) consult--source-org-roam)))
+#+end_src
+
 #+begin_src emacs-lisp
   (setup org-roam-ql
     (defun my-org-roam-ql--expansion-ft (title &optional exact)
@@ -3197,6 +3194,71 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
 #+end_src
 
 Side notes: org-roam has some issue with ~org-element--cache-sync~ that cause org-mode to hang on saving occasionally. I'm still trying to figure out why.
+
+My ~org-roam-node-find~ implementation that is able to show my link tags in annotation. This with the recent orderless updates allows me to filter notes by tags. ~my-org-roam--node-to-tags-table~'s implementation technically should be easier and faster, but somehow =GROUP_CONCAT= does not work correctly with Emacsql.
+#+begin_src emacs-lisp
+  (setup org-roam
+    (:require org-roam-ql)
+    (defun my-org-roam--name-table ()
+      "Return a table of id to name."
+      (let* ((nodes (org-roam-ql-nodes '(level 0)))
+             (table (make-hash-table
+                     :test #'equal
+                     :size (length nodes))))
+        (cl-loop for node in nodes do
+                 (puthash (org-roam-node-id node) (org-roam-node-title node) table))
+        table))
+
+    (defun my-org-roam--node-to-tags-table (name-table type prefix)
+      "Return an table of id to its forward links (as list of names). PREFIX is
+  put before each name. TYPE is the type of the links."
+      (let* ((s-ds (org-roam-db-query '[:select [source dest] :from links :where (= type $s1)] type))
+             (table (make-hash-table
+                     :test #'equal)))
+        (cl-loop for s-d in s-ds do
+                 (puthash (car s-d)
+                          (cons
+                           (concat prefix (gethash (cadr s-d) name-table))
+                           (gethash (car s-d) table nil))
+                          table))
+        table))
+
+    (defun my-org-roam-node-find ()
+      "Find top-level nodes."
+      (interactive)
+      (let* ((name-table (my-org-roam--name-table))
+             (related-table (my-org-roam--node-to-tags-table name-table "related" "#"))
+             (under-table (my-org-roam--node-to-tags-table name-table "under" "@"))
+             (nodes (let ((nodes-temp nil))
+                      (maphash (lambda (id name) (push
+                                                  (cons (propertize (string-truncate-left name 140) 'node-id id) id)
+                                                  nodes-temp))
+                               name-table)
+                      nodes-temp))
+             (indent (apply #'max (cl-mapcar (lambda (node) (length (car node))) nodes)))
+             (align (propertize " " 'display `(space :align-to (+ left ,indent))))
+             (annotate (lambda (node)
+                         (let* ((id (get-pos-property 0 'node-id node))
+                                (related (string-join (gethash id related-table)))
+                                (under (string-join (gethash id under-table))))
+                           (concat align under related))))
+             (found (consult--read
+                     nodes
+                     :prompt "Org-Roam: "
+                     :require-match nil
+                     :category 'org-roam-node
+                     :annotate annotate
+                     :lookup (lambda (selected &rest rest)
+                               (if-let (found (apply #'consult--lookup-cdr selected rest))
+                                   (cons 'found found)
+                                 (cons 'new selected))))))
+        (if (eq 'found (car found))
+            (org-roam-id-open (cdr found) nil)
+          (org-roam-capture-
+           :node (org-roam-node-create :title (cdr found))
+           :templates nil
+           :props '(:finalize find-file))))))
+#+end_src
 
 ***** Bibliography
 #+begin_src emacs-lisp
