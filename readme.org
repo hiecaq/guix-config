@@ -23,6 +23,7 @@
     - [[#eza][eza]]
     - [[#ripgrep][ripgrep]]
     - [[#fd][fd]]
+    - [[#direnv][Direnv]]
   - [[#aliases][Aliases]]
 - [[#fonts][Fonts]]
 - [[#emacs][Emacs]]
@@ -48,6 +49,7 @@
     - [[#recentf][Recentf]]
     - [[#save-history][Save History]]
     - [[#editorconfig][Editorconfig]]
+    - [[#envrc][Envrc]]
     - [[#subword][Subword]]
     - [[#highlight-parentheses][Highlight Parentheses]]
     - [[#transient][Transient]]
@@ -497,6 +499,17 @@ Add [[https://github.com/sharkdp/fd][fd]], which is "a simple, fast and user-fri
    (list
     (specification->package
      "fd")))
+#+end_src
+
+*** Direnv
+[[https://direnv.net/][direnv]] is the environment switcher on the shell level, based on current directories.
+#+begin_src scheme
+  (simple-service
+   'home-direnv
+   home-profile-service-type
+   (list
+    (specification->package
+     "direnv")))
 #+end_src
 
 ** Aliases
@@ -1197,7 +1210,7 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
 [[https://github.com/editorconfig/editorconfig-emacs][editorconfig-emacs]] implements its own =editorconfig= core, so it's logical to assume that it works on any platform.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
+   'home-emacs-editorconfig
    home-profile-service-type
    (list
     (specification->package
@@ -1207,6 +1220,24 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
 #+begin_src emacs-lisp
   (setup editorconfig
     (:enable))
+#+end_src
+
+*** Envrc
+[[https://github.com/purcell/envrc][envrc]] is Emacs' integration with [[https://direnv.net/][direnv]] that works in buffer-local style.
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-envrc
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-envrc")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup envrc
+    (:with-mode envrc-global-mode
+      (:hook-into after-init)))
 #+end_src
 
 *** Subword
