@@ -95,6 +95,7 @@
       - [[#org-appear][Org Appear]]
       - [[#personal-knowledge-management][Personal Knowledge Management]]
       - [[#style-and-faces][Style and Faces]]
+    - [[#detached][Detached]]
     - [[#english][English]]
       - [[#linting][Linting]]
       - [[#capitalizing][Capitalizing]]
@@ -3479,11 +3480,84 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
            org-tags-column 0)
 #+end_src
 
+*** Detached
+[[https://sr.ht/~niklaseklund/detached.el/][detached]] utilizes [[https://github.com/crigler/dtach][dtach]] and provides Emacs-integrated features. It can do many cool things, see [[https://emacsconf.org/2022/talks/detached/][EmacsConf2022 Talk]] for its demonstration.
+#+begin_src scheme
+    (simple-service
+     'home-emacs-detached
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-detached")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup detached
+    (:option detached-session-directory (exdg-cache "detached-sessions/")
+             detached-db-directory (exdg-state "detached-db/"))
+    (detached-init))
+#+end_src
+
+Its consult integration is currently broken on my site, so let's fix it:
+#+begin_src emacs-lisp
+  (setup detached-consult
+    (cl-defun my-detached-consult--source-items (&key (seq #'seq-filter) pred)
+      (mapcar #'car
+              (funcall seq (lambda (s) (funcall pred (cdr s)))
+                       (detached-session-candidates (detached-get-sessions)))))
+
+
+    (:when-loaded
+      (consult-customize
+       detached-consult--source-active-session
+       :items
+       (lambda ()
+         (my-detached-consult--source-items :pred #'detached-session-active-p)))
+
+      (consult-customize
+       detached-consult--source-inactive-session
+       :items
+       (lambda ()
+         (my-detached-consult--source-items :pred #'detached-session-inactive-p)))
+
+      (consult-customize
+       detached-consult--source-failure-session
+       :items
+       (lambda ()
+         (my-detached-consult--source-items :pred #'detached-session-failed-p)))
+
+      (consult-customize
+       detached-consult--source-success-session
+       :items
+       (lambda ()
+         (my-detached-consult--source-items :seq #'seq-remove :pred #'detached-session-failed-p)))
+
+      (consult-customize
+       detached-consult--source-local-session
+       :items
+       (lambda ()
+         (my-detached-consult--source-items :pred #'detached-session-localhost-p)))
+
+      (consult-customize
+       detached-consult--source-remote-session
+       :items
+       (lambda ()
+         (my-detached-consult--source-items :pred #'detached-session-remotehost-p)))
+
+      (consult-customize
+       detached-consult--source-current-session
+       :items
+       (lambda ()
+         (let ((host-name (car (detached--host))))
+           (my-detached-consult--source-items :pred (lambda (x)
+                                                      (string= (detached-session-host-name x) host-name))))))))
+#+end_src
+
 *** English
 **** Linting
 #+begin_src scheme
     (simple-service
-     'home-emacs-titlecase
+     'home-emacs-flymake-vale
      home-profile-service-type
      (list
       (specification->package
