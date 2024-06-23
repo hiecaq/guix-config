@@ -2260,7 +2260,7 @@ With ~embark-live~, a buffer is live-updating to show the candidates of the curr
       (:hook +embark-live-vertico)))
 #+end_src
 
-I found that very often I want the buffer opened by embark to be somewhere I assign. Adapted from [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Karthik Chikmagalur's hack]], I now have a way of picking the window (or splitting on-the-fly) by calling ~my-embark-act-other-window~. For minibuffer things are a little bit complicated, and currently I'm using a toggle outside of Embark directly.
+I found that very often I want the buffer opened by embark to be somewhere I assign. Adapted from [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Karthik Chikmagalur's hack]] and [[https://karthinks.com/software/emacs-window-management-almanac/#a-window-prefix-command-for-ace-window][ace-window-prefix]], I now have a way of picking the window (or splitting on-the-fly) by calling ~my-embark-act-other-window~. For minibuffer things are a little bit complicated, and currently I'm using a toggle outside of Embark directly.
 #+begin_src emacs-lisp
   (setup embark
     (defvar my-embark--action-ace-window-p nil
@@ -2275,6 +2275,25 @@ I found that very often I want the buffer opened by embark to be somewhere I ass
       "Never call `ace-window' for these actions. These are the actions that pop windows
   themselves, which should be fixed in other way later.")
 
+    (defun ace-window-prefix ()
+      "Use `ace-window' to display the buffer of the next command.
+      The next buffer is the buffer displayed by the next command invoked
+      immediately after this command (ignoring reading from the minibuffer).
+      Creates a new window before displaying the buffer.
+      When `switch-to-buffer-obey-display-actions' is non-nil,
+      `switch-to-buffer' commands are also supported."
+      ;; steal from https://karthinks.com/software/emacs-window-management-almanac/#a-window-prefix-command-for-ace-window
+      (interactive)
+      (display-buffer-override-next-command
+       (lambda (buffer _)
+         (let (window type (aw-dispatch-always t))
+           (setq
+            window (aw-select (propertize " ACE" 'face 'mode-line-highlight))
+            type 'reuse)
+           (cons window type)))
+       nil "[ace-window]")
+      (message "Use `ace-window' to display next command buffer..."))
+
     (cl-defun my-embark--ace-window (&rest rest &key run action quit &allow-other-keys)
       "call `ace-window' before the action."
       (when (and my-embark--action-ace-window-p
@@ -2282,10 +2301,7 @@ I found that very often I want the buffer opened by embark to be somewhere I ass
                  (not (embark--action-repeatable-p action))
                  (not (memq action my-embark--action-ace-window-blacklist)))
         (setq my-embark--action-ace-window-p nil)
-        (with-demoted-errors "%s"
-          (require 'ace-window)
-          (let ((aw-dispatch-always t))
-            (aw-switch-to-window (aw-select nil)))))
+        (ace-window-prefix))
       (apply run :action action :quit quit rest))
 
     (cl-pushnew 'my-embark--ace-window
@@ -2300,7 +2316,9 @@ I found that very often I want the buffer opened by embark to be somewhere I ass
     (defun my-toggle-embark-ace-window ()
       (interactive)
       (when (minibufferp)
-        (setq my-embark--action-ace-window-p (not my-embark--action-ace-window-p))
+        (setq my-embark--action-ace-window-p (not my-embark--action-ace-window-p)))
+      (if my-embark--action-ace-window-p
+          (ace-window-prefix)
         (message "ace-window-p: [%s]" my-embark--action-ace-window-p)))
 
     (:with-map vertico-map
