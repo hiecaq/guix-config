@@ -3498,6 +3498,7 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 
 #+begin_src emacs-lisp
   (setup detached
+    (:option detached-init-block-list '(dired-rsync))
     (:option detached-session-directory (exdg-cache "detached-sessions/")
              detached-db-directory (exdg-state "detached-db/"))
     (detached-init))
@@ -3924,6 +3925,12 @@ One thing that dired (with tramp) does it badly is copying files over network. F
      (list
       (specification->package
        "emacs-dired-rsync")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup dired
+    (:hook #'dired-hide-details-mode)
+    (:option dired-dwim-target t))
 #+end_src
 
 #+begin_src emacs-lisp
