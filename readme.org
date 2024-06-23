@@ -86,6 +86,7 @@
     - [[#project][Project]]
     - [[#emacsql][Emacsql]]
     - [[#epub][Epub]]
+    - [[#pdf][Pdf]]
     - [[#org-mode][Org Mode]]
       - [[#general-settings][General Settings]]
       - [[#task-management][Task Management]]
@@ -2660,6 +2661,26 @@ Emacs' built-in  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Doc
     (:option nov-save-place-file (exdg-state "nov-save-place.el")
              (prepend auto-mode-alist) `(,(rx ".epub" eos) . nov-mode)))
 #+end_src
+
+*** Pdf
+For PDF files, Emacs' built-in [[info:emacs#Document View][doc-view]] mode is actually quite usable. It pre-renders the PDF files into images and save them in the filesystem.
+
+Anyway, I use [[https://github.com/vedang/pdf-tools][pdf-tools]] which relies on an external program =epdfinfo= that utilizes [[https://poppler.freedesktop.org/][poppler]]. The pages are rendered on-demand and stored in memory only, and more importantly it provides some extra features, such as the support for PDF markup annotations.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-pdf-tools
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-pdf-tools")))
+#+end_src
+
+Its Guix package already handles the =pdfinfo= program, so I set it up without letting it re-attempt the build-on-the-fly process.
+#+begin_src emacs-lisp
+  (setup pdf-tools
+    (pdf-loader-install nil t))
+#+end_src
+
 *** Org Mode
 From its website
 #+begin_quote
