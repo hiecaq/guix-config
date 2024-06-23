@@ -1226,20 +1226,25 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
 *** Envrc
 [[https://github.com/purcell/envrc][envrc]] is Emacs' integration with [[https://direnv.net/][direnv]] that works in buffer-local style.
 
+[[https://github.com/purcell/inheritenv][interitenv]].
 #+begin_src scheme
   (simple-service
    'home-emacs-envrc
    home-profile-service-type
    (list
     (specification->package
-     "emacs-envrc")))
+     "emacs-envrc")
+    (specification->package
+     "emacs-inheritenv")))
 #+end_src
 
 #+begin_src emacs-lisp
   (setup envrc
+    (:also-load inheritenv)
     (:with-mode envrc-global-mode
       (:hook-into after-init)))
 #+end_src
+
 
 *** Subword
 [[help:subword-mode][subword-mode]] is an Emacs built-in that makes =CamelCase= be considered as 2 separate words =Camel= and =Case=. Evil also respects this minor mode. I've found that to turn on this mode is almost always positive for Evil usages, because the =io= =ao= text objects select the whole symbol anyway, pretty much covers the non-subword usage. There is also [[help:superword-mode][superword-mode]] BTW. See [[info:emacs#MixedCase Words][MixedCase Words]] and [[info:emacs#Misc for Programs][Misc for Programs]] in the documentation.
