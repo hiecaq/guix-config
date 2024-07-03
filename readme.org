@@ -1087,6 +1087,16 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
   (setq exdg-config-dir (expand-file-name "config/" user-emacs-directory))
 #+end_src
 
+*** Fonts
+#+begin_src emacs-lisp
+  (set-face-attribute 'default nil :height 140)
+  (set-face-attribute 'variable-pitch nil :weight 'normal :inherit 'default)
+  (when (eq system-type 'gnu/linux)
+    (set-face-attribute 'default nil        :family "Hack")
+    (set-face-attribute 'variable-pitch nil :family "Sans Serif"))
+  (set-face-attribute 'fixed-pitch nil    :family  (internal-get-lisp-face-attribute 'default :family))
+#+end_src
+
 *** Modus Themes
 #+begin_src scheme
   (simple-service
