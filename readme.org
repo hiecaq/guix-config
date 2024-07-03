@@ -3429,6 +3429,7 @@ There are quite a lot bibliographic packages, among which I use [[https://github
 #+begin_src emacs-lisp
   (setup citar
     (:option
+     citar-library-paths `(,(expand-file-name "resources" (xdg-user-dir "DOCUMENTS")))
      org-cite-global-bibliography my-global-bibliography
      org-cite-insert-processor 'citar
      org-cite-follow-processor 'citar
@@ -3476,7 +3477,6 @@ As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-
     (:enable)
     (advice-add #'citar-org-roam--create-capture-note :override #'my-citar-org-roam--create-capture-note))
 #+end_src
-TODO: What's the point of ~citar-library-paths~?
 
 One great feature of =citar-org-roam= is that [[https://github.com/org-roam/org-roam/issues/2207][we can have multiple notes per reference key]]. This makes it possible to split very long literature notes for textbooks into separate files (or just headings), per chapter for example.
 
