@@ -2779,6 +2779,12 @@ Org-mode defaults to "show everything" whenever a buffer is initially opened, wh
   (:option org-startup-folded 'showall)
 #+end_src
 
+Disable org-mode's own window arrangement when editing source block and have it just use ~display-buffer~. With this way, the window control is left to ~display-buffer-alist~.
+#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
+  (:option org-src-window-setup 'plain)
+#+end_src
+
+
 Templates:
 #+begin_src lisp-data
   org-mode
