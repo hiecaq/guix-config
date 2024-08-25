@@ -3966,6 +3966,7 @@ Here is How =mu= is initialized. This needs to be run manually.
                                    (:mailing-list . 10)
                                    (:from-or-to . 22)
                                    (:thread-subject))
+             mu4e-thread-fold-unread t
              message-kill-buffer-on-exit t
              mail-user-agent 'mu4e-user-agent
              read-mail-command 'mu4e
@@ -3977,7 +3978,11 @@ Here is How =mu= is initialized. This needs to be run manually.
              user-full-name "hiecaq"
              send-mail-function #'sendmail-send-it
              sendmail-program (executable-find "msmtp")
-             mail-envelope-from 'header))
+             message-send-mail-function 'message-send-mail-with-sendmail
+             mail-envelope-from 'header)
+    (:with-map mu4e-headers-mode-map
+      (:with-state (normal)
+        (:bind "T" #'mu4e-view-mark-thread))))
 #+end_src
 *** Eat
 [[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
