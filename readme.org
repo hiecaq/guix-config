@@ -291,7 +291,6 @@ As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-u
     #:use-module (guix channels)
     #:use-module (gnu home services guix)
     #:use-module (gnu home services shells)
-    #:use-module (gnu home-services shellutils)
     #:use-module (guix gexp))
 #+end_src
 
@@ -697,6 +696,7 @@ I and my Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: mak
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-module (hiecaq packages emacs-xyz)
     #:use-module (guix utils)
+    #:use-module (guix gexp)
     #:use-module (guix packages)
     #:use-module (guix git-download)
     #:use-module (guix build utils)
@@ -4003,3 +4003,4 @@ This configuration is written while referencing the following guix configuration
 - [[https://github.com/qbladea/linux-os][Luhux 的 Guix 操作系统配置文件]]
 - [[https://git.sr.ht/~abcdw/rde][rde by Andrew Tropin]]. I use it as a channel.
 - [[https://github.com/tumashu/geeguix][Tumashu's Guixsd Configuration]]
+- [[https://codeberg.org/hako/Rosenthal/][Rosenthal by Hako]], a Guix channel
