@@ -3252,7 +3252,7 @@ Add consult source:
     (defvar consult--source-org-roam
       (list :name     "Notes"
             :category 'org-roam-buffer
-            :narrow   ?o
+            :narrow   ?n
             :face     'consult-buffer
             :history  'buffer-name-history
             :state    #'consult--buffer-state
