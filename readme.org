@@ -2119,6 +2119,36 @@ For ~consult-grep~ families and ~consult-find~ families, it is possible to conve
     (:option consult--regexp-compiler #'consult--orderless-regexp-compiler))
 #+end_src
 
+~consult-info~ can be used as a ~Info-search~ drop-in replacement:
+#+begin_src emacs-lisp
+  (setup info
+    (:with-mode Info-mode
+      (:rebind #'Info-search #'consult-info
+               #'Info-search-case-sensitively #'consult-info)))
+
+  (setup consult
+    (defun consult-info-emacs ()
+      "Search through Emacs info pages."
+      (interactive)
+      (consult-info "emacs" "efaq" "elisp" "eintr" "cl"))
+
+    (defun consult-info-org ()
+      "Search through the Org info page."
+      (interactive)
+      (consult-info "org" "orgguide" "org-roam" "org-super-agenda"))
+
+    (defun consult-info-completion ()
+      "Search through completion info pages."
+      (interactive)
+      (consult-info "vertico" "consult" "marginalia" "orderless" "embark"
+                    "corfu" "tempel"))
+
+    (defun consult-info-guix ()
+      "Search through guix info pages."
+      (interactive)
+      (consult-info "guix" "guix-cookbook" "emacs-guix" "guile")))
+#+end_src
+
 *** Embark
 [[https://github.com/oantolin/embark][embark]] is probably the most world-changing package in Emacs recently. It basically provides a just-in-time context-aware action list (quite like no-repeating hydra or which-key) in minibuffer on the =complete-read= candidate or on anything in the editing file.
 
