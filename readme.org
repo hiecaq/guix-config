@@ -2965,6 +2965,11 @@ Enable tracking org heading links using globally unique UIDs. This is a must-hav
 #+end_src
 
 ***** Custom Links
+Org-mode has built-in manpage link support, but it is not on by default:
+#+begin_src emacs-lisp
+  (setup (:require ol-man))
+#+end_src
+
 =lfile= looks up the link by querying =plocate= database, which is a pre-indexed DB for local files.
 Based on [[https://karl-voit.at/2022/02/10/lfile/][blog post]] from [[https://github.com/novoid][Karl Voit]].
 #+begin_src emacs-lisp
