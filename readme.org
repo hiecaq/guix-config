@@ -3650,7 +3650,7 @@ Its consult integration is currently broken on my site, so let's fix it:
        (description "Vale is a natural language linter.
   So with flymake-vale you get on-the-fly natural language linting.")
        (license license:gpl3+)
-       (propagated-inputs (list upstream:go-github-com-errata-ai-vale)))))
+       (propagated-inputs (list upstream:vale)))))
 #+end_src
 
 #+begin_src emacs-lisp
