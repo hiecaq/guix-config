@@ -2967,7 +2967,7 @@ Based on [[https://karl-voit.at/2022/02/10/lfile/][blog post]] from [[https://gi
          )))
     (org-link-set-parameters
      "lfile"
-     :follow (lambda (filename) (my-handle-lfile-link #'consult-file-externally filename))
+     :follow (lambda (filename) (my-handle-lfile-link #'embark-open-externally filename))
      :help-echo "Opens the file located via \"locate\" with your default application"
      ))
 #+end_src
