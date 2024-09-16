@@ -2055,7 +2055,7 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
                  (_ (eq evil-search-module 'evil-search))
                  (hist (car consult--line-history))
                  (orderless-component-separator 'list)
-                 (pattern (car (orderless-pattern-compiler hist))))
+                 (pattern (cadr (orderless-compile hist))))
         (evil-push-search-history pattern (eq evil-ex-search-direction 'forward))
         (setq evil-ex-search-pattern (list pattern t t))
         (when evil-ex-search-persistent-highlight
@@ -2111,7 +2111,7 @@ For ~consult-grep~ families and ~consult-find~ families, it is possible to conve
 #+begin_src emacs-lisp
   (setup consult
     (defun consult--orderless-regexp-compiler (input type &rest _config)
-      (setq input (orderless-pattern-compiler input))
+      (setq input (cdr (orderless-compile input)))
       (cons
        (mapcar (lambda (r) (consult--convert-regexp r type)) input)
        (lambda (str) (orderless--highlight input t str))))
