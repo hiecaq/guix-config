@@ -1361,7 +1361,6 @@ References:
      "emacs-evil"
      "emacs-evil-collection-next"
      "emacs-evil-surround"
-     "emacs-evil-replace-with-register"
      "emacs-evil-snipe"
      "emacs-evil-commentary")))
 #+end_src
@@ -1441,11 +1440,23 @@ I found that its key bindings conflict with =evil-snipe= a lot, so I remap them 
 #+end_src
 
 **** Evil Replace With Register
-[[https://github.com/Dewdrops/evil-ReplaceWithRegister][evil-replace-with-register]] defines a =rplace= operator.
+[[https://github.com/Dewdrops/evil-ReplaceWithRegister][evil-replace-with-register]] defines a =replace= operator. However, we can implement its functionality easily with Evil mode itself, see [[https://emacs-china.org/t/evil-replace-with-register/27638][this post]]. I add some simple code to the solution there to make =""= register work as the way I want.
 #+begin_src emacs-lisp
-  (setup (:require evil-replace-with-register)
+  (evil-define-operator my-evil-replace-with-register (count beg end type register)
+    "Replacing an existing text with the contents of a register"
+    :move-point nil
+    (interactive "<vc><R><x>")
+    (setq count (or count 1))
+    (let ((saved (evil-get-register ?\")))
+      (if (eq type 'block)
+          (evil-visual-paste count register)
+        (delete-region beg end)
+        (evil-paste-before count register))
+      (evil-set-register ?\" saved)))
+
+  (setup evil
     (:global (:with-state (normal visual)
-               (:bind "," #'evil-replace-with-register))))
+               (:bind "," #'my-evil-replace-with-register))))
 #+end_src
 
 **** Evil Snipe
