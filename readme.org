@@ -650,6 +650,8 @@ TODO: I'm still not sure if I should put some config as big as Emacs' in this fi
     #:use-module (gnu services)
     #:use-module (gnu packages)
     #:use-module (gnu home services)
+    #:use-module (gnu home services shells)
+    #:use-module (guix packages)
     #:use-module (guix gexp))
 
   (define-public services
@@ -4000,6 +4002,35 @@ Here is How =mu= is initialized. This needs to be run manually.
       (:with-state (normal)
         (:bind "T" #'mu4e-view-mark-thread))))
 #+end_src
+*** vterm
+#+begin_src scheme
+    (simple-service
+     'home-emacs-vterm
+     home-profile-service-type
+     (list
+      (specification->package
+       "emacs-vterm")))
+#+end_src
+
+#+begin_src scheme
+  (simple-service
+   'fish-vterm-setup
+   home-fish-service-type
+   (home-fish-extension
+    (config
+     (list (mixed-text-file "fish-vterm.fish"
+                            "source "
+                            (specification->package "emacs-vterm")
+                            "/share/emacs/site-lisp/vterm-"
+                            (package-version (specification->package "emacs-vterm"))
+                            "/etc/emacs-vterm.fish")))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup vterm
+    (:unbind "C-SPC"))
+#+end_src
+
 *** Eat
 [[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
 #+begin_src scheme
