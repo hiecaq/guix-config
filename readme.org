@@ -2312,6 +2312,16 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
 #+end_src
 TODO: I'm thinking about binding =c-u embark-act= directly,
 
+After using this set-up for a while, I found it quite annoying that it requires hitting =RET= after filtering to pick targets. This can be fixed with this advice:
+#+begin_src emacs-lisp
+  (define-advice vertico--update (:after (&rest _) choose-filtered-target)
+    "Pick the target when input has filtered candidates to only one."
+    (when (and (eq vertico--total 1)
+               (eq (vertico--metadata-get 'category) 'embark-target)
+               (> (cdr vertico--input) 0))
+      (vertico-exit)))
+#+end_src
+
 #+begin_src emacs-lisp
   (cl-defun my-embark--ignore-target (&key action target &allow-other-keys)
     "If the target is empty (introduced by global), do thing."
