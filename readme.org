@@ -58,6 +58,7 @@
       - [[#evil-replace-with-register][Evil Replace With Register]]
       - [[#evil-snipe][Evil Snipe]]
       - [[#evil-commentary][Evil Commentary]]
+      - [[#window-map][Window map]]
     - [[#god-mode][God mode]]
     - [[#which-key][Which key]]
     - [[#posframe][Posframe]]
@@ -984,6 +985,58 @@ One extra thing: Emacs comes with a customization interface, which supports sett
         (fit-window-to-buffer window))))
 #+end_src
 
+#+begin_src emacs-lisp
+  (defun my-window-shot (&optional window)
+    "Take screenshot of a given Emacs window."
+    (interactive)
+    (pcase-let ((`(,window-left ,window-top ,window-right ,window-bottom)
+                 (window-edges (window-normalize-window window t) nil t t)))
+      (let* ((geo (format "%dx%d+%d+%d"
+                          (- window-right window-left)
+                          (- window-bottom window-top)
+                          window-left
+                          window-top))
+             (file (expand-file-name (format "%f.jpg" (time-to-seconds (time-since 0)))
+                                     (xdg-user-dir "PICTURES"))))
+        (make-process :name "window-shot"
+                      :command `("maim"
+                                 "-m" "10"
+                                 "--geometry" ,geo
+                                 ,file)))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defvar my-window-record--process nil "Running record process")
+  (defun my-window-record (&optional window sec)
+    "Take screen record of a given Emacs window."
+    (interactive)
+    (if (process-live-p my-window-record--process)
+        (process-send-string my-window-record--process "q")
+      (pcase-let ((`(,window-left ,window-top ,window-right ,window-bottom)
+                   (window-edges (window-normalize-window window t) nil t t)))
+        (let* ((size (format "%dx%d"
+                             (- window-right window-left)
+                             (- window-bottom window-top)))
+               (geo (format ":0.0+%d,%d"
+                            window-left
+                            window-top))
+               (file (expand-file-name (format "%f.mp4" (time-to-seconds (time-since 0)))
+                                       (xdg-user-dir "PICTURES")))
+               (proc (make-process :name "window-record"
+                                   :buffer "*window-record*"
+                                   :connection-type 'pty
+                                   :command `("ffmpeg"
+                                              "-video_size" ,size
+                                              "-framerate" "8"
+                                              "-f" "x11grab"
+                                              "-i" ,geo
+                                              ,file))))
+          (setq my-window-record--process proc)
+          (unless (null sec)
+            (run-with-timer sec nil
+                            #'process-send-string proc "q"))))))
+#+end_src
+
 *** Universal Argument
 I am using [[https://www.kaufmann.no/roland/dvorak/][Programmer Dvorak (DVP)]], which swaps digits and special symbols. This makes typing numbers generally inconvenient. The idea behind this change is that we should define ~const~ variables to hold these numbers to reduce the chances we need to actually type numbers. However, Emacs (and Evil) use numbers to repeat commands, a situation that we still need typing digits directly. This is improved by the following tweak.
 
@@ -1513,6 +1566,15 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
   (setup evil-commentary
     (:also-load evil)
     (:enable))
+#+end_src
+
+**** Window map
+Add my helper commands to the ~evil-window-map~
+#+begin_src emacs-lisp
+  (setup evil
+    (:with-map evil-window-map
+      (:bind "M-s"  #'my-window-shot
+             "M-r"  #'my-window-record)))
 #+end_src
 
 *** God mode
