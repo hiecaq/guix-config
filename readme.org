@@ -2709,6 +2709,8 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
     (:with-map my-leader-map (:bind "p" project-prefix-map))
     (:with-map project-prefix-map
       (:bind "m" #'magit-project-status
+             "v" #'my-project-vterm
+             "s" #'my-project-vterm-command
              "g" (my-ignore-arg #'consult-ripgrep))))
 #+end_src
 
@@ -4091,16 +4093,40 @@ Here is How =mu= is initialized. This needs to be run manually.
    (home-fish-extension
     (config
      (list (mixed-text-file "fish-vterm.fish"
-                            "source "
-                            (specification->package "emacs-vterm")
-                            "/share/emacs/site-lisp/vterm-"
-                            (package-version (specification->package "emacs-vterm"))
-                            "/etc/emacs-vterm.fish")))))
+                            "if test \"$INSIDE_EMACS\" = 'vterm';"
+                            "  source $EMACS_VTERM_PATH/etc/emacs-vterm.fish;"
+                            "end")))))
 #+end_src
 
 #+begin_src emacs-lisp
   (setup vterm
-    (:unbind "C-SPC"))
+    (:option vterm-shell "~/.guix-home/profile/bin/fish")
+    (:unbind "C-SPC")
+
+    (defun my-project-vterm ()
+      "Start a project-specific vterm buffer, or switch to the existing one."
+      (interactive)
+      (defvar vterm-buffer-name)
+      (let* ((default-directory (project-root (project-current t)))
+             (vterm-buffer-name (project-prefixed-buffer-name "vterm"))
+             (vterm-buffer (get-buffer vterm-buffer-name)))
+        (if (and vterm-buffer (not current-prefix-arg))
+            (pop-to-buffer vterm-buffer (bound-and-true-p display-comint-buffer-action))
+          (vterm t))))
+
+    (defun my-project-vterm-command (cmd)
+      (interactive
+       (list (read-shell-command (if shell-command-prompt-show-cwd
+                                     (format-message "Shell command in `%s': "
+                                                     (abbreviate-file-name
+                                                      default-directory))
+                                   "Shell command: ")
+                                 nil nil)))
+      (unless (string-empty-p cmd)
+        (with-current-buffer (call-interactively #'my-project-vterm)
+          (vterm-send-string (concat cmd "\n"))
+          (when (evil-normal-state-p)
+            (evil-collection-vterm-insert))))))
 #+end_src
 
 *** Eat
