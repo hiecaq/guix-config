@@ -4057,6 +4057,103 @@ Here is How =mu= is initialized. This needs to be run manually.
       (:with-state (normal)
         (:bind "T" #'mu4e-view-mark-thread))))
 #+end_src
+*** MPV
+[[https://github.com/kljohann/mpv.el][mpv.el]] controls [[https://mpv.io/][mpv]] via its IPC interface, useful for note-taking.
+
+I don't want to use directly Guix upstream's =emacs-mpv=, which depends on its packaged =mpv=, because I currently just use Arch's directly. So let's make a variant.
+#+begin_src scheme
+  (service
+   (service-type
+    (name 'home-emacs-mpv)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list
+               (specification->package
+                "emacs-mpv-minimal"))))))
+    (default-value #f)
+    (description #f)))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-mpv-minimal
+    (package
+     (inherit upstream:emacs-mpv)
+     (name "emacs-mpv-minimal")
+     (inputs (modify-inputs (package-inputs upstream:emacs-mpv)
+                            (delete "mpv")))
+     (arguments
+      (append
+       (substitute-keyword-arguments
+        (package-arguments upstream:emacs-mpv)
+        ((#:phases phases)
+         `(modify-phases ,phases
+                         (delete 'patch-exec-paths))))))))
+#+end_src
+
+Advice ~org-timer-item~ so that when mpv is running it inserts the mpv timestamp, instead of starting a new timer. This is a different approach than ~mpv-insert-playback-position~ (but it is based on its implementation), because I think this way gives better compatibility (e.g ~evil-org-open-below~)
+#+begin_src emacs-lisp
+  (setup org
+    (org-link-set-parameters "mpv"
+                             :follow (lambda (file)
+                                       (if (mpv--url-p file)
+                                           (mpv-play-url file)
+                                         (mpv-play file))))
+    (define-advice org-timer-item (:around (orig-fun &rest r) insert-mpv-timestamp)
+      "Insert mpv timestamp instead if mpv is running."
+      (if-let* (((mpv-live-p))
+                (time (mpv-get-playback-position))
+                (hms (org-timer-secs-to-hms (round time))))
+          (cl-letf (((symbol-function 'org-timer)
+                     (lambda (&optional _restart no-insert)
+                       (funcall
+                        (if no-insert #'identity #'insert)
+                        (concat hms " ")))))
+            (apply orig-fun r))
+        (apply orig-fun r))))
+#+end_src
+
+Add ~mpv-seek-to-position-at-point~ to ~org-open-at-point-functions~ on demand:
+#+begin_src emacs-lisp
+  (setup mpv
+    (:with-hook mpv-on-start-hook
+      (:hook (lambda (&rest r) (add-hook 'org-open-at-point-functions
+                                         #'mpv-seek-to-position-at-point))))
+    (:with-hook mpv-on-exit-hook
+      (:hook (lambda () (remove-hook 'org-open-at-point-functions
+                                     #'mpv-seek-to-position-at-point)))))
+#+end_src
+
+
+Define an embark target and keymap, which can be used when mpv is running.
+#+begin_src emacs-lisp
+  (defun embark-target-mpv ()
+    (when (and (fboundp #'mpv-live-p) (mpv-live-p))
+      (cons 'mpv (mpv-get-property "filename/no-ext"))))
+
+  (add-hook 'embark-target-finders #'embark-target-mpv 10)
+
+  (defvar-keymap embark-mpv-map
+    :doc "Commands to act on current mpv process."
+    :parent embark-general-map
+    "RET" #'mpv-pause
+    "q" #'mpv-quit
+    "k" #'mpv-kill
+    "f" #'mpv-seek-forward
+    "b" #'mpv-seek-backward
+    "-" #'mpv-volume-decrease
+    "+" #'mpv-volume-increase)
+
+  (setup embark
+    (:when-loaded
+      (:option (prepend embark-keymap-alist) '(mpv . embark-mpv-map)
+               (prepend* embark-repeat-actions)
+               '(mpv-seek-forward
+                 mpv-seek-backward
+                 mpv-volume-decrease
+                 mpv-volume-increase))))
+#+end_src
 *** vterm
 #+begin_src scheme
     (simple-service
