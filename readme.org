@@ -4262,3 +4262,4 @@ This configuration is written while referencing the following guix configuration
 - [[https://git.sr.ht/~abcdw/rde][rde by Andrew Tropin]]. I use it as a channel.
 - [[https://github.com/tumashu/geeguix][Tumashu's Guixsd Configuration]]
 - [[https://codeberg.org/hako/Rosenthal/][Rosenthal by Hako]], a Guix channel
+- [[https://github.com/yveszoundi/guix-config/][Yves Zoundi's Guix Configuration]]
