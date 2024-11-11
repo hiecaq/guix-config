@@ -110,9 +110,12 @@
     - [[#plantuml][PlantUML]]
     - [[#email][Email]]
       - [[#mu4e][mu4e]]
+    - [[#mpv][MPV]]
+    - [[#vterm][vterm]]
     - [[#eat][Eat]]
     - [[#dired][Dired]]
       - [[#dired-rsync][dired-rsync]]
+    - [[#guix-1][Guix]]
 - [[#references-and-recommendations][References and Recommendations]]
 
 * Introduction
@@ -4249,6 +4252,16 @@ One thing that dired (with tramp) does it badly is copying files over network. F
 #+begin_src emacs-lisp
   (setup dired-rsync
     (:option dired-rsync-options "-azs --info=progress2"))
+#+end_src
+
+*** Guix
+#+begin_src scheme
+  (simple-service
+   'home-emacs-guix
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-guix")))
 #+end_src
 
 * References and Recommendations
