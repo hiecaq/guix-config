@@ -28,6 +28,7 @@
 - [[#fonts][Fonts]]
 - [[#desktop-environment][Desktop Environment]]
   - [[#display][Display]]
+  - [[#audio-and-sound][Audio and Sound]]
 - [[#emacs][Emacs]]
   - [[#basics][Basics]]
   - [[#early-initialization][Early Initialization]]
@@ -734,6 +735,16 @@ So, simply
                    ((#:cabal-revision cr) #f)))))
 
   (define-public xmobar upstream:xmobar)
+#+end_src
+
+** Audio and Sound
+I use a user [[https://gitlab.freedesktop.org/pipewire/pipewire][pipewire]] session.
+#+begin_src scheme :noweb-ref de-use-module
+  #:use-module (gnu home services sound)
+#+end_src
+
+#+begin_src scheme :noweb-ref de-service
+  (service home-pipewire-service-type)
 #+end_src
 
 * Emacs
