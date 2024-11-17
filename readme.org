@@ -648,20 +648,38 @@ this module simply provides a single service that install the fonts needed.
 :END:
 My "desktop environment" is plain window management with friends.
 
+I currently use Guix's default display manager, i.e. =gdm=, and when there is no =*.desktop= of WMs available in its search path, it can log in with the user provided =~/.xsession= executable (which won't be displayed in the selection menu).
+
+So, simply
+#+begin_src sh :tangle "build/xsession" :shebang #!/usr/bin/env bash
+  exec xmonad
+#+end_src
+
 #+begin_src scheme
   (define-module (hiecaq home de)
+    #:use-module (guix gexp)
     #:use-module (gnu services)
     #:use-module (gnu home services)
     #:use-module (hiecaq packages wm))
 
   (define-public services
-    (list (simple-service
-           'home-xmonad
-           home-profile-service-type
-           (list
-            xmonad
-            ghc-xmonad-contrib
-            xmobar))))
+    (list (service
+           (service-type
+            (name 'home-wm)
+            (extensions
+             (list
+              (service-extension
+               home-profile-service-type
+               (const (list
+                       xmonad
+                       ghc-xmonad-contrib
+                       xmobar)))
+              (service-extension
+               home-files-service-type
+               ;; recursive to keep x bits, see https://lists.gnu.org/archive/html/help-guix/2023-03/msg00190.html
+               (const `((".xsession" ,(local-file "../../xsession" #:recursive? #t)))))))
+            (default-value #f)
+            (description #f)))))
 #+end_src
 
 #+begin_src scheme :tangle no :noweb-ref home-module
