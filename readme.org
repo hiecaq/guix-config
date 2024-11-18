@@ -1080,6 +1080,12 @@ One extra thing: Emacs comes with a customization interface, which supports sett
     (:option custom-file null-device))
 #+end_src
 
+Allow word-wrap at any CJK character, otherwise it only wraps at spaces when there are also non-CJK characters in the physical lines, producing sparse visual lines.
+#+begin_src emacs-lisp
+  (setup emacs
+    (:option word-wrap-by-category t))
+#+end_src
+
 *** Window Management
 #+begin_src emacs-lisp
   (setup window
