@@ -1215,14 +1215,10 @@ TODO: this should not require help.
 #+end_src
 
 *** Xdg
-I add a ~xdg-log-home~ getter definition. This is technically not part of the standard, but Guix has this environment variable defined, so why not?
 #+begin_src emacs-lisp
-  (setup (:require xdg)
-    (unless (functionp #'xdg-log-home)
-      (defun xdg-log-home ()
-        "Return the base directory for user-specific log data."
-        (xdg--dir-home "XDG_LOG_HOME" "~/.local/log"))))
+  (setup (:require xdg))
 #+end_src
+
 
 *** No Littering
 [[https://github.com/emacscollective/no-littering][no-littering]] helps put emacs directory clean, sorting package-created files and directories into reasonable directories. One thing it misses is the distinguishing between permanent data and temporary data. I used to fork it to provide this distinguishing, but it turns out to be too troublesome to maintain. Now I simply consider this as a "fallback" solution. Later on for the variables from packages I really use I'll overwrite them manually.
@@ -1251,7 +1247,6 @@ I add a ~xdg-log-home~ getter definition. This is technically not part of the st
   (def-exdg-home-dir cache)
   (def-exdg-home-dir data)
   (def-exdg-home-dir state)
-  (def-exdg-home-dir log)
 
   (setq exdg-config-dir (expand-file-name "config/" user-emacs-directory))
 #+end_src
