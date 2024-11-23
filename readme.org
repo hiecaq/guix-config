@@ -28,6 +28,7 @@
 - [[#fonts][Fonts]]
 - [[#desktop-environment][Desktop Environment]]
   - [[#display][Display]]
+  - [[#d-bus][D-Bus]]
   - [[#audio-and-sound][Audio and Sound]]
 - [[#emacs][Emacs]]
   - [[#basics][Basics]]
@@ -735,6 +736,16 @@ So, simply
                    ((#:cabal-revision cr) #f)))))
 
   (define-public xmobar upstream:xmobar)
+#+end_src
+
+** D-Bus
+Start a session-specific D-Bus for unprivileged apps:
+#+begin_src scheme :noweb-ref de-use-module
+  #:use-module (gnu home services desktop)
+#+end_src
+
+#+begin_src scheme :noweb-ref de-service
+  (service home-dbus-service-type)
 #+end_src
 
 ** Audio and Sound
