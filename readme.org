@@ -120,6 +120,7 @@
     - [[#dired][Dired]]
       - [[#dired-rsync][dired-rsync]]
     - [[#guix-1][Guix]]
+    - [[#desktop-notification-daemon][Desktop Notification Daemon]]
 - [[#references-and-recommendations][References and Recommendations]]
 
 * Introduction
@@ -4379,6 +4380,64 @@ One thing that dired (with tramp) does it badly is copying files over network. F
    (list
     (specification->package
      "emacs-guix")))
+#+end_src
+
+*** Desktop Notification Daemon
+[[https://github.com/sinic/ednc][ednc]] enables Emacs to be the desktop notification daemon listening D-bus, similar to [[https://dunst-project.org/][Dunst]].
+#+begin_src scheme
+  (simple-service
+   'home-emacs-ednc
+   home-profile-service-type
+   (list
+    (specification->package
+     "emacs-ednc")))
+#+end_src
+
+The following configuration let a posframe show up whenever there are new notifications. When the posframe is presented, I can use =C-g= to dismiss the latest notification, and when there is none the posframe will be automatically closed (well, invisible actually).
+#+begin_src emacs-lisp
+  (setup ednc
+    (defvar my-ednc-posframe--buffer "*ednc-posframe*"
+      "Buffer used for ednc notification posframe display.")
+
+    (defun my-ednc-posframe-show ()
+      (interactive)
+      (when (and (buffer-live-p (get-buffer my-ednc-posframe--buffer))
+                 (posframe-workable-p))
+        (posframe-show my-ednc-posframe--buffer
+                       :poshandler #'posframe-poshandler-frame-top-center
+                       :border-width 1)))
+
+    (defun my-ednc-posframe-hide ()
+      (interactive)
+      (when (posframe-workable-p)
+        (posframe-hide my-ednc-posframe--buffer)))
+
+    (defun my-ednc-posframe--update (&rest _)
+      (let ((notifications (ednc-notifications)))
+        (with-current-buffer (get-buffer-create my-ednc-posframe--buffer)
+          (erase-buffer)
+          (insert (mapconcat
+                   (lambda (n) (ednc-format-notification n :expand))
+                   notifications "")))
+        (when (posframe-workable-p)
+          (if notifications
+              (my-ednc-posframe-show)
+            (my-ednc-posframe-hide)))))
+
+    (defun my-ednc--dismiss-first-notification ()
+      (when-let* ((buffer (get-buffer my-ednc-posframe--buffer))
+                  (frame (with-current-buffer buffer
+                           posframe--frame))
+                  ((frame-visible-p frame))
+                  (notification (ednc-notifications)))
+        (ednc-dismiss-notification (car notification))))
+
+    (advice-add #'keyboard-quit :before #'my-ednc--dismiss-first-notification)
+
+    (:when-loaded
+      (:with-hook ednc-notification-presentation-functions
+        (:hook #'my-ednc-posframe--update)))
+    (:enable))
 #+end_src
 
 * References and Recommendations
