@@ -29,6 +29,7 @@
 - [[#desktop-environment][Desktop Environment]]
   - [[#display][Display]]
   - [[#d-bus][D-Bus]]
+  - [[#xdg-desktop-portal][XDG Desktop Portal]]
   - [[#audio-and-sound][Audio and Sound]]
 - [[#emacs][Emacs]]
   - [[#basics][Basics]]
@@ -747,6 +748,43 @@ Start a session-specific D-Bus for unprivileged apps:
 
 #+begin_src scheme :noweb-ref de-service
   (service home-dbus-service-type)
+#+end_src
+
+** XDG Desktop Portal
+[[https://flatpak.github.io/xdg-desktop-portal/][xdg-desktop-portal]] exposes a series of D-bus interface to give sandboxed application access to some host system functionalities, most notably file-picker, in a way similar to Android nowadays.
+
+There are several daemons involved, and all of them will be automatically started the first time related D-bus events happen:
+- =xdg-desktop-portal=, the daemon [[https://flatpak.github.io/xdg-desktop-portal/docs/terminology.html#][provides the API that application interacts with]].
+- =xdg-document-portal=, the daemon that [[https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Documents.html][binds the shared files inside and outside sandboxes]], i.e under =/run/usr/$UID/doc=
+- =xdg-permission-store=, the daemon that [[https://github.com/flatpak/xdg-desktop-portal/wiki/The-Permission-Store/][keeps the permissions which a user has given to apps]].
+- =xdg-desktop-portal-gtk=, the daemon that is the back-end that actually handles the translated and standardized requests.
+BTW, if the portal does not work immediately after reconfigure, try reboot the system.
+
+#+begin_src scheme :noweb-ref de-use-module
+  #:use-module (gnu packages freedesktop)
+#+end_src
+
+#+begin_src scheme :noweb-ref de-service
+  (service
+   (service-type
+    (name 'home-xdg-desktop-portal)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list xdg-desktop-portal
+                    xdg-desktop-portal-gtk)))
+      (service-extension
+       home-xdg-configuration-files-service-type
+       (const `(("xdg-desktop-portal/portals.conf" ,(local-file "../../portals.conf")))))))
+    (default-value #f)
+    (description #f)))
+#+end_src
+
+The following file set using =xdg-desktop-portal-gtk= as the default backend. There can actually be multiple backends running at the same time.
+#+begin_src conf :tangle "build/portals.conf"
+  [preferred]
+  default=gtk
 #+end_src
 
 ** Audio and Sound
