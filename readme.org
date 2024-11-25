@@ -1136,6 +1136,12 @@ Allow word-wrap at any CJK character, otherwise it only wraps at spaces when the
     (:option word-wrap-by-category t))
 #+end_src
 
+Also, Emacs by default auto-renames certain buffers when a buffer with the same name is killed, which brings trouble to scripting. So I'd have this feature turned off.
+#+begin_src emacs-lisp
+  (setup uniquify
+    (:option uniquify-after-kill-buffer-p nil))
+#+end_src
+
 *** Window Management
 #+begin_src emacs-lisp
   (setup window
