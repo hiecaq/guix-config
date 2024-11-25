@@ -4394,6 +4394,13 @@ Define an embark target and keymap, which can be used when mpv is running.
 *** Dired
 =dired= is Emacs' built-in file explorer. It has a classic text-based UI that is so easy to use that many community-maintained packages follow its design principles.
 
+#+begin_src emacs-lisp
+  (setup dired
+    (:hook #'dired-hide-details-mode)
+    (:option dired-dwim-target t
+             dired-listing-switches "-alh"))
+#+end_src
+
 **** dired-rsync
 One thing that dired (with tramp) does it badly is copying files over network. For small files it is fine, for big files not only is it slow but also it blocks the whole Emacs while copying. [[https://github.com/stsquad/dired-rsync][dired-rsync]] to the rescue, which basically wraps [[https://rsync.samba.org/][rsync]] and does things asynchronously.
 #+begin_src scheme
@@ -4403,12 +4410,6 @@ One thing that dired (with tramp) does it badly is copying files over network. F
      (list
       (specification->package
        "emacs-dired-rsync")))
-#+end_src
-
-#+begin_src emacs-lisp
-  (setup dired
-    (:hook #'dired-hide-details-mode)
-    (:option dired-dwim-target t))
 #+end_src
 
 #+begin_src emacs-lisp
