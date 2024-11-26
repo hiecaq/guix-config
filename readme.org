@@ -3090,6 +3090,13 @@ Put newer note at the top:
   (:option org-reverse-note-order t)
 #+end_src
 
+Don't open files in new window. Let the ~display-buffer-alist~ decides instead.
+#+begin_src emacs-lisp
+  (setup ol
+    (:when-loaded
+      (:option (prepend org-link-frame-setup) '(file . find-file))))
+#+end_src
+
 ***** Effort Measurement and Time Cost Estimates
 Org mode provides the feature to estimate effort and track time spent on a task.
 
