@@ -1,6 +1,6 @@
 # -*- org-use-property-inheritance: t; toc-org-max-depth: 4; org-confirm-babel-evaluate: nil; -*-
 #+title: hiecaq's guix configuration
-#+last_modified: [2024-02-12 Mon 12:45]
+#+last_modified: [2024-11-26 Tue 23:35]
 #+startup: indent
 #+property: header-args :comments org :results silent :mkdirp t
 
@@ -853,7 +853,7 @@ I'm currently using =emacs= from Guix official channel.
     (description #f)))
 #+end_src
 
-I and my Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a channel!
+My Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a channel!
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-module (hiecaq packages emacs-xyz)
     #:use-module (guix utils)
@@ -1404,6 +1404,7 @@ TODO: this should not require help.
     (:option midnight-delay (* 4 60 60))
     (:enable))
 #+end_src
+
 *** Auto Save
 #+begin_src emacs-lisp
   (setup files
@@ -1412,6 +1413,7 @@ TODO: this should not require help.
       (:option auto-save-file-name-transforms
                `(("\\`/[^/]*\\([^/]*/\\)*\\([^/]*\\)\\'" ,(concat autosave-dir "\\2") t)))))
 #+end_src
+
 *** Recentf
 [[info:emacs#File Conveniences][recentf]] is an Emacs built-in minor mode that saves recent file list.
 #+begin_src emacs-lisp
@@ -1846,7 +1848,7 @@ As a side note, which-key default configuration requires there to be at least 1 
       (:hook-into text-mode prog-mode))
 
     (defun my-eldoc-box-quit-frame-when-interactive (interactive)
-      """When manually open the doc buffer, close eldoc-box immediately."""
+      "When manually open the doc buffer, close eldoc-box immediately."
       (when interactive
         (eldoc-box-quit-frame)))
     (advice-add #'eldoc-doc-buffer :before #'my-eldoc-box-quit-frame-when-interactive))
@@ -3047,7 +3049,6 @@ Disable org-mode's own window arrangement when editing source block and have it 
   (:option org-src-window-setup 'plain)
 #+end_src
 
-
 Templates:
 #+begin_src lisp-data
   org-mode
@@ -3057,6 +3058,7 @@ Templates:
   (scheme "#+begin_src scheme" n> r> n "#+end_src" :post (org-edit-src-code))
   (id :post (org-roam-node-insert))
 #+end_src
+
 **** Task Management
 I generally follow the GTD way as my task management system.
 
@@ -4180,6 +4182,7 @@ It's weird that it introduces many unnecessary propagated inputs, so I make a va
     (default-value #f)
     (description #f)))
 #+end_src
+
 ***** Back-end Initialization
 Here is How =mu= is initialized. This needs to be run manually.
 #+begin_src sh :noweb yes
