@@ -4225,7 +4225,6 @@ Here is How =mu= is initialized. This needs to be run manually.
 *** MPV
 [[https://github.com/kljohann/mpv.el][mpv.el]] controls [[https://mpv.io/][mpv]] via its IPC interface, useful for note-taking.
 
-I don't want to use directly Guix upstream's =emacs-mpv=, which depends on its packaged =mpv=, because I currently just use Arch's directly. So let's make a variant.
 #+begin_src scheme
   (service
    (service-type
@@ -4236,25 +4235,9 @@ I don't want to use directly Guix upstream's =emacs-mpv=, which depends on its p
        home-profile-service-type
        (const (list
                (specification->package
-                "emacs-mpv-minimal"))))))
+                "emacs-mpv"))))))
     (default-value #f)
     (description #f)))
-#+end_src
-
-#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
-  (define-public emacs-mpv-minimal
-    (package
-     (inherit upstream:emacs-mpv)
-     (name "emacs-mpv-minimal")
-     (inputs (modify-inputs (package-inputs upstream:emacs-mpv)
-                            (delete "mpv")))
-     (arguments
-      (append
-       (substitute-keyword-arguments
-        (package-arguments upstream:emacs-mpv)
-        ((#:phases phases)
-         `(modify-phases ,phases
-                         (delete 'patch-exec-paths))))))))
 #+end_src
 
 Advice ~org-timer-item~ so that when mpv is running it inserts the mpv timestamp, instead of starting a new timer. This is a different approach than ~mpv-insert-playback-position~ (but it is based on its implementation), because I think this way gives better compatibility (e.g ~evil-org-open-below~)
