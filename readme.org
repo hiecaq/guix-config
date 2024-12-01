@@ -1006,10 +1006,11 @@ Use Utf-8 as the default coding system.
 #+begin_src scheme
   (simple-service
    'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-setup")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list (specification->package
+            "emacs-setup")))))
 #+end_src
 
 See Alternative Macro Definer at [[https://www.emacswiki.org/emacs/SetupEl][its Emacs Wiki page]], and [[https://github.com/mfiano/emacs-config/blob/main/lisp/mf-setup.el][Michael Fiano's Emacs Configuration on this]]. Many of the following tweaks are based on them, with some modifications, mainly for the Emacs 29 changes.
@@ -1340,11 +1341,13 @@ Also here is a helper macro for binding commands. I personally do not like using
 Emacs comes with an [[info:elisp#Rx Notation][Rx Notation]] that converts sexp DSL in that format into Emacs Regex strings. However, Emacs' regex format is a little bit different from PCRE, the most prevalent regex standard among tools outside of Emacs. [[https://github.com/joddie/pcre2el][pcre2el]] is the missing bridge between PCRE, Emacs regex string and rx notation.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-pcre2el")))
+   'home-emacs-pcre
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-pcre2el")))))
 #+end_src
 *** Help
 TODO: this should not require help.
@@ -1363,11 +1366,13 @@ TODO: this should not require help.
 [[https://github.com/emacscollective/no-littering][no-littering]] helps put emacs directory clean, sorting package-created files and directories into reasonable directories. One thing it misses is the distinguishing between permanent data and temporary data. I used to fork it to provide this distinguishing, but it turns out to be too troublesome to maintain. Now I simply consider this as a "fallback" solution. Later on for the variables from packages I really use I'll overwrite them manually.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-no-littering")))
+   'home-emacs-no-littering
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-no-littering")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1404,10 +1409,12 @@ TODO: this should not require help.
 #+begin_src scheme
   (simple-service
    'home-emacs-modus-themes
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-modus-themes")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-modus-themes")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1528,10 +1535,12 @@ TODO: this should not require help.
 #+begin_src scheme
   (simple-service
    'home-emacs-editorconfig
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-editorconfig")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-editorconfig")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1546,12 +1555,14 @@ TODO: this should not require help.
 #+begin_src scheme
   (simple-service
    'home-emacs-envrc
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-envrc")
-    (specification->package
-     "emacs-inheritenv")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-envrc")
+      (specification->package
+       "emacs-inheritenv")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1601,10 +1612,12 @@ TODO: this should not require help.
 #+begin_src scheme
   (simple-service
    'home-emacs-highlight-parentheses
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-highlight-parentheses")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-highlight-parentheses")))))
 #+end_src
 
 The configs here is basically from [[https://protesilaos.com/emacs/modus-themes#h:24bab397-dcb2-421d-aa6e-ec5bd622b913][Note on highlight-parentheses.el]] in Modus Themes documentation, modified a little bit.
@@ -1659,15 +1672,17 @@ References:
 #+begin_src scheme
   (simple-service
    'home-emacs-evil
-   home-profile-service-type
-   (specifications->packages
-    (list
-     "emacs-goto-chg"
-     "emacs-evil"
-     "emacs-evil-collection-next"
-     "emacs-evil-surround"
-     "emacs-evil-snipe"
-     "emacs-evil-commentary")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          (list
+           "emacs-goto-chg"
+           "emacs-evil"
+           "emacs-evil-collection-next"
+           "emacs-evil-surround"
+           "emacs-evil-snipe"
+           "emacs-evil-commentary")))))
 #+end_src
 
 I need some latest contributions to the =evil-collection= repository:
@@ -1831,11 +1846,13 @@ Add my helper commands to the ~evil-window-map~
 [[https://github.com/emacsorphanage/god-mode][god-mode]] provides a minor mode in which modifier keys of key bindings are handled sepecially: =C-= is not needed any more, =M-= is implied with a single key, etc.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-god-mode")))
+   'home-emacs-god-mode
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-god-mode")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1868,11 +1885,13 @@ Add my helper commands to the ~evil-window-map~
 [[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode that hints you the keybindings prefixed with what you have typed when you get stuck.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-which-key")))
+   'home-emacs-which-key
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-which-key")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1888,11 +1907,13 @@ As a side note, which-key default configuration requires there to be at least 1 
 [[https://github.com/tumashu/posframe][posframe]] pops a child-frame at point, connected to its root window's buffer.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-posframe")))
+   'home-emacs-posframe
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-posframe")))))
 #+end_src
 
 *** Eldoc
@@ -1910,12 +1931,14 @@ As a side note, which-key default configuration requires there to be at least 1 
 
 [[https://github.com/casouri/eldoc-box][eldoc-box]] shows eldoc in a separate childframe instead of the crowded echo area.
 #+begin_src scheme
-    (simple-service
-     'home-emacs-eldoc-box
-     home-profile-service-type
+  (simple-service
+   'home-emacs-eldoc-box
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-eldoc-box")))
+       "emacs-eldoc-box")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1963,12 +1986,14 @@ Its package definition in the Guix official channel is for the "latest" release 
 #+end_src
 
 #+begin_src scheme
-    (simple-service
-     'home-emacs-ace-window
-     home-profile-service-type
+  (simple-service
+   'home-emacs-ace-window
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-ace-window-next")))
+       "emacs-ace-window-next")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2040,15 +2065,14 @@ The default UI for ~ispell~ is quite hard to use, and there is a package [[https
 Note that the version in official Guix Package Channel is =0.6.1=, which was 3 years ago. It is kind of broken on my site, so I'll use the master HEAD version instead:
 #+begin_src scheme
   (simple-service
-   'home-emacs-flyspell-correct
-   home-profile-service-type
-   (list
-    (specification->package
-     "hunspell")
-    (specification->package
-     "hunspell-dict-en-us")
-    (specification->package
-     "emacs-flyspell-correct-next")))
+   'home-emacs-flyspell
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          '("hunspell"
+            "hunspell-dict-en-us"
+            "emacs-flyspell-correct-next")))))
 #+end_src
 
 I drop the unused dependencies. It is ridiculous to have to propagate =ivy=, =helm= and =popup= to use this package.
@@ -2140,12 +2164,14 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 #+end_src
 
 #+begin_src scheme
-    (simple-service
-     'home-emacs-topsy
-     home-profile-service-type
+  (simple-service
+   'home-emacs-topsy
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-topsy")))
+       "emacs-topsy")))))
 #+end_src
 
 *** Orderless
@@ -2153,10 +2179,12 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 #+begin_src scheme
   (simple-service
    'home-emacs-orderless
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-orderless")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-orderless")))))
 #+end_src
 
 Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Steal from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]]:
@@ -2265,11 +2293,13 @@ My orderless seperator is toggle-able. It defaults to ~orderless-escapable-split
 [[https://github.com/minad/vertico][vertico]] "provides a performant and minimalistic vertical completion UI based on the default completion system."
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-vertico")))
+   'home-emacs-vertico
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-vertico")))))
 #+end_src
 
 By default, =C-b= allows the cursor to moves onto the prompt, which is not good because the prompt is read-only and many commands just don't work once you do that. On the README of vertico the author provides the following hack, utilizing ~cursor-intangible-mode~:
@@ -2299,11 +2329,13 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
 [[https://github.com/minad/marginalia][marginalia]] adds info to the right of completion candidates, thus the name margin-alia.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-marginalia")))
+   'home-emacs-marginalia
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-marginalia")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2315,11 +2347,13 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
 [[https://github.com/minad/consult][consult]] provides practical commands based on the Emacs completion function =completing-read=. What this means is that basically =consult= pop up candidates when calling its commands into =comleting-read=.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-consult")))
+   'home-emacs-consult
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-consult")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2484,10 +2518,12 @@ Reference:
 #+begin_src scheme
   (simple-service
    'home-emacs-embark
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-embark")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-embark")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2688,20 +2724,16 @@ Note: Somehow only post-hooks can recognize ~(minibufferp)~.
 - YASnippet expansion with wrapping (i.e. wrapping region of text into the template) seems weird
 - Tempel uses syntax of built-in Tempo, which is sexp-like expressions.
 - With tempel, multiple templates can be defined within a single file, while YASnippet requires single template per file.
-#+begin_src scheme
-  (simple-service
-   'home-emacs-tempel
-   home-profile-service-type
-   (list
-    (specification->package "emacs-tempel")
-    (specification->package "emacs-eglot-tempel-next")))
-#+end_src
 
 #+begin_src scheme
   (simple-service
    'home-emacs-tempel
    home-emacs-service-type
    (home-emacs-extension
+    (packages
+     (map specification->package
+          '("emacs-tempel"
+            "emacs-eglot-tempel-next")))
     (configs `(("emacs/config/templates.eld" ,(local-file "../../templates.eld"))))))
 #+end_src
 
@@ -2776,11 +2808,13 @@ The version in Guix official channel is as old as 2022, so again I declare a HEA
 [[https://github.com/minad/corfu][corfu]] is a ~completion-at-point~ implementation that is much more concise than =company=.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-corfu")))
+   'home-emacs-corfu
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-corfu")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2806,10 +2840,12 @@ The version in Guix official channel is as old as 2022, so again I declare a HEA
 #+begin_src scheme
   (simple-service
    'home-emacs-vundo
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-vundo")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-vundo")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2856,11 +2892,13 @@ The version in Guix official channel is as old as 2022, so again I declare a HEA
 [[https://github.com/Malabarba/aggressive-indent-mode][aggressize-indent-mode]] basically reindents what you have changed after every change you made.
 #+begin_src scheme
   (simple-service
-   'home-emacs-setup
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-aggressive-indent")))
+   'home-emacs-aggressive-indent
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-aggressive-indent")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2904,10 +2942,12 @@ I plan on switching to =eshell= as my main shell. Here are some references:
 #+begin_src scheme
   (simple-service
    'home-emacs-fish-completion
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-fish-completion")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-fish-completion")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2921,10 +2961,12 @@ I plan on switching to =eshell= as my main shell. Here are some references:
 #+begin_src scheme
   (simple-service
    'home-emacs-magit
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-magit")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-magit")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3001,10 +3043,12 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
 #+begin_src scheme
   (simple-service
    'home-emacs-emacsql
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-emacsql-sqlite-builtin")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-emacsql-sqlite-builtin")))))
 #+end_src
 
 *** Epub
@@ -3034,10 +3078,12 @@ Emacs' built-in  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Doc
 #+begin_src scheme
   (simple-service
    'home-emacs-nov-el
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-nov-el-next")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-nov-el-next")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3053,10 +3099,12 @@ Anyway, I use [[https://github.com/vedang/pdf-tools][pdf-tools]] which relies on
 #+begin_src scheme
   (simple-service
    'home-emacs-pdf-tools
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-pdf-tools")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-pdf-tools")))))
 #+end_src
 
 Its Guix package already handles the =pdfinfo= program, so I set it up without letting it re-attempt the build-on-the-fly process.
@@ -3078,13 +3126,15 @@ Useful References:
 #+begin_src scheme
   (simple-service
    'home-emacs-org
-   home-profile-service-type
-   (specifications->packages
-    (list "emacs-org"
-          "emacs-evil-org"
-          "emacs-toc-org"
-          "emacs-org-appear-next"
-          "emacs-org-download-next")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          '("emacs-org"
+            "emacs-evil-org"
+            "emacs-toc-org"
+            ;; "emacs-org-appear-next"
+            "emacs-org-download-next")))))
 #+end_src
 
 #+begin_src emacs-lisp :noweb yes
@@ -3240,7 +3290,7 @@ References:
     (:hook-into org-mode))
 #+end_src
 
-**** Org Appear
+**** COMMENT Org Appear
 [[https://github.com/awth13/org-appear][org-appear]] is a minor mode that "toggle visibility of hidden Org mode element parts upon entering and leaving an element", and it works with Evil very well.
 
 Its package definition in the Guix Official Channel is for the "latest" release version, which is as old as January 2022. So I makes a variation to use the master branch HEAD at the time of writing.
@@ -3474,11 +3524,12 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
 #+begin_src scheme
   (simple-service
    'home-emacs-org-roam
-   home-profile-service-type
-   (specifications->packages
-    (list
-     "emacs-org-roam-next"
-     "emacs-org-roam-ql")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          '("emacs-org-roam-next"
+            "emacs-org-roam-ql")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3732,10 +3783,12 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
 #+begin_src scheme
   (simple-service
    'home-emacs-ebib
-   home-profile-service-type
-   (specifications->packages
-    (list
-     "emacs-ebib")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-ebib")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3782,11 +3835,12 @@ There are quite a lot bibliographic packages, among which I use [[https://github
 #+begin_src scheme
   (simple-service
    'home-emacs-citar
-   home-profile-service-type
-   (specifications->packages
-    (list
-     "emacs-citar-next"
-     "emacs-citar-org-roam-next")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          '("emacs-citar-next"
+            "emacs-citar-org-roam-next")))))
 #+end_src
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
@@ -3911,12 +3965,14 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 *** Detached
 [[https://sr.ht/~niklaseklund/detached.el/][detached]] utilizes [[https://github.com/crigler/dtach][dtach]] and provides Emacs-integrated features. It can do many cool things, see [[https://emacsconf.org/2022/talks/detached/][EmacsConf2022 Talk]] for its demonstration.
 #+begin_src scheme
-    (simple-service
-     'home-emacs-detached
-     home-profile-service-type
+  (simple-service
+   'home-emacs-detached
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-detached")))
+       "emacs-detached")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3985,12 +4041,14 @@ Its consult integration is currently broken on my site, so let's fix it:
 *** English
 **** Linting
 #+begin_src scheme
-    (simple-service
-     'home-emacs-flymake-vale
-     home-profile-service-type
+  (simple-service
+   'home-emacs-flymake-vale
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-flymake-vale")))
+       "emacs-flymake-vale")))))
 #+end_src
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
@@ -4056,12 +4114,14 @@ Its consult integration is currently broken on my site, so let's fix it:
 #+end_src
 
 #+begin_src scheme
-    (simple-service
-     'home-emacs-titlecase
-     home-profile-service-type
+  (simple-service
+   'home-emacs-titlecase
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-titlecase")))
+       "emacs-titlecase")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -4083,24 +4143,28 @@ Eglot is Emacs' built-in LSP client.
 
 *** Haskell
 #+begin_src scheme
-    (simple-service
-     'home-emacs-haskell
-     home-profile-service-type
+  (simple-service
+   'home-emacs-haskell
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-haskell-mode")))
+       "emacs-haskell-mode")))))
 #+end_src
 
 *** Rust
 #+begin_src scheme
   (simple-service
    'home-emacs-rust
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-eglot")
-    (specification->package
-     "emacs-rustic-minimal")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-eglot")
+      (specification->package
+       "emacs-rustic-minimal")))))
 #+end_src
 
 Its package definition introduces =lsp-mode= and =flycheck=, so I defines a variant to drop them.
@@ -4144,12 +4208,12 @@ Its package definition introduces =lsp-mode= and =flycheck=, so I defines a vari
 #+begin_src scheme
   (simple-service
    'home-emacs-dhall
-   home-profile-service-type
-   (list
-    (specification->package
-     "dhall")
-    (specification->package
-     "emacs-dhall-mode-next")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          '("dhall"
+            "emacs-dhall-mode-next")))))
 #+end_src
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
@@ -4201,22 +4265,26 @@ Its package definition introduces =lsp-mode= and =flycheck=, so I defines a vari
 #+end_src
 
 #+begin_src scheme
-    (simple-service
-     'home-emacs-ron-mode
-     home-profile-service-type
+  (simple-service
+   'home-emacs-ron
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-ron-mode")))
+       "emacs-ron-mode")))))
 #+end_src
 
 *** Dart
 #+begin_src scheme
-    (simple-service
-     'home-emacs-dart
-     home-profile-service-type
+  (simple-service
+   'home-emacs-dart
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-dart-mode-minimal")))
+       "emacs-dart-mode-minimal")))))
 #+end_src
 
 It's weird that it introduces many unnecessary propagated inputs, so I make a variant to drop them.
@@ -4230,12 +4298,14 @@ It's weird that it introduces many unnecessary propagated inputs, so I make a va
 
 *** PlantUML
 #+begin_src scheme
-    (simple-service
-     'home-emacs-plantuml
-     home-profile-service-type
+  (simple-service
+   'home-emacs-plantuml
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-plantuml-mode")))
+       "emacs-plantuml-mode")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -4264,9 +4334,14 @@ It's weird that it introduces many unnecessary propagated inputs, so I make a va
                (specification->package
                 "rss2email")
                (specification->package
-                "msmtp")
-               (specification->package
-                "mu"))))
+                "msmtp"))))
+      (service-extension
+       home-emacs-service-type
+       (const (home-emacs-extension
+               (packages
+                (list
+                 (specification->package
+                  "mu"))))))
       (service-extension
        home-environment-variables-service-type
        (const '(("XAPIAN_CJK_NGRAM" . "1"))))))
@@ -4327,18 +4402,14 @@ Here is How =mu= is initialized. This needs to be run manually.
 [[https://github.com/kljohann/mpv.el][mpv.el]] controls [[https://mpv.io/][mpv]] via its IPC interface, useful for note-taking.
 
 #+begin_src scheme
-  (service
-   (service-type
-    (name 'home-emacs-mpv)
-    (extensions
+  (simple-service
+   'home-emacs-mpv
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
-      (service-extension
-       home-profile-service-type
-       (const (list
-               (specification->package
-                "emacs-mpv"))))))
-    (default-value #f)
-    (description #f)))
+      (specification->package
+       "emacs-mpv")))))
 #+end_src
 
 Advice ~org-timer-item~ so that when mpv is running it inserts the mpv timestamp, instead of starting a new timer. This is a different approach than ~mpv-insert-playback-position~ (but it is based on its implementation), because I think this way gives better compatibility (e.g ~evil-org-open-below~)
@@ -4405,12 +4476,14 @@ Define an embark target and keymap, which can be used when mpv is running.
 #+end_src
 *** vterm
 #+begin_src scheme
-    (simple-service
-     'home-emacs-vterm
-     home-profile-service-type
+  (simple-service
+   'home-emacs-vterm
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-vterm")))
+       "emacs-vterm")))))
 #+end_src
 
 #+begin_src scheme
@@ -4459,12 +4532,14 @@ Define an embark target and keymap, which can be used when mpv is running.
 *** Eat
 [[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
 #+begin_src scheme
-    (simple-service
-     'home-emacs-eat
-     home-profile-service-type
+  (simple-service
+   'home-emacs-eat
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-eat")))
+       "emacs-eat")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -4488,12 +4563,14 @@ Define an embark target and keymap, which can be used when mpv is running.
 **** dired-rsync
 One thing that dired (with tramp) does it badly is copying files over network. For small files it is fine, for big files not only is it slow but also it blocks the whole Emacs while copying. [[https://github.com/stsquad/dired-rsync][dired-rsync]] to the rescue, which basically wraps [[https://rsync.samba.org/][rsync]] and does things asynchronously.
 #+begin_src scheme
-    (simple-service
-     'home-emacs-dired-rsync
-     home-profile-service-type
+  (simple-service
+   'home-emacs-dired-rsync
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
      (list
       (specification->package
-       "emacs-dired-rsync")))
+       "emacs-dired-rsync")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -4505,10 +4582,14 @@ One thing that dired (with tramp) does it badly is copying files over network. F
 #+begin_src scheme
   (simple-service
    'home-emacs-guix
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-guix")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-guix")))))
+#+end_src
+
 #+end_src
 
 *** Desktop Notification Daemon
@@ -4516,10 +4597,12 @@ One thing that dired (with tramp) does it badly is copying files over network. F
 #+begin_src scheme
   (simple-service
    'home-emacs-ednc
-   home-profile-service-type
-   (list
-    (specification->package
-     "emacs-ednc")))
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-ednc")))))
 #+end_src
 
 The following configuration let a posframe show up whenever there are new notifications. When the posframe is presented, I can use =C-g= to dismiss the latest notification, and when there is none the posframe will be automatically closed (well, invisible actually).
