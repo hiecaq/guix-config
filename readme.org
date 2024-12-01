@@ -804,6 +804,88 @@ I use a user [[https://gitlab.freedesktop.org/pipewire/pipewire][pipewire]] sess
 :header-args:scheme: :noweb-ref emacs-service
 :END:
 TODO: I'm still not sure if I should put some config as big as Emacs' in this file.
+
+Implement a =home-emacs-service-type= that
+- The service itself defines the Emacs version to use and the "Emacs compiler" to use, via =home-emacs-configuration=
+- The service's extension add Emacs packages to use, configuration file to link, etc, via =home-emacs-extension=.
+The reason for this set-up is
+- I can easily swap between different Emacs versions, and packages will be automatically transformed to using that version's byte-codes.
+- Configurations are discrete by using extensions, so they fit this literature configuration set-up better.
+#+begin_src scheme :tangle "build/hiecaq/home/services/emacs.scm" :noweb-ref nil
+  (define-module (hiecaq home services emacs)
+    #:use-module (gnu services)
+    #:use-module (gnu services configuration)
+    #:use-module (gnu home services)
+    #:use-module ((gnu packages emacs) #:prefix upstream:)
+    #:use-module (guix packages)
+    #:use-module (srfi srfi-1)
+    #:export (home-emacs-configuration
+              home-emacs-extension
+              home-emacs-service-type))
+
+  (define-configuration/no-serialization home-emacs-configuration
+    (emacs
+     (package upstream:emacs)
+     "Emacs to use.")
+    (emacs-compiler
+     (package upstream:emacs-minimal)
+     "Emacs used for compiling packages.")
+    (packages
+     (list '())
+     "List of Emacs packages to use.")
+    (configs
+     (alist '())
+     "Emacs configuration files."))
+
+  (define (home-emacs-transformed-package config)
+    (package-input-rewriting
+     `((,upstream:emacs-minimal
+        . ,(home-emacs-configuration-emacs-compiler config))
+       (,upstream:emacs
+        . ,(home-emacs-configuration-emacs config)))))
+
+  (define (home-emacs-profile config)
+    `(,(home-emacs-configuration-emacs config)
+      ,@(map (home-emacs-transformed-package config)
+             (home-emacs-configuration-packages config))))
+
+  (define-configuration/no-serialization home-emacs-extension
+    (packages
+     (list '())
+     "Extra list of Emacs packages to use.")
+    (configs
+     (alist '())
+     "Extra Emacs configuration files."))
+
+  (define (home-emacs-extensions original-config extension-configs)
+    (let ((append-fields
+           (lambda (config-getter extension-getter)
+             (append (config-getter original-config)
+                     (append-map extension-getter extension-configs)))))
+      (home-emacs-configuration
+       (inherit original-config)
+       (packages (append-fields home-emacs-configuration-packages
+                                home-emacs-extension-packages))
+       (configs (append-fields home-emacs-configuration-configs
+                               home-emacs-extension-configs)))))
+
+  (define home-emacs-service-type
+    (service-type
+     (name 'home-emacs)
+     (extensions
+      (list (service-extension home-xdg-configuration-files-service-type
+                               home-emacs-configuration-configs)
+            (service-extension home-profile-service-type
+                               home-emacs-profile)
+            (service-extension home-environment-variables-service-type
+                               (const '(("EDITOR" . "emacsclient -a nvim -c")
+                                        ("VISUAL" . "emacsclient -a nvim -c"))))))
+     (compose identity)
+     (extend home-emacs-extensions)
+     (default-value (home-emacs-configuration))
+     (description #f)))
+#+end_src
+
 #+begin_src scheme :tangle "build/hiecaq/home/emacs.scm" :noweb yes :noweb-ref nil
   (define-module (hiecaq home emacs)
     #:use-module (gnu services)
