@@ -1542,18 +1542,7 @@ TODO: this should not require help.
 *** Editorconfig
 [[https://editorconfig.org/][editorconfig]] is a very handy tool that standardize how different editors should behave according to different language, including tab width, trailing space and so on. It is not only helpful for team to maintain a codestyle standard, but also a handful tool for people use several different editors / computers, like I do.
 
-[[https://github.com/editorconfig/editorconfig-emacs][editorconfig-emacs]] implements its own =editorconfig= core, so it's logical to assume that it works on any platform.
-#+begin_src scheme
-  (simple-service
-   'home-emacs-editorconfig
-   home-emacs-service-type
-   (home-emacs-extension
-    (packages
-     (list
-      (specification->package
-       "emacs-editorconfig")))))
-#+end_src
-
+[[https://github.com/editorconfig/editorconfig-emacs][editorconfig-emacs]] implements its own =editorconfig= core, so it's logical to assume that it works on any platform. It is built-in since Emacs 30.
 #+begin_src emacs-lisp
   (setup editorconfig
     (:enable))
@@ -1908,18 +1897,7 @@ Add my helper commands to the ~evil-window-map~
 #+end_src
 
 *** Which key
-[[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode that hints you the keybindings prefixed with what you have typed when you get stuck.
-#+begin_src scheme
-  (simple-service
-   'home-emacs-which-key
-   home-emacs-service-type
-   (home-emacs-extension
-    (packages
-     (list
-      (specification->package
-       "emacs-which-key")))))
-#+end_src
-
+[[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode that hints you the keybindings prefixed with what you have typed when you get stuck. It is built-in since Emacs 30.
 #+begin_src emacs-lisp
   (setup (:require which-key)
     (:option which-key-show-transient-maps t
