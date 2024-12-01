@@ -841,6 +841,8 @@ The reason for this set-up is
     (package-input-rewriting
      `((,upstream:emacs-minimal
         . ,(home-emacs-configuration-emacs-compiler config))
+       (,upstream:emacs-no-x
+        . ,(home-emacs-configuration-emacs config))
        (,upstream:emacs
         . ,(home-emacs-configuration-emacs config)))))
 
@@ -915,7 +917,8 @@ I'm currently using =emacs= from Guix official channel.
 #+begin_src scheme
   (service home-emacs-service-type
            (home-emacs-configuration
-            (emacs upstream:emacs)))
+            (emacs upstream:emacs-next)
+            (emacs-compiler upstream:emacs-next-minimal)))
 #+end_src
 
 My Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a channel!
@@ -1685,10 +1688,22 @@ References:
            "emacs-evil-commentary")))))
 #+end_src
 
+[[https://github.com/noctuid/annalist.el][annalist]] is a dependency of =emacs-evil-collection=, and its test dependency [[https://github.com/abo-abo/lispy][lispy]] somehow fail to build under Emacs 30 because of test failures. I simply disable tests for  =annalist= and deletes all its test dependencies.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-annalist-minimal
+    (package
+      (inherit upstream:emacs-annalist)
+      (name "emacs-annalist-minimal")
+      (native-inputs '())
+      (arguments (substitute-keyword-arguments
+                     (package-arguments upstream:emacs-annalist)
+                   ((#:tests? t) #f)))))
+#+end_src
+
 I need some latest contributions to the =evil-collection= repository:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-collection-next
-    (let ((commit "5886bab852dc9e31959e70384d535473e44504ad")
+    (let ((commit "20c415aaa07c6541753489b166cd58d6771bd1e1")
           (last-release-version "0.0.10")
           (revision "0"))
       (package
@@ -1704,7 +1719,10 @@ I need some latest contributions to the =evil-collection= repository:
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "0dz9dkmxm4j2r2nilgxwgvsgbm531rrsiszzx480zrmqybdsziq6")))))))
+           "17ifxk4lpj1l52b3m2x5sj5ywdnrjyy1hbvfbvg4zwa1kc0l3ds1"))))
+       (propagated-inputs
+        (modify-inputs (package-propagated-inputs upstream:emacs-evil-collection)
+                       (replace "emacs-annalist" emacs-annalist-minimal))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3021,7 +3039,6 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
     (package
       (inherit upstream:emacs-emacsql)
       (name "emacs-emacsql-minimal")
-      (inputs (list upstream:emacs-minimal))
       (propagated-inputs (list))
       (build-system emacs-build-system)
       (arguments
