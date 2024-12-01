@@ -117,6 +117,7 @@
     - [[#email][Email]]
       - [[#mu4e][mu4e]]
     - [[#mpv][MPV]]
+    - [[#pyim][PYIM]]
     - [[#vterm][vterm]]
     - [[#eat][Eat]]
     - [[#dired][Dired]]
@@ -4546,6 +4547,69 @@ Define an embark target and keymap, which can be used when mpv is running.
                  mpv-volume-decrease
                  mpv-volume-increase))))
 #+end_src
+
+*** PYIM
+[[https://github.com/tumashu/pyim][pyim]] is an Emacs input method framework for Chinese, similar to fcitx for Linux, which also provides some Chinese-related parsing utilities.
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-pyim
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          '("emacs-pyim"
+            "emacs-pyim-basedict")))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:require pyim)
+    (:require pyim-basedict)
+    (pyim-basedict-enable)
+    (:option default-input-method "pyim"
+             pyim-dcache-directory (exdg-cache "pyim/")
+             pyim-page-length 5
+             pyim-default-scheme 'quanpin))
+#+end_src
+
+PYIM use 1-based index, which is not very friendly to Dvorak-programmer keymaps. There is no configuration available currently, so  I override  ~pyim-page-menu-create~ with a slightly modified version of it.
+#+begin_src emacs-lisp
+  (setup pyim
+    (define-advice pyim-page-menu-create
+        (:override (candidates position &optional separator hightlight-current)
+                my-0-base)
+      "Overwrite the target to use 0-based index."
+      (let ((i 0) result)
+        (dolist (candidate candidates)
+          (let ((str (substring-no-properties
+                      (if (consp candidate)
+                          (concat (car candidate) (cdr candidate))
+                        candidate))))
+            ;; highlight for `pyim-page-next-word'
+            (push
+             (if (and hightlight-current
+                      (= i position))
+                 (format "%d%s" i
+                         (propertize
+                          (format "[%s]" str)
+                          'face 'pyim-page-selection))
+               (format "%d.%s " i str))
+             result)
+            (setq i (1+ i))))
+        (string-join (nreverse result) (or separator "")))))
+
+#+end_src
+
+Map Dvorak programmer number key rows to the number they corresponding to, so that I don't need to use Shift key when selecting words.
+#+begin_src emacs-lisp
+  (setup pyim
+    (dolist (d (number-sequence 0 9))
+      (:bind (alist-get d my-dvp-digit-row-alist)
+             (lambda ()
+               (interactive)
+               (pyim-select-word-by-number (1+ d))))))
+#+end_src
+
 *** vterm
 #+begin_src scheme
   (simple-service
