@@ -890,9 +890,10 @@ The reason for this set-up is
   (define-module (hiecaq home emacs)
     #:use-module (gnu services)
     #:use-module (gnu packages)
+    #:use-module ((gnu packages emacs) #:prefix upstream:)
     #:use-module (gnu home services)
     #:use-module (gnu home services shells)
-    #:use-module (guix packages)
+    #:use-module (hiecaq home services emacs)
     #:use-module (guix gexp))
 
   (define-public services
@@ -908,31 +909,13 @@ Add this module and its services:
 #+begin_src scheme :noweb-ref home-environment-service
   emacs:services
 #+end_src
+
 ** Basics
 I'm currently using =emacs= from Guix official channel.
 #+begin_src scheme
-  (service
-   (service-type
-    (name 'home-emacs)
-    (extensions
-     (list
-      (service-extension
-       home-profile-service-type
-       (const (list
-               (specification->package
-                "emacs"))))
-      (service-extension
-       home-xdg-configuration-files-service-type
-       (const `(("emacs/init.el" ,(local-file "../../init.el"))
-                ("emacs/early-init.el" ,(local-file "../../early-init.el"))
-                ("emacs/config/templates.eld" ,(local-file "../../templates.eld")))))
-      (service-extension
-       home-environment-variables-service-type
-       (const '(("EDITOR" . "emacsclient -a nvim -c")
-                ("VISUAL" . "emacsclient -a nvim -c"))))))
-
-    (default-value #f)
-    (description #f)))
+  (service home-emacs-service-type
+           (home-emacs-configuration
+            (emacs upstream:emacs)))
 #+end_src
 
 My Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a channel!
@@ -957,9 +940,19 @@ NOTE: the hash for git-based packages is got by following [[https://guix.gnu.org
 :PROPERTIES:
 :header-args:emacs-lisp: :lexical t :tangle "build/early-init.el"
 :END:
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-early-init
+   home-emacs-service-type
+   (home-emacs-extension
+    (configs `(("emacs/early-init.el" ,(local-file "../../early-init.el"))))))
+#+end_src
+
 #+begin_src emacs-lisp :comments no
   ;;; early-init.el --- Configurations before package systems and UI systems -*- lexical-binding: t; buffer-read-only: t; eval: (auto-revert-mode 1) -*-
 #+end_src
+
 *** Packages
 I don't use the built-in =package.el= to fetch packages, so I'll turn it off:
 #+begin_src emacs-lisp
@@ -990,6 +983,14 @@ grabbed from [[https://emacsnotes.wordpress.com/2022/09/11/three-bonus-keys-c-i-
 #+end_src
 
 ** Main Configurations
+#+begin_src scheme
+  (simple-service
+   'home-emacs-init
+   home-emacs-service-type
+   (home-emacs-extension
+    (configs `(("emacs/init.el" ,(local-file "../../init.el"))))))
+#+end_src
+
 Init file header:
 #+begin_src emacs-lisp :comments no
   ;;; init.el --- Main Configurations -*- lexical-binding: t; buffer-read-only: t; eval: (auto-revert-mode 1) -*-
@@ -2694,6 +2695,14 @@ Note: Somehow only post-hooks can recognize ~(minibufferp)~.
    (list
     (specification->package "emacs-tempel")
     (specification->package "emacs-eglot-tempel-next")))
+#+end_src
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-tempel
+   home-emacs-service-type
+   (home-emacs-extension
+    (configs `(("emacs/config/templates.eld" ,(local-file "../../templates.eld"))))))
 #+end_src
 
 The functions here come from tempel's README.
