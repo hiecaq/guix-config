@@ -1208,7 +1208,7 @@ Always use =y-or-p= over =yes-or-no=, and use ~read-key~ instead of ~read-from-m
 I don't want Emacs to auto-recenter when scrolling off-the-screen:
 #+begin_src emacs-lisp
   (setup emacs
-    (:option scroll-conservatively 101))
+    (:option scroll-conservatively 108))
 #+end_src
 
 Emacs comes with a customization interface, which supports setting via function calls too (good!) and saves the results in a file (bad!).  Up until Emacs 29, I set the storage to =/dev/null=. Started from Emacs 30, I find that sometimes file-defined local variables are not loaded the first time I open a buffer, so I came up with a new solution: set it to a random temporary file every time Emacs starts.
