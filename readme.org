@@ -2024,10 +2024,18 @@ Add my helper commands to the ~evil-window-map~
 
 *** Which key
 [[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode that hints you the keybindings prefixed with what you have typed when you get stuck. It is built-in since Emacs 30.
+
+I turned off ~which-key-show-transient-maps~ because it has cause ~embark-act~ on a non-minibuffer target to behave strangely when the binding in keymap is longer than a single key:
+- Embark loses focus on the minibuffer (and is captured to the window containing the target)  if ~embark-prefix-help-command~ is queried after giving the first key
+- ~embark-prefix-help-command~ cannot shows the correct keymap after the first key is given
+#+begin_src emacs-lisp
+  (setup which-key
+    (:option which-key-show-transient-maps nil))
+#+end_src
+
 #+begin_src emacs-lisp
   (setup (:require which-key)
-    (:option which-key-show-transient-maps t
-             which-key-use-C-h-commands nil)
+    (:option which-key-use-C-h-commands nil)
     (which-key-enable-god-mode-support)
     (:enable))
 #+end_src
