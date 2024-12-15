@@ -3050,6 +3050,24 @@ I plan on switching to =eshell= as my main shell. Here are some references:
                (window-width . 80))))
 #+end_src
 
+Eshell by default don't bind =C-d= to quitting the shell window and process. To do this, I steal 
+[[https://github.com/howardabrams/dot-files/blob/master/emacs-eshell.org#shell-here][a snippet from Howard Abrams]] and modified it a little bit to use the new Emacs 30 features.
+#+begin_src emacs-lisp
+  (setup eshell
+    (defun my-eshell-quit-or-delete-char (arg)
+      (interactive "p")
+      (if-let* (((eolp))
+                (point (save-excursion
+                         (when-let* ((match (text-property-search-backward 'field 'prompt t)))
+                           (goto-char (prop-match-end match)))))
+                ((eq point (point-max))))
+          (progn
+            (insert "exit")
+            (eshell-send-input))
+        (delete-forward-char arg)))
+    (:with-state insert (:bind "C-d" #'my-eshell-quit-or-delete-char)))
+#+end_src
+
 **** fish-completion
 [[https://gitlab.com/Ambrevar/emacs-fish-completion][fish-completion]] is a cool package that empowers Eshell with auto-completion feature from the fish shell. This package even has the ability to fallback on auto-completion provided by bash shell, although I'm not using that right now.
 #+begin_src scheme
