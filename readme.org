@@ -3068,6 +3068,13 @@ Eshell by default don't bind =C-d= to quitting the shell window and process. To 
     (:with-state insert (:bind "C-d" #'my-eshell-quit-or-delete-char)))
 #+end_src
 
+Use ~consult-history~ instead of ~eshell-*-matching-input~
+#+begin_src emacs-lisp
+  (setup eshell
+    (:rebind #'eshell-previous-matching-input #'consult-history
+             #'eshell-next-matching-input #'consult-history))
+#+end_src
+
 **** fish-completion
 [[https://gitlab.com/Ambrevar/emacs-fish-completion][fish-completion]] is a cool package that empowers Eshell with auto-completion feature from the fish shell. This package even has the ability to fallback on auto-completion provided by bash shell, although I'm not using that right now.
 #+begin_src scheme
