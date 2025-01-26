@@ -774,7 +774,7 @@ So, simply
 #+end_src
 
 #+begin_src scheme :noweb-ref de-use-module
-  #:use-module (hiecaq packages wm)
+  #:use-module (gnu packages wm)
 #+end_src
 
 #+begin_src scheme :noweb-ref de-service
@@ -795,75 +795,6 @@ So, simply
        (const `((".xsession" ,(local-file "../../xsession" #:recursive? #t)))))))
     (default-value #f)
     (description #f)))
-#+end_src
-
-#+begin_src scheme :tangle "build/hiecaq/packages/wm.scm" :noweb-ref nil
-  (define-module (hiecaq packages wm)
-    #:use-module (guix utils)
-    #:use-module (guix build-system haskell)
-    #:use-module (guix packages)
-    #:use-module (guix download)
-    #:use-module (gnu packages haskell)
-    #:use-module ((gnu packages haskell-xyz) #:prefix upstream:)
-    #:use-module ((gnu packages wm) #:prefix upstream:))
-
-  (define-public xmonad
-    (package
-      (inherit upstream:xmonad)
-      (name "xmonad")
-      (version "0.18.0")
-      (source
-       (origin
-         (method url-fetch)
-         (uri (hackage-uri "xmonad" version))
-         (sha256
-          (base32 "1ysxxjkkx2l160nlj1h8ysxrfhxjlmbws2nm0wyiivmjgn20xs11"))))))
-
-  (define-public ghc-xmonad-contrib
-    (package
-     (inherit upstream:ghc-xmonad-contrib)
-     (name "ghc-xmonad-contrib")
-     (version "0.18.1")
-     (source
-      (origin
-       (method url-fetch)
-       (uri (hackage-uri "xmonad-contrib" version))
-       (sha256
-        (base32 "0ck4hq9yhdzggrs3q4ji6nbg6zwhmhc0ckf9vr9d716d98h9swq5"))))
-     (inputs
-      (modify-inputs (package-inputs upstream:ghc-xmonad-contrib)
-                     (replace "xmonad" xmonad)))
-     (arguments (substitute-keyword-arguments
-                 (package-arguments upstream:ghc-xmonad-contrib)
-                 ((#:cabal-revision cr) #f)))))
-
-  (define-public ghc-xmobar
-    (package
-     (inherit upstream:ghc-xmobar)
-     (version "0.48.1")
-     (source
-      (origin
-       (method url-fetch)
-       (uri (hackage-uri "xmobar" version))
-       (sha256
-        (base32 "1infcisv7l00a4z4byjwjisg4yndk0cymibfii1c7yzyzrlvavhl"))))
-     (inputs
-      (modify-inputs (package-inputs upstream:ghc-xmobar)
-                     (prepend upstream:ghc-extra)))))
-
-  (define-public xmobar
-    (package
-     (inherit upstream:xmobar)
-     (version "0.48.1")
-     (source
-      (origin
-       (method url-fetch)
-       (uri (hackage-uri "xmobar" version))
-       (sha256
-        (base32 "1infcisv7l00a4z4byjwjisg4yndk0cymibfii1c7yzyzrlvavhl"))))
-     (inputs
-      (modify-inputs (package-inputs upstream:xmobar)
-                     (replace "ghc-xmobar" ghc-xmobar)))))
 #+end_src
 
 ** D-Bus
