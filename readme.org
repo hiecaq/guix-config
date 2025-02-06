@@ -3113,6 +3113,27 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
    project-prefix-map)
 #+end_src
 
+~project-prefixed-buffer-name~ is used for project shells (and Eshells), we can configure it to be used for compilation buffers too:
+#+begin_src emacs-lisp
+  (setup project
+    (:option project-compilation-buffer-name-function #'project-prefixed-buffer-name))
+#+end_src
+
+However, its implementation does not work very well with directories that shared the same name but across different computers, when accessed with TRAMP.
+
+To fix this easily, I decide to override ~project-name~:
+#+begin_src emacs-lisp
+  (cl-defmethod project-name :extra "prefixed with remote identifier"
+    (project)
+    "Prefix the project name with remote identifier if available."
+    (let* ((dir (directory-file-name (project-root project)))
+           (base (file-name-nondirectory dir)))
+      (if-let* ((remote (file-remote-p dir))
+                (formatted (substring remote 1)))
+          (concat formatted base)
+        base)))
+#+end_src
+
 *** Emacsql
 [[https://github.com/magit/emacsql][emacsql]] is "a high-level Emacs Lisp RDBMS front-end", which provides a consistent facade for different sqlite integration implementations. There is one tagged version in Guix package upstream, but it is too old for my need (and it comes with too many unnecessary dependencies), see below.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
