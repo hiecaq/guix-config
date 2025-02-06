@@ -2302,8 +2302,28 @@ For a normal orderless matching, which is triggered when ~completion-styles~ tri
   (setup orderless
     (:option orderless-style-dispatchers '(+orderless-consult-dispatch
                                            orderless-kwd-dispatch
-                                           orderless-affix-dispatch)
+                                           my-orderless-prefix-dispatch)
              orderless-matching-styles '(orderless-regexp)))
+#+end_src
+
+The ~my-orderless-prefix-dispatch~ is a slightly modified version of ~orderless-affix-dispatch~, which is built-in in the package. I've found that dispatching by both prefix and suffix causes more problems than the ones it attempts to solve.
+#+begin_src emacs-lisp
+  (setup orderless
+    (defun my-orderless-prefix-dispatch (component _index _total)
+      "Match COMPONENT according to the styles in `orderless-affix-dispatch-alist'.
+  If the COMPONENT starts with one of the characters used
+  as a key in `orderless-affix-dispatch-alist', then that character
+  is removed and the remainder of the COMPONENT is matched in the
+  style associated to the character."
+      (let ((len (length component))
+            (alist orderless-affix-dispatch-alist))
+        (when (> len 0)
+          (cond
+           ;; Ignore single dispatcher character
+           ((and (= len 1) (alist-get (aref component 0) alist)) #'ignore)
+           ;; Prefix
+           ((when-let ((style (alist-get (aref component 0) alist)))
+              (cons style (substring component 1)))))))))
 #+end_src
 
 Affix dispatcher can be adjust by setting the ~orderless-affix-dispatch-alist~, which maps the single affix character to matcher.
