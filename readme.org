@@ -89,6 +89,7 @@
     - [[#aggresive-indent][Aggresive Indent]]
     - [[#eshell][Eshell]]
       - [[#fish-completion][fish-completion]]
+    - [[#ediff][Ediff]]
     - [[#magit][Magit]]
     - [[#project][Project]]
     - [[#emacsql][Emacsql]]
@@ -3023,6 +3024,12 @@ Use ~consult-history~ instead of ~eshell-*-matching-input~
   (setup fish-completion
     (:needs "fish")
     (:hook-into eshell-mode))
+#+end_src
+
+*** Ediff
+#+begin_src emacs-lisp
+  (setup ediff
+    (:option ediff-window-setup-function #'ediff-setup-windows-plain))
 #+end_src
 
 *** Magit
