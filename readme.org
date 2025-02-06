@@ -3017,12 +3017,15 @@ Use ~consult-history~ instead of ~eshell-*-matching-input~
     (packages
      (list
       (specification->package
+       "emacs-bash-completion")
+      (specification->package
        "emacs-fish-completion")))))
 #+end_src
 
 #+begin_src emacs-lisp
   (setup fish-completion
     (:needs "fish")
+    (:option fish-completion-fallback-on-bash-p t)
     (:hook-into eshell-mode))
 #+end_src
 
