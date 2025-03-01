@@ -4620,7 +4620,7 @@ Map Dvorak programmer number key rows to the number they corresponding to, so th
             (evil-collection-vterm-insert))))))
 #+end_src
 
-*** Eat
+*** COMMENT Eat
 [[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
 #+begin_src scheme
   (simple-service
@@ -4633,11 +4633,14 @@ Map Dvorak programmer number key rows to the number they corresponding to, so th
        "emacs-eat")))))
 #+end_src
 
+Note that I disable Eat for now, because ~eat-eshell-mode~ hang the whole Emacs when some non-ASCII characters are printed. Nevertheless, here is the config:
 #+begin_src emacs-lisp
   (setup eat
     (:option eshell-visual-commands nil
              eshell-visual-subcommands nil
              eshell-visual-options nil)
+    (:with-map eat-eshell-semi-char-mode-map
+      (:unbind "C-SPC"))
     (eat-eshell-mode +1))
 #+end_src
 
