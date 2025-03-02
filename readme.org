@@ -2740,7 +2740,8 @@ After using this set-up for a while, I found it quite annoying that it requires 
     :doc "Commands to act on current file."
     :parent embark-buffer-map
     "g" #'revert-buffer
-    "u" #'vundo)
+    "u" #'vundo
+    "D" #'toggle-window-dedicated)
 
   (add-to-list 'embark-keymap-alist '(this-buffer . this-buffer-map))
 #+end_src
