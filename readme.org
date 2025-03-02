@@ -1823,20 +1823,23 @@ I don't really use =;= at all, so I map it to ~evil-avy-goto-char-2~, which has 
 
 **** Evil Surround
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] defines operators that change/add/delete delimiters around a text object.
-I found that its key bindings conflict with =evil-snipe= a lot, so I remap them to =m=, which stands for markers.
+I remap them all to =s= for better consistency.
 #+begin_src emacs-lisp
   (setup evil-surround
     (:with-state (operator visual)
       (:unbind "s" "S" "g S"))
     (:with-state (normal operator)
-      (:bind "m" #'evil-surround-edit
-             "M" #'evil-Surround-edit))
+      (:bind "s" #'evil-surround-edit
+             "S" #'evil-Surround-edit))
     (:with-state visual
-      (:bind "m" #'evil-surround-region
-             "M" #'evil-Surround-region))
+      (:bind "s" #'evil-surround-region
+             "S" #'evil-Surround-region))
     (:also-load evil)
     (:with-function turn-on-evil-surround-mode
-      (:hook-into prog-mode text-mode wdired-mode comint-mode eshell-mode minibuffer-setup)))
+      (:hook-into prog-mode text-mode wdired-mode comint-mode eshell-mode minibuffer-setup))
+    (define-advice wdired-change-to-dired-mode (:after (&rest _) turn-off-evil-surround)
+      "`wdired-mode-hook' is only called when activated, so we have to do this manually when deactivating."
+      (turn-off-evil-surround-mode)))
 #+end_src
 
 **** Evil Replace With Register
