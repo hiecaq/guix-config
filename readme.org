@@ -1294,6 +1294,12 @@ Also, Emacs by default auto-renames certain buffers when a buffer with the same 
     (:option uniquify-after-kill-buffer-p nil))
 #+end_src
 
+I found some hacks [[https://emacs-china.org/t/topic/25811/9][here]] that speed up displaying long lines by sacrificing the compatibility of bidirectional text. I don't read or type bidirectional text myself,  and these hacks can be reverted on a per-buffer basis if necessary. I currently use just the one that is not subjected against in the documentation.
+#+begin_src emacs-lisp
+  (setup emacs
+    (:option bidi-paragraph-direction 'left-to-right))
+#+end_src
+
 *** Window Management
 #+begin_src emacs-lisp
   (setup window
