@@ -1813,6 +1813,14 @@ I need some latest contributions to the =evil-collection= repository:
     (evil-collection-init))
 #+end_src
 
+I don't really use =;= at all, so I map it to ~evil-avy-goto-char-2~, which has the functionality similar to =vim-sneak=. I switched from =s= to =;= because overriding it for Magit is kind of hard, and it is even harder to come up with a new mnemonic for "staging".
+#+begin_src emacs-lisp
+  (setup evil
+    (:global
+     (:with-state (normal motion operator visual)
+       (:bind ";" #'evil-avy-goto-char-2))))
+#+end_src
+
 **** Evil Surround
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] defines operators that change/add/delete delimiters around a text object.
 I found that its key bindings conflict with =evil-snipe= a lot, so I remap them to =m=, which stands for markers.
@@ -1889,10 +1897,6 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
   (setup (:require evil-snipe)
     (:with-function turn-off-evil-snipe-override-mode (:hook-into magit-mode))
     (:option evil-snipe-repeat-scope 'whole-line)
-    (:with-map evil-snipe-override-mode-map
-      (:with-state (normal motion operator visual)
-        (:bind "s" #'evil-avy-goto-char-2
-               "S" #'evil-avy-goto-char-2)))
     (:with-mode evil-snipe-override-mode
       (:enable)))
 #+end_src
