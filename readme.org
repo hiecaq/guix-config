@@ -1828,6 +1828,12 @@ I don't really use =;= at all, so I map it to ~evil-avy-goto-char-2~, which has 
      (:with-state (normal motion operator visual)
        (:bind ";" #'evil-avy-goto-char-2))))
 #+end_src
+And Dired EPA integration's keybindings conflicts with =;=, so I'd like to unbind them:
+#+begin_src emacs-lisp
+  (setup dired
+    (:with-state (normal)
+      (:unbind ";")))
+#+end_src
 
 **** Evil Surround
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] defines operators that change/add/delete delimiters around a text object.
