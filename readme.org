@@ -4714,6 +4714,12 @@ I dont' use ~dired-dwim-target~ anymore, because using "future history" is conve
     (:option dired-dwim-target nil))
 #+end_src
 
+When moving through lines, skip empty lines, and don't wrap on the last line.
+#+begin_src emacs-lisp
+  (setup dired
+    (:option dired-movement-style 'bounded))
+#+end_src
+
 **** dired-rsync
 One thing that dired (with tramp) does it badly is copying files over network. For small files it is fine, for big files not only is it slow but also it blocks the whole Emacs while copying. [[https://github.com/stsquad/dired-rsync][dired-rsync]] to the rescue, which basically wraps [[https://rsync.samba.org/][rsync]] and does things asynchronously.
 #+begin_src scheme
