@@ -1302,6 +1302,12 @@ I found some hacks [[https://emacs-china.org/t/topic/25811/9][here]] that speed 
     (:option bidi-paragraph-direction 'left-to-right))
 #+end_src
 
+Time out on remote file access (in seconds), for example if they are offline, so that Emacs is not blocked forever.
+#+begin_src emacs-lisp
+  (setup files
+    (:option remote-file-name-access-timeout 3))
+#+end_src
+
 *** Window Management
 #+begin_src emacs-lisp
   (setup window
