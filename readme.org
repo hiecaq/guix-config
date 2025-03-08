@@ -3168,6 +3168,12 @@ To fix this easily, I decide to override ~project-name~:
         base)))
 #+end_src
 
+Emacs 30 has introduced ~uniquify-dirname-transform~ that customize how buffer names are uniquified, which gives more deterministic result if we set it to the built-in project powered variant:
+#+begin_src emacs-lisp
+  (setup uniquify
+    (:option uniquify-dirname-transform #'project-uniquify-dirname-transform))
+#+end_src
+
 *** Emacsql
 [[https://github.com/magit/emacsql][emacsql]] is "a high-level Emacs Lisp RDBMS front-end", which provides a consistent facade for different sqlite integration implementations. There is one tagged version in Guix package upstream, but it is too old for my need (and it comes with too many unnecessary dependencies), see below.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
