@@ -4708,6 +4708,12 @@ Note that I disable Eat for now, because ~eat-eshell-mode~ hang the whole Emacs 
              dired-listing-switches "-alh"))
 #+end_src
 
+I dont' use ~dired-dwim-target~ anymore, because using "future history" is convenient enough.
+#+begin_src emacs-lisp
+  (setup dired
+    (:option dired-dwim-target nil))
+#+end_src
+
 **** dired-rsync
 One thing that dired (with tramp) does it badly is copying files over network. For small files it is fine, for big files not only is it slow but also it blocks the whole Emacs while copying. [[https://github.com/stsquad/dired-rsync][dired-rsync]] to the rescue, which basically wraps [[https://rsync.samba.org/][rsync]] and does things asynchronously.
 #+begin_src scheme
