@@ -87,7 +87,6 @@
     - [[#pulse][Pulse]]
     - [[#electric-pair-mode][electric-pair-mode]]
     - [[#aggresive-indent][Aggresive Indent]]
-    - [[#visual-fill-column][Visual Fill Column]]
     - [[#eshell][Eshell]]
       - [[#fish-completion][fish-completion]]
     - [[#ediff][Ediff]]
@@ -3006,19 +3005,6 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
     (:hook #'my-aggressive-indent-after-change))
 #+end_src
 
-*** Visual Fill Column
-[[https://codeberg.org/joostkremers/visual-fill-column][this package]] is quite useful for the wide screen nowadays: when using ~visual-line-mode~, it wraps the line at the ~fill-column~ (which is usually 80) instead of at the right margin of the window.
-#+begin_src scheme
-  (simple-service
-   'home-emacs-visual-fill-column
-   home-emacs-service-type
-   (home-emacs-extension
-    (packages
-     (list
-      (specification->package
-       "emacs-visual-fill-column")))))
-#+end_src
-
 *** Eshell
 I plan on switching to =eshell= as my main shell. Here are some references:
 - [[https://howardism.org/Technical/Emacs/eshell-why.html][Why Use Eshell?]] by Howard Abrams
@@ -3306,7 +3292,7 @@ Useful References:
 #+begin_src emacs-lisp :noweb yes
   (setup org
     <<org-setup>>
-    (:hook visual-line-fill-column-mode variable-pitch-mode))
+    (:hook visual-line-mode variable-pitch-mode))
 #+end_src
 
 **** General Settings
