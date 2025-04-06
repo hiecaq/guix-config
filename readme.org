@@ -124,6 +124,7 @@
     - [[#eat][Eat]]
     - [[#dired][Dired]]
       - [[#dired-rsync][dired-rsync]]
+    - [[#emms][EMMS]]
     - [[#guix-1][Guix]]
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
 - [[#references-and-recommendations][References and Recommendations]]
@@ -4742,6 +4743,103 @@ One thing that dired (with tramp) does it badly is copying files over network. F
 #+begin_src emacs-lisp
   (setup dired-rsync
     (:option dired-rsync-options "-azs --info=progress2"))
+#+end_src
+
+*** EMMS
+[[https://www.gnu.org/software/emms/][EMMS]], short for Emacs Multimedia System, "displays and plays multimedia from within Emacs using a variety of external players and from different sources".
+#+begin_src scheme
+  (simple-service
+   'home-emacs-emms
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-emms-with-convert")))))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-emms-with-convert
+    (package
+      (inherit upstream:emacs-emms)
+      (name "emacs-emms-with-convert")
+      (inputs
+       (modify-inputs (package-inputs upstream:emacs-emms)
+                      (prepend (@(gnu packages imagemagick) imagemagick))))
+      (arguments
+       (substitute-keyword-arguments (package-arguments upstream:emacs-emms)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (add-after 'set-external-programs 'set-external-programs-convert
+               (lambda* (#:key inputs #:allow-other-keys)
+                 (let ((imagemagick (assoc-ref inputs "imagemagick")))
+                   (emacs-substitute-variables "emms-browser.el"
+                     ("emms-browser-thumbnail-convert-program"
+                      (string-append imagemagick "/bin/convert")))
+                   (substitute* "emms-browser.el"
+                     (("\\(executable-find \"convert\"\\)") "emms-browser-thumbnail-convert-program")))))))))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup emms
+    (:also-load emms-source-file
+                emms-source-playlist
+                emms-source-beets
+                emms-player-mpv
+                emms-info-libtag
+                emms-cache
+                emms-browser)
+    (:option emms-directory (exdg-state "emms")
+             emms-cache-file (exdg-cache "emms-cache")
+             emms-browser-thumbnail-directory (exdg-cache "emms-thumbnail")
+             emms-player-list '(emms-player-mpv)
+             emms-info-functions '(emms-info-native)))
+#+end_src
+
+Always center to the playing song when opening the playlist.
+#+begin_src emacs-lisp
+  (setup emms
+    (:option emms-playlist-mode-center-when-go t))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup emms
+    (:when-loaded
+      (:option (prepend* emms-player-mpv-parameters)
+               '("--volume=40"))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup emms
+    (:option emms-track-initialize-functions '(emms-info-initialize-track))
+    (:option emms-info-functions '(emms-info-libtag))
+    (:option emms-track-description-function #'emms-info-track-description) 
+    (:option emms-browser-covers #'emms-browser-cache-thumbnail-async))
+#+end_src
+
+As far as I can tell, the browser feature depends on the cache feature, so we have no choose but turn it on.
+#+begin_src emacs-lisp
+  (setup emms-cache
+    (:when-loaded
+      (emms-cache +1)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup emms-source-beets
+    (:option emms-source-beets-database
+             (expand-file-name "library.db" (xdg-user-dir "MUSIC"))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (define-advice emms-browser-remove-tracks
+      (:filter-args (args) dont-delete-my-files)
+    "Just don't delete files, period."
+    (let* ((linum-or-delete (car args))
+           (rest (cdr args))
+           (d (if (numberp linum-or-delete)
+                  linum-or-delete
+                nil)))
+      `(,d ,@rest)))
 #+end_src
 
 *** Guix
