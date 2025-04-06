@@ -1564,8 +1564,10 @@ TODO: this should not require help.
                                 mode-name
                                 mode-line-end-spaces))
 
-  (setopt mode-line-buffer-identification (propertized-buffer-identification "%b"))
-  (setopt mode-line-format my-mode-line-format)
+  (setup bindings
+    (:option mode-line-buffer-identification (propertized-buffer-identification "%b")
+             mode-line-format my-mode-line-format
+             mode-line-right-align-edge 'right-fringe))
 #+end_src
 
 *** Midnight
