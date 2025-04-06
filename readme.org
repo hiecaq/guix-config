@@ -4711,14 +4711,13 @@ Note that I disable Eat for now, because ~eat-eshell-mode~ hang the whole Emacs 
 #+begin_src emacs-lisp
   (setup dired
     (:hook #'dired-hide-details-mode)
-    (:option dired-dwim-target t
-             dired-listing-switches "-alh"))
+    (:option dired-listing-switches "-alh"))
 #+end_src
 
-I dont' use ~dired-dwim-target~ anymore, because using "future history" is convenient enough.
+I re-enabled ~dired-dwim-target~.  It automatically pick the directory shows in the "other Dired buffer" as the first candidate for Dired operations.
 #+begin_src emacs-lisp
   (setup dired
-    (:option dired-dwim-target nil))
+    (:option dired-dwim-target t))
 #+end_src
 
 When moving through lines, skip empty lines, and don't wrap on the last line.
