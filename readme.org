@@ -8,10 +8,31 @@
 
 * Table of Contents :TOC:noexport:
 - [[#introduction][Introduction]]
+- [[#system-configuration][System Configuration]]
+  - [[#private-info][Private Info]]
+  - [[#kernel-firmware-and-initial-ram-disk][Kernel, Firmware and Initial RAM Disk]]
+  - [[#bootloader][Bootloader]]
+  - [[#file-system][File System]]
+    - [[#btrfs-subvolumes][BTRFS subvolumes]]
+    - [[#tmp][TMP]]
+    - [[#efi][EFI]]
+    - [[#device-ids][Device IDs]]
+  - [[#users][Users]]
+  - [[#packages][Packages]]
+  - [[#services][Services]]
+    - [[#smart-card][Smart Card]]
+    - [[#game-controllers][Game Controllers]]
+    - [[#android][Android]]
+    - [[#hardware-monitor][Hardware monitor]]
+  - [[#default-services-modification][Default Services Modification]]
+    - [[#guix][Guix]]
+    - [[#gdm][GDM]]
+    - [[#audio][Audio]]
 - [[#home-configuration][Home Configuration]]
-- [[#guix][Guix]]
+- [[#guix-1][Guix]]
   - [[#locales][Locales]]
   - [[#channels][Channels]]
+    - [[#nonguix][Nonguix]]
 - [[#cross-desktop-group-xdg][Cross-Desktop Group (XDG)]]
   - [[#base-directories][Base Directories]]
   - [[#user-directories][User Directories]]
@@ -27,6 +48,7 @@
   - [[#aliases][Aliases]]
 - [[#fonts][Fonts]]
 - [[#search][Search]]
+  - [[#system-service][System service]]
 - [[#desktop-environment][Desktop Environment]]
   - [[#display][Display]]
   - [[#d-bus][D-Bus]]
@@ -35,7 +57,7 @@
 - [[#emacs][Emacs]]
   - [[#basics][Basics]]
   - [[#early-initialization][Early Initialization]]
-    - [[#packages][Packages]]
+    - [[#packages-1][Packages]]
     - [[#special-key-remapping][Special Key Remapping]]
     - [[#some-configurations-that-might-make-sense-to-put-here][Some Configurations that might make sense to put here]]
   - [[#main-configurations][Main Configurations]]
@@ -133,6 +155,319 @@ This is my all-in-one [[https://guix.gnu.org/][Guix]] configuration, working in 
 
 Unless explicitly stated, all code in this configuration is under GPL3 license.
 
+* System Configuration
+This is the main entry point for =guix system=. It can be deployed with
+#+begin_src sh
+  sudo guix system -L build reconfigure build/system-configuration.scm
+#+end_src
+
+#+begin_src scheme :tangle "build/system-configuration.scm" :noweb yes
+  (use-modules (gnu)
+               (guix channels)
+               (gnu system nss)
+               (gnu packages haskell)
+               (hiecaq services search)
+               <<system-module>>
+               )
+
+  (use-service-modules desktop ssh xorg linux security-token sound)
+  (use-package-modules bootloaders fonts games android)
+
+  <<system-helper>>
+
+  (define %channels
+    (cons*
+     <<guix-channel>>
+     %default-channels))
+
+  (operating-system
+    <<operating-system>>
+
+    (users (cons*
+            <<operating-system-users>>
+            %base-user-accounts))
+
+    (packages (cons*
+               <<system-packages>>
+               %base-packages))
+
+    (services (cons*
+               <<system-services>>
+               (modify-services %desktop-services
+                 <<system-services-modify>>)))
+    ;; Allow resolution of '.local' host names with mDNS.
+    (name-service-switch %mdns-host-lookup-nss))
+#+end_src
+
+** Private Info
+Host name shows up in some places, and I'm not good at naming so I just call it "desktop". 
+#+begin_src scheme :noweb-ref operating-system
+  (host-name "desktop")
+#+end_src
+
+Time zone.  All Linuxes should be synchronized to the same UTC time, and local time is then displayed based on the time zone.
+#+begin_src scheme :noweb-ref operating-system
+  (timezone "Etc/UTC")
+#+end_src
+
+Nowadays locale should be just UTF-8.
+#+begin_src scheme :noweb-ref operating-system
+    (locale "en_US.utf8")
+#+end_src
+
+I use standard keyboard layout too.
+#+begin_src scheme :noweb-ref operating-system
+    (keyboard-layout (keyboard-layout "us"))
+#+end_src
+
+** Kernel, Firmware and Initial RAM Disk
+I must confess that I have to use non-liberal firmware.
+#+begin_src scheme :noweb-ref system-module
+  (nongnu packages linux)
+  (nongnu system linux-initrd)
+#+end_src
+
+Then the kernel and firmware are from nonguix channel:
+#+begin_src scheme :noweb-ref operating-system
+  (kernel linux)
+  (initrd microcode-initrd)
+  (firmware (list linux-firmware))
+#+end_src
+
+I use =xxhash= for btrfs checksum, so the corresponding modules to be added to the Initial Ram Disk modules.  See [[https://old.reddit.com/r/btrfs/comments/17ksj0w/installing_debian_with_xxhash/][here]].
+#+begin_src scheme :noweb-ref operating-system
+  (initrd-modules (append
+                   (list "xxhash" "xxhash_generic")
+                   %base-initrd-modules))
+#+end_src
+
+** Bootloader
+use UEFI flavored GRUB.  Note that the mount point is =/efi= (instead of =/boot/efi=), as suggested by the [[https://wiki.archlinux.org/title/EFI_system_partition#Typical_mount_points][Arch Wiki]].
+#+begin_src scheme :noweb-ref operating-system
+  (bootloader (bootloader-configuration
+               (bootloader grub-efi-bootloader)
+               (targets '("/efi"))
+               (keyboard-layout keyboard-layout)))
+#+end_src
+
+** File System
+See [[https://www.hiecaq.org/posts/20241024T234951M098.html][my blog post]] for details on how I partitioned / formatted the file system.  This preparation cannot be done from Guix system declaration itself and has to be done manually (or with shell scripts).
+
+firstly, we need to declare the mapped devices, which handles our LUKS-encrypted device.
+#+begin_src scheme :noweb yes :noweb-ref operating-system
+  (mapped-devices
+   (list (mapped-device
+          (source (uuid <<system-luks-device-uuid>>))
+          (target "cryptbtrfs")
+          (type luks-device-mapping))))
+#+end_src
+
+Then actual file systems are listed in this field: 
+#+begin_src scheme :noweb yes :noweb-ref operating-system
+  (file-systems (append
+                 (list
+                  <<file-system>>
+                  )
+                 %base-file-systems))
+#+end_src
+
+*** BTRFS subvolumes
+To begin with, since most things are on the encrypted btrfs partition, it is important to understand when to make subvolumes.  As far as I can tell, the main decision factor is if you want to back up the subvolume separately, or simply to exclude some subvolumes from the backups.
+
+Thus, mostly everything under =/=, exclude =/home=, is managed by Guix, so seldom they need to be backed up.  The exceptions here I made are:
+- =/home= :: as mentioned, I want it to be backed-up seperately
+- =/swap= :: who need to back up swap?
+- =/var/log= :: system logs, can be backed up often
+- =/var/cache= and =/var/tmp= :: These are either temporary or can be regenerated, so no need to back up
+#+begin_src scheme :noweb-ref file-system
+  (%btrfs "@" "/" mapped-devices)
+  (%btrfs "@home" "/home" mapped-devices)
+  (%btrfs "@swap" "/swap" mapped-devices)
+  (%btrfs "@log" "/var/log" mapped-devices)
+  (%btrfs "@cache" "/var/cache" mapped-devices)
+  (%btrfs "@tmp" "/var/tmp" mapped-devices)
+#+end_src
+
+Next, since I manage my home with guix home, most things do not need to be backed up either.  The exceptions are the "well known" user directories.
+#+begin_src scheme :noweb-ref file-system
+  (%btrfs "@documents" "/home/hiecaq/documents" mapped-devices)
+  (%btrfs "@downloads" "/home/hiecaq/downloads" mapped-devices)
+  (%btrfs "@videos" "/home/hiecaq/videos" mapped-devices)
+  (%btrfs "@music" "/home/hiecaq/music" mapped-devices)
+  (%btrfs "@pictures" "/home/hiecaq/pictures" mapped-devices)
+#+end_src
+
+The above ~%btrfs~ is defined as
+#+begin_src scheme :noweb-ref system-helper 
+  (define* (%btrfs subvol mount-point dep #:key
+                   (flags '(no-atime)))
+    (file-system
+     (device "/dev/mapper/cryptbtrfs")
+     (mount-point mount-point)
+     (type "btrfs")
+     (flags flags)
+     (options (string-append "compress=zstd,subvol=" subvol))
+     (dependencies dep)))
+#+end_src
+
+Important things are:
+- =no-atime=, which is good for btrfs' CoW
+- =compress=zstd=, that is to enable btrfs' transparent compression with Zstandard algorithm.
+
+*** TMP
+Guix does not mount =/tmp= as =tmpfs= in ~%base-file-systems~ by default.  The reason is that Guix uses =/tmp= to build things, and the temporary build files can be too large to be contained in RAM, see [[https://logs.guix.gnu.org/guix/2024-10-27.log#080317][Rutherther's reply to me]].  However, my desktop's RAM is large enough, so
+#+begin_src scheme :noweb-ref file-system
+  (file-system
+   (device "tmpfs")
+   (mount-point "/tmp")
+   (type "tmpfs")
+   (flags '(no-suid no-dev))
+   (options "size=80%")
+   (check? #f))
+#+end_src
+
+*** EFI
+The last thing is to mount the EFI system partition:
+#+begin_src scheme :noweb yes :noweb-ref file-system
+  (file-system
+   (device (uuid <<system-efi-device-uuid>> 'fat))
+   (mount-point "/efi")
+   (type "vfat"))
+#+end_src
+
+*** Device IDs
+This is what's displayed in =lsblk -f -o UUID /dev/nvme0n1p2=
+#+name: system-luks-device-uuid
+#+begin_src scheme :exports none
+  "5e797e8b-d3b9-4693-b2f9-c17cf0943c34"
+#+end_src
+
+This is what's displayed in =lsblk -o UUID /dev/nvme0n1p1=
+#+name: system-efi-device-uuid
+#+begin_src scheme :exports none
+  "B09A-E98C"
+#+end_src
+
+** Users
+I only have one explicit user:
+#+begin_src scheme :noweb-ref operating-system-users
+  (user-account
+   (name "hiecaq")
+   (group "users")
+   (supplementary-groups '("wheel" "netdev"
+                           "input" "audio" "video"
+                           "plocate" "adbusers")))
+#+end_src
+
+** Packages
+:PROPERTIES:
+:header-args:scheme: :noweb-ref system-packages
+:END:
+Currently just a list of fonts:
+#+begin_src scheme
+  font-hack
+  font-google-noto
+  font-google-noto-emoji
+  font-google-noto-sans-cjk
+#+end_src
+
+** Services
+:PROPERTIES:
+:header-args:scheme: :noweb-ref system-services
+:END:
+
+*** Smart Card
+#+begin_src scheme
+  (service pcscd-service-type)
+#+end_src
+
+*** Game Controllers
+We need the udev rules provided by Steam:
+#+begin_src scheme
+  (udev-rules-service 'steam steam-devices-udev-rules)
+#+end_src
+
+*** Android
+To connect to Android devices, we need the following udev rule.  It requires the user to be in =adbusers= group to use =adb= / =fastboot= without root privilege.  We can automatically create the group here.
+#+begin_src scheme
+  (udev-rules-service 'android android-udev-rules
+                      #:groups '("adbusers"))
+#+end_src
+
+*** Hardware monitor
+To show the system fan speeds, my device need this kernel module:
+#+begin_src scheme
+  (service kernel-module-loader-service-type
+           '("nct6683"))
+#+end_src
+
+
+** Default Services Modification
+:PROPERTIES:
+:header-args:scheme: :noweb-ref system-services-modify
+:END:
+
+*** Guix
+We modify the system-wide channels (which will be used if a user does not have a channel list themselves) and add the substitute for Nonguix.
+#+begin_src scheme
+  (guix-service-type
+   config => (guix-configuration
+              (inherit config)
+              (substitute-urls %substitute-urls)
+              (channels %channels)
+              (authorized-keys
+               (append (list %nonguix-signing-key)
+                       %default-authorized-guix-keys))))
+#+end_src
+
+#+begin_src scheme :noweb-ref system-helper
+  (define %substitute-urls
+    '("https://ci.guix.gnu.org"
+      "https://substitutes.nonguix.org"))
+
+  (define %nonguix-signing-key
+    (plain-file "nonguix.pub" "\
+  (public-key
+   (ecc
+    (curve Ed25519)
+    (q #C1FD53E5D4CE971933EC50C9F307AE2171A2D3B52C804642A7A35F84F3A4EA98#)))"))
+#+end_src
+
+*** GDM
+Somehow after log-in my mouse cursor disappears.  We need to add a configuration to =/etc/X11/xorg.conf.d/= to fix it, here is how to do that in Guix's way:
+#+begin_src scheme
+  (gdm-service-type
+   config => (gdm-configuration
+              (inherit config)
+              (auto-suspend? #f)
+              (xorg-configuration
+               (let ((xorg-config ((@@(gnu services xorg) gdm-configuration-xorg) config)))
+                 (xorg-configuration
+                  (inherit xorg-config)
+                  (extra-config (list %fix-amd-disappearing-cursor-conf)))))))
+#+end_src
+
+The fix is from https://forums.linuxmint.com/viewtopic.php?t=424779
+#+begin_src scheme :noweb-ref system-helper
+  (define %fix-amd-disappearing-cursor-conf "
+  Section \"Device\"
+    Identifier \"AMD\"
+    Driver \"amdgpu\"
+    Option \"SWCursor\" \"true\"
+  EndSection
+  ")
+#+end_src
+
+*** Audio
+Remove pulseaudio.
+#+begin_src scheme
+  (delete pulseaudio-service-type)
+  (alsa-service-type
+   config => (alsa-configuration
+              (inherit config)
+              (pulseaudio? #f)))
+#+end_src
+
 * Home Configuration
 This is the main entry point for =guix home=. It can be tested with
 #+begin_src sh
@@ -159,14 +494,6 @@ and deployed with
      )))
 #+end_src
 
-This basically reads the default essential service list, and modifies it as needed. ~home-environment-default-essential-services~ is private, so we have to use [[https://www.gnu.org/software/guile/manual/html_node/Using-Guile-Modules.html][@@]] syntax to force importing it. Maybe there is a better way.
-#+begin_src scheme :noweb-ref home-environment-conf
-  (essential-services
-   (fonts:modify-essential-service
-    ((@@(gnu home) home-environment-default-essential-services)
-     this-home-environment)))
-#+end_src
-
 This is a list of packages that are not installed by services. Eventually this list should be empty.
 #+begin_src scheme :noweb-ref home-environment-conf
   (packages (specifications->packages
@@ -184,17 +511,15 @@ This file defines those settings related to Guix itself.
     #:use-module (gnu packages)
     #:use-module (gnu home services)
     #:use-module (gnu home services guix)
+    #:use-module (gnu home services gnupg)
+    #:use-module (gnu packages gnupg)
+    #:use-module (guix gexp)
     #:use-module (guix channels))
 
   (define-public services
     (list
      <<guix-service>>
-     (simple-service
-      'variant-packages-service
-      home-channels-service-type
-      (list
-       <<guix-channel>>
-       ))))
+     ))
 #+end_src
 
 Add this module and its services:
@@ -231,6 +556,17 @@ Set the locales as recommended in [[https://guix.gnu.org/manual/en/html_node/App
 :header-args:scheme: :noweb-ref guix-channel
 :END:
 
+*** COMMENT Home Service
+Since I'm using guix as a system, the home service is not needed.
+#+begin_src scheme :noweb-ref guix-service
+  (simple-service
+   'variant-packages-service
+   home-channels-service-type
+   (list
+    <<guix-channel>>
+    ))
+#+end_src
+
 *** COMMENT RDE
 [[https://git.sr.ht/~abcdw/rde][rde]] is a "developers and power user friendly GNU/Linux distribution based on GNU Guix package manager", which can be used as a channel directly. In this way, I can use the helper procedures that it defines.
 
@@ -244,6 +580,19 @@ I no longer need functionality belongs to rde, but I keep it here for future ref
      "257cebd587b66e4d865b3537a9a88cccd7107c95"
      (openpgp-fingerprint
       "2841 9AC6 5038 7440 C7E9  2FFA 2208 D209 58C1 DEB0"))))
+#+end_src
+
+*** Nonguix
+[[https://gitlab.com/nonguix/nonguix][nonguix]] holds non-free stuffs, including kernel, firmware, and other close-source binaries.
+#+begin_src scheme
+  (channel
+   (name 'nonguix)
+   (url "https://gitlab.com/nonguix/nonguix")
+   (introduction
+    (make-channel-introduction
+     "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
+     (openpgp-fingerprint
+      "2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5"))))
 #+end_src
 
 * Cross-Desktop Group (XDG)
@@ -744,6 +1093,25 @@ this module simply provides a single service that install the fonts needed.
      (description #f)))
 #+end_src
 
+** System service
+This is translated from [[https://gitlab.archlinux.org/archlinux/packaging/packages/plocate/-/blob/main/updatedb.conf][Arch's configuration]]
+#+begin_src scheme :noweb-ref system-services
+  (service locate-service-type
+           (locate-configuration
+            (group "plocate")
+            (prune-fs '("9p" "afs" "anon_inodefs"
+                        "auto" "autofs" "bdev" "binfmt_misc" "cgroup" "cifs" "coda" "configfs"
+                        "cpuset" "cramfs" "debugfs" "devpts" "devtmpfs" "ecryptfs" "exofs"
+                        "ftpfs" "fuse" "fuse.encfs" "fuse.s3fs" "fuse.sshfs" "fusectl" "gfs"
+                        "gfs2" "hugetlbfs" "inotifyfs" "iso9660" "jffs2" "lustre" "mqueue"
+                        "ncpfs" "nfs" "nfs4" "nfsd" "pipefs" "proc" "ramfs" "rootfs"
+                        "rpc_pipefs" "securityfs" "selinuxfs" "sfs" "shfs" "smbfs" "sockfs"
+                        "sshfs" "sysfs" "tmpfs" "ubifs" "udf" "usbfs" "vboxsf"))
+            (prune-names '(".git" ".hg" ".svn" ".cache"))
+            (prune-paths '("/afs" "/media" "/mnt"
+                           "/net" "/sfs" "/tmp" "/udev" "/gnu/store"
+                           "/var/cache" "/var/lock" "/var/run" "/var/tmp"))))
+#+end_src
 * Desktop Environment
 My "desktop environment" is plain window management with friends.
 
