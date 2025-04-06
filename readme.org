@@ -4098,6 +4098,7 @@ I mainly use it to keep images referenced in org-roam notes. There is no other p
   (setup org-download
     (:option org-download-backend "wget \"%s\" -O \"%s\""
              org-download-image-dir (expand-file-name "images" org-roam-directory)
+             org-yank-image-save-method (expand-file-name "images" org-roam-directory)
              org-download-method 'directory
              org-download-heading-lvl nil
              org-download-screenshot-method "maim -s %s"))
