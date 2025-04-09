@@ -3738,10 +3738,12 @@ Templates:
 #+begin_src lisp-data
   org-mode
 
-  (begin "#+begin_" (s name) n> r> n "#+end_" name)
-  (elisp "#+begin_src emacs-lisp" n> r> n "#+end_src" :post (org-edit-src-code))
-  (scheme "#+begin_src scheme" n> r> n "#+end_src" :post (org-edit-src-code))
+  (begin "#+begin_" (s name) n r n "#+end_" name)
+  (elisp "#+begin_src emacs-lisp" n r n "#+end_src" :post (org-edit-src-code))
+  (scheme "#+begin_src scheme" n r n "#+end_src" :post (org-edit-src-code))
+  (sh "#+begin_src sh" n r n "#+end_src" :post (org-edit-src-code))
   (id :post (org-roam-node-insert))
+  (cite :post (call-interactively #'citar-insert-citation))
 #+end_src
 
 **** Task Management
