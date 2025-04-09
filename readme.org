@@ -3374,6 +3374,13 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
     (:hook #'my-aggressive-indent-after-change))
 #+end_src
 
+*** Comint
+Comint is the base major mode for all kinds of interactive REPLs.
+#+begin_src emacs-lisp
+  (setup comint
+    (:rebind #'comint-history-isearch-backward-regexp #'consult-history))
+#+end_src
+
 *** Eshell
 I plan on switching to =eshell= as my main shell. Here are some references:
 - [[https://howardism.org/Technical/Emacs/eshell-why.html][Why Use Eshell?]] by Howard Abrams
@@ -3421,6 +3428,12 @@ Use ~consult-history~ instead of ~eshell-*-matching-input~
   (setup eshell
     (:rebind #'eshell-previous-matching-input #'consult-history
              #'eshell-next-matching-input #'consult-history))
+#+end_src
+
+When each session ends, append session history instead of replacing the whole history:
+#+begin_src emacs-lisp
+  (setup eshell
+    (:option eshell-history-append t))
 #+end_src
 
 **** fish-completion
