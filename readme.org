@@ -3963,20 +3963,8 @@ Again the packaged version in Guix official packages is quite old, so here is th
       (inherit upstream:emacs-org-roam)
       (name "emacs-org-roam-next")
       (propagated-inputs
-       (list upstream:emacs-dash
-             upstream:emacs-magit
-             upstream:emacs-org
-             emacs-emacsql-sqlite-builtin))
-      (arguments
-       (append
-        (substitute-keyword-arguments (package-arguments upstream:emacs-org-roam)
-          ((#:phases phases)
-           `(modify-phases ,phases
-              (add-after 'patch-exec-paths 'drop-emacsql-sqlite-dependency
-                (lambda _
-                  (substitute* "org-roam.el"
-                    (("\\(require 'emacsql-sqlite\\)") ""))
-                  #t)))))))))
+       (modify-inputs (package-propagated-inputs upstream:emacs-org-roam)
+                      (replace "emacs-emacsql" emacs-emacsql-sqlite-builtin)))))
 #+end_src
 
 And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]], which has a query syntax and feature set similar to [[https://github.com/alphapapa/org-ql][org-ql]] (It starts as a "spin-off" from org-ql I think, see [[https://github.com/alphapapa/org-ql/issues/303][this]] and [[https://github.com/alphapapa/org-ql/issues/354][this]]). Basically it turns a s-exp query into a series of SQL queries to the org-roam database.
