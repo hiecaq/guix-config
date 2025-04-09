@@ -1,6 +1,5 @@
 # -*- org-use-property-inheritance: t; toc-org-max-depth: 4; org-confirm-babel-evaluate: nil; -*-
 #+title: hiecaq's guix configuration
-#+last_modified: [2024-11-26 Tue 23:35]
 #+startup: indent
 #+property: header-args :comments org :results silent :mkdirp t
 
@@ -3687,17 +3686,6 @@ Prevent =M-RET= from splitting the line if the line is a headline or an item.
   (:option org-M-RET-may-split-line '((default . nil)))
 #+end_src
 
-Update =#+last_modified= every time an org file is saved.
-#+begin_src emacs-lisp :tangle no :noweb-ref org-setup
-  (defun my-org-autoupdate-timestamp ()
-    (setq-local time-stamp-active t
-                time-stamp-start "#\\+last_modified:[ \t]*"
-                time-stamp-end "$"
-                time-stamp-format "\[%Y-%02m-%02d %3a %02H:%02M\]")
-    (add-hook 'before-save-hook #'time-stamp nil t))
-  (:hook my-org-autoupdate-timestamp)
-#+end_src
-
 #+begin_src emacs-lisp :tangle no :noweb-ref org-setup
   (:option org-persist-directory (exdg-cache "org-persist"))
 #+end_src
@@ -3911,7 +3899,6 @@ Based on [[https://karl-voit.at/2022/02/10/lfile/][blog post]] from [[https://gi
      :help-echo "Opens the file located via \"locate\" with your default application"
      ))
 #+end_src
-
 Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in-org-roam-v2/1504][is]] [[https://org-roam.discourse.group/t/link-categorization/2486][an]] [[https://org-roam.discourse.group/t/custom-roam-style-link/39/57][attempt]] [[https://forum.zettelkasten.de/discussion/887/thinking-about-metadata][to]] [[https://forum.zettelkasten.de/discussion/573/idea-for-categorizing-theory-models-definitions-arguments-and-facts][implement]] [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link]] [[https://org-roam.discourse.group/t/the-case-for-custom-link-types/][Tags]].
 #+begin_src emacs-lisp
   (setup ol
@@ -4052,7 +4039,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
              org-roam-node-display-template (concat "${hierarchy:*} " (propertize "${tags:10}" 'face 'org-tag))
              org-roam-capture-templates '(("d" "default" plain "%?"
                                            :target (file+head  "%(format-time-string org-id-ts-format).org"
-                                                               "#+title: %(titlecase--string \"${title}\" titlecase-style)\n#+date: %U\n#+last_modified: %U\n")
+                                                               "#+title: %(titlecase--string \"${title}\" titlecase-style)\n#+date: %U\n")
                                            :unnarrowed t)))
     ;; from https://github.com/org-roam/org-roam/issues/1565
     (with-eval-after-load 'org-roam-node
@@ -4413,7 +4400,7 @@ As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-
          '(("r" "reference" plain "%?" :if-new
             (file+head
              "%(format-time-string org-id-ts-format).org"
-             "#+title: ${title}\n#+date: %U\n#+last_modified: %U\n")
+             "#+title: ${title}\n#+date: %U\n")
             :immediate-finish t
             :unnarrowed t))
          :info (list :citekey citekey)
@@ -4517,6 +4504,7 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
     (:with-function flymake-vale-load
       (:hook-into text-mode)))
 #+end_src
+
 **** Capitalizing
 [[https://github.com/duckwork/titlecase.el][titlecase]] solves one of the hardest problem in (English) writing: capitalizing titles. its most impressing feature is that it supports many standard styles, like [[https://www.chicagomanualofstyle.org/book/ed17/part2/ch08/toc.html][Chicago]] and [[https://blog.apastyle.org/apastyle/capitalization/][APA]]. I mainly use it with embark.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
