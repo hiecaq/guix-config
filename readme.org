@@ -81,6 +81,7 @@
     - [[#highlight-parentheses][Highlight Parentheses]]
     - [[#transient][Transient]]
     - [[#evil][Evil]]
+      - [[#noun-verb-editing][Noun-Verb Editing]]
       - [[#evil-surround][Evil Surround]]
       - [[#evil-replace-with-register][Evil Replace With Register]]
       - [[#evil-snipe][Evil Snipe]]
@@ -2208,6 +2209,26 @@ And Dired EPA integration's keybindings conflicts with =;=, so I'd like to unbin
   (setup dired
     (:with-state (normal)
       (:unbind ";")))
+#+end_src
+
+**** Noun-Verb Editing
+See [[https://www.hiecaq.org/posts/20250409T225608M449.html][my blog post]] for details.
+#+begin_src emacs-lisp
+  (setup evil
+    (defun my-evil-inner-thing ()
+      (interactive)
+      (evil-visual-char)
+      (set-transient-map evil-inner-text-objects-map))
+
+    (defun my-evil-outer-thing ()
+      (interactive)
+      (evil-visual-char)
+      (set-transient-map evil-outer-text-objects-map))
+
+    (:global
+     (:with-state (normal)
+       (:bind "m" #'my-evil-inner-thing)
+       (:bind "M" #'my-evil-outer-thing))))
 #+end_src
 
 **** Evil Surround
