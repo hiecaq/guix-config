@@ -2226,9 +2226,18 @@ See [[https://www.hiecaq.org/posts/20250409T225608M449.html][my blog post]] for 
       (set-transient-map evil-outer-text-objects-map))
 
     (:global
+     (:with-map (evil-operator-state-map evil-visual-state-map)
+       (:unbind "a" "i")
+       (:bind "." evil-inner-text-objects-map
+              "," evil-outer-text-objects-map
+              "a" #'evil-append
+              "i" #'evil-insert))
      (:with-state (normal)
-       (:bind "m" #'my-evil-inner-thing)
-       (:bind "M" #'my-evil-outer-thing))))
+       (:bind "." #'my-evil-inner-thing
+              "," #'my-evil-outer-thing
+              "#" #'evil-repeat))))
+#+end_src
+
 #+end_src
 
 **** Evil Surround
