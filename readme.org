@@ -2269,7 +2269,7 @@ I remap them all to =s= for better consistency.
 
   (setup evil
     (:global (:with-state (normal visual)
-               (:bind "," #'my-evil-replace-with-register))))
+               (:bind "g s" #'my-evil-replace-with-register))))
 #+end_src
 
 **** Evil Snipe
