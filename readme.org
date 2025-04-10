@@ -82,6 +82,7 @@
     - [[#transient][Transient]]
     - [[#evil][Evil]]
       - [[#noun-verb-editing][Noun-Verb Editing]]
+      - [[#move-up-and-down-a-list][Move up and down a list]]
       - [[#evil-surround][Evil Surround]]
       - [[#evil-replace-with-register][Evil Replace With Register]]
       - [[#evil-snipe][Evil Snipe]]
@@ -2238,6 +2239,13 @@ See [[https://www.hiecaq.org/posts/20250409T225608M449.html][my blog post]] for 
               "#" #'evil-repeat))))
 #+end_src
 
+**** Move up and down a list
+#+begin_src emacs-lisp
+  (setup evil
+    (:global
+     (:with-state (motion)
+       (:bind "-" #'backward-up-list
+              "+" #'down-list))))
 #+end_src
 
 **** Evil Surround
