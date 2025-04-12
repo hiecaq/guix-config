@@ -4307,6 +4307,59 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
            :props '(:finalize find-file))))))
 #+end_src
 
+A helper function that make org-roam links by matching title:
+#+begin_src emacs-lisp
+  (setup org-roam
+    (defun my-roam-link-make-string (desc type)
+      (let* ((node (car (org-roam-ql-nodes `(and (level 0) (file-title ,desc 'exact)))))
+             (id (org-roam-node-id node)))
+        (org-link-make-string
+         (concat type ":" id)
+         desc))))
+#+end_src
+
+****** org-roam-dailies
+=org-roam-dailies= is =org-roam='s lightweight implementation of a subset of features from [[https://github.com/bastibe/org-journal][org-journal]]. I plan on building on top of this with some elisp code to fit into my need.
+
+#+begin_src emacs-lisp
+  (setup org-roam-dailies
+    (defvar my-org-roam-dailies-prelude
+      (string-join
+       '("#+title: %<%Y-%m-%d>"
+         "#+date:%U"
+         ""
+         "- under %(my-roam-link-make-string \"Daily Notes\" \"under\")"
+         ""
+         "")
+       "\n")
+      "Prelude text at the beginning of my daily notes.")
+    (:option org-roam-dailies-capture-templates
+             `(("d" "default" entry
+                "* %?"
+                :target (file+head "%<%Y-%m-%d>.org"
+                                   ,my-org-roam-dailies-prelude))
+               ("l" "log" item
+                "- %U %?"
+                :target (file+head+olp "%<%Y-%m-%d>.org"
+                                       ,my-org-roam-dailies-prelude
+                                       ("Log")))
+               ("L" "log with context" item
+                "- %U at %a %?"
+                :target (file+head+olp "%<%Y-%m-%d>.org"
+                                       ,my-org-roam-dailies-prelude
+                                       ("Log")))))
+    (defun my-org-roam-dailies-log-today ()
+      (interactive)
+      (org-roam-dailies-capture-today nil "l"))
+    (defun my-org-roam-dailies-log-today-with-context ()
+      (interactive)
+      (org-roam-dailies-capture-today nil "L"))
+    (:with-map my-global-consult-map
+      (:bind "l" #'my-org-roam-dailies-log-today))
+    (:with-map my-global-consult-map
+      (:bind "L" #'my-org-roam-dailies-log-today-with-context)))
+#+end_src
+
 ***** Bibliography
 #+begin_src emacs-lisp
   (defvar my-global-bibliography
