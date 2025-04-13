@@ -4012,20 +4012,32 @@ This means that, giving that org-roam is quite stable now, we can use the databa
 Again the packaged version in Guix official packages is quite old, so here is the git HEAD version. I also clear up the =propagated-inputs= list a little bit, especially by adding a simple hack to remove the redundant dependency on the old =emacs-sqlite=. Similar to =emacsql-sqlite-built-in=, it requires Emacs 29 to compile.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-next
-    (package
-      (inherit upstream:emacs-org-roam)
-      (name "emacs-org-roam-next")
-      (propagated-inputs
-       (modify-inputs (package-propagated-inputs upstream:emacs-org-roam)
-                      (replace "emacs-emacsql" emacs-emacsql-sqlite-builtin)))))
+    (let ((commit "3a91a46d13796e00dfa96c0002762927e9434a66")
+          (revision "3"))
+      (package
+        (inherit upstream:emacs-org-roam)
+        (name "emacs-org-roam-next")
+        (version (git-version "2.2.2" revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/hiecaq/org-roam")
+                 (commit commit)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32 "0cggdrx8i5armh10jwz9457f8bm56wyqbrb20lr3gpr629lziib1"))))
+        (propagated-inputs
+         (modify-inputs (package-propagated-inputs upstream:emacs-org-roam)
+           (replace "emacs-emacsql" emacs-emacsql-sqlite-builtin))))))
 #+end_src
 
 And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]], which has a query syntax and feature set similar to [[https://github.com/alphapapa/org-ql][org-ql]] (It starts as a "spin-off" from org-ql I think, see [[https://github.com/alphapapa/org-ql/issues/303][this]] and [[https://github.com/alphapapa/org-ql/issues/354][this]]). Basically it turns a s-exp query into a series of SQL queries to the org-roam database.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-ql
-    (let ((commit "f628fef081394f159f196f4350132aecb3edb8cc")
+    (let ((commit "d891f9a184dd79ad00d064131ace292d22254c32")
           (last-release-version "0.2")
-          (revision "1")
+          (revision "2")
           (url "https://github.com/ahmed-shariff/org-roam-ql"))
       (package
        (name "emacs-org-roam-ql")
@@ -4039,7 +4051,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "1ssxvy6y79f035whk9b8jg1vqsy6vymgq9yrzbxv06g5vsggvlh5"))))
+           "1fkzyp0b2s4phw4483mpaxwm7380r926l6wy4qrvgjkyjmgagwnq"))))
        (build-system emacs-build-system)
        (propagated-inputs
         (list upstream:emacs-magit
@@ -4238,6 +4250,18 @@ Add consult source:
     (:when-loaded
       (org-roam-ql-defexpansion 'ft "Compare to `title' of a file node" #'my-org-roam-ql--expansion-ft)
       (org-roam-ql-defexpansion 'related "Related" #'my-org-roam-ql--expand-related)))
+#+end_src
+
+Add =org-roam-ql= support to CLOSED timestamp:
+#+begin_src emacs-lisp
+  (setup org-roam-ql
+    (:when-loaded
+      (org-roam-ql-defpred 'closed
+                           "Compare `closed' of a node to arg based on comparison parsed (< or >)"
+                           #'org-roam-node-closed
+                           #'org-roam-ql--predicate-compare-time)
+
+      (org-roam-ql--sort-function-for-slot "closed" #'org-roam-ql--sort-time-less)))
 #+end_src
 
 Side notes: org-roam has some issue with ~org-element--cache-sync~ that cause org-mode to hang on saving occasionally. I'm still trying to figure out why.
