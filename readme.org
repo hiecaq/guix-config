@@ -3845,6 +3845,26 @@ References:
       (:with-state motion (:bind "RET" #'org-open-at-point))))
 #+end_src
 
+org-log buffer, i.e. the buffer created if you set to take note when state changes, is not of a special mode other than just org-mode.  So in order to still use =ZZ= and =ZQ= to finish editing or abort editing, I decide to replace the evil commands:
+#+begin_src emacs-lisp
+  (setup org
+    (defun my-org-evil-save-modified-and-close ()
+      (interactive)
+      (if (and (local-variable-p 'org-finish-function)
+  	         (fboundp org-finish-function))
+          (funcall org-finish-function)
+        (evil-save-modified-and-close)))
+
+    (defun my-org-evil-quit ()
+      (interactive)
+      (if (and (local-variable-p 'org-finish-function)
+  	         (fboundp org-finish-function))
+          (let ((org-note-abort t)) (funcall org-finish-function))
+        (evil-quit)))
+    (:rebind #'evil-save-modified-and-close #'my-org-evil-save-modified-and-close
+             #'evil-quit #'my-org-evil-quit))
+#+end_src
+
 **** Toc Org
 [[https://github.com/snosov1/toc-org][toc-org]] will automatically update the content of the first heading with a =:TOC:= tag in an org file to show an up-to-date TOC whenever the file is saved. Handy!
 #+begin_src emacs-lisp
