@@ -60,6 +60,7 @@
     - [[#special-key-remapping][Special Key Remapping]]
     - [[#some-configurations-that-might-make-sense-to-put-here][Some Configurations that might make sense to put here]]
   - [[#main-configurations][Main Configurations]]
+    - [[#packages-2][Packages]]
     - [[#setupel][setup.el]]
     - [[#some-sane-configurations][Some Sane Configurations]]
     - [[#window-management][Window Management]]
@@ -1432,6 +1433,20 @@ Use Utf-8 as the default coding system.
   (set-language-environment "UTF-8")
   (prefer-coding-system 'utf-8-unix)
 #+end_src
+
+*** Packages
+On Android and Windows, I currently just use =package.el=.
+#+begin_src emacs-lisp
+  (setopt package-archives
+          (if (eq system-type 'gnu/linux)
+              nil
+            '(("gnu"    . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+              ("nongnu" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
+              ("melpa"  . "https://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/"))))
+
+  (defvar package-selected-packages nil)
+#+end_src
+
 *** setup.el
 [[https://www.emacswiki.org/emacs/SetupEl][setup.el]] provides "context sensitive local macros" to "ease repetitive configuration patterns in Emacs". It is considered as an alternative to the now built-in [[https://github.com/jwiegley/use-package][use-package]].
 #+begin_src scheme
@@ -1587,6 +1602,13 @@ TODO: I should split this out later.
     :repeatable t
     `(unless (eq system-type ,type)
        ,(setup-quit)))
+
+  (defsetup :package (package)
+    "Push PACKAGE into package-selected-packages."
+    :shorthand cadr
+    `(add-to-list 'package-selected-packages ',package))
+
+  (setup (:package setup))
 #+end_src
 
 *** Some Sane Configurations
@@ -1834,7 +1856,8 @@ TODO: this should not require help.
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require no-littering))
+  (setup (:package no-littering)
+    (:require no-littering))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1917,7 +1940,7 @@ TODO: this should not require help.
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup modus-themes
+  (setup (:package modus-themes)
     (:option modus-themes-mixed-fonts t)
     (:require modus-themes)
     (load-theme 'modus-vivendi :no-confirm))
@@ -2057,6 +2080,7 @@ TODO: this should not require help.
 
 #+begin_src emacs-lisp
   (setup envrc
+    (:system 'gnu/linux)
     (:also-load inheritenv)
     (:with-mode envrc-global-mode
       (:hook-into after-init)))
@@ -2112,7 +2136,7 @@ TODO: this should not require help.
 
 The configs here is basically from [[https://protesilaos.com/emacs/modus-themes#h:24bab397-dcb2-421d-aa6e-ec5bd622b913][Note on highlight-parentheses.el]] in Modus Themes documentation, modified a little bit.
 #+begin_src emacs-lisp
-  (setup highlight-parentheses
+  (setup (:package highlight-parentheses)
     (defvar my-highlight-parentheses-use-background t
       "Prefer `highlight-parentheses-background-colors'.")
 
@@ -2213,7 +2237,7 @@ I need some latest contributions to the =evil-collection= repository:
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup evil
+  (setup (:package evil)
     (:option
      evil-want-integration t ;; require by collection
      evil-want-keybinding nil ;; require by collection
@@ -2239,7 +2263,7 @@ I need some latest contributions to the =evil-collection= repository:
      (:with-state (normal)
        (:bind "<CTRL-i>" #'evil-jump-forward))))
 
-  (setup evil-collection
+  (setup (:package evil-collection)
     (:option evil-collection-setup-minibuffer t
              evil-collection-key-blacklist '("SPC" "C-SPC" "DEL" "C-z"))
     (:require evil-collection)
@@ -2300,7 +2324,7 @@ See [[https://www.hiecaq.org/posts/20250409T225608M449.html][my blog post]] for 
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] defines operators that change/add/delete delimiters around a text object.
 I remap them all to =s= for better consistency.
 #+begin_src emacs-lisp
-  (setup evil-surround
+  (setup (:package evil-surround)
     (:with-state (operator visual)
       (:unbind "s" "S" "g S"))
     (:with-state (normal operator)
@@ -2372,7 +2396,8 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require evil-snipe)
+  (setup (:package evil-snipe)
+    (:require evil-snipe)
     (:with-function turn-off-evil-snipe-override-mode (:hook-into magit-mode))
     (:option evil-snipe-repeat-scope 'whole-line)
     (:with-mode evil-snipe-override-mode
@@ -2382,7 +2407,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
 **** Evil Commentary
 [[https://github.com/linktohack/evil-commentary][evil-commentary]] defines operators for commenting.
 #+begin_src emacs-lisp
-  (setup evil-commentary
+  (setup (:package evil-commentary)
     (:also-load evil)
     (:enable))
 #+end_src
@@ -2410,14 +2435,15 @@ Add my helper commands to the ~evil-window-map~
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require god-mode)
+  (setup (:package god-mode)
+    (:require god-mode)
     (:option god-mode-alist '((nil . "C-") ("m" . "M-") ("M" . "C-M-"))
              god-mode-enable-function-key-translation t)
     (:global
-        (:with-state (normal visual motion)
-          (:bind "SPC" #'god-execute-with-current-bindings))
-      (:with-state (insert emacs motion)
-        (:bind "C-<espace>" #'god-execute-with-current-bindings)))
+     (:with-state (normal visual motion)
+       (:bind "SPC" #'god-execute-with-current-bindings))
+     (:with-state (insert emacs motion)
+       (:bind "C-<espace>" #'god-execute-with-current-bindings)))
     (defun my-god-mode-lookup-key-sequence (&optional key key-string-so-far)
       "Retry with literal KEY when the non-literal attempt failed."
       (interactive)
@@ -2493,7 +2519,7 @@ As a side note, which-key default configuration requires there to be at least 1 
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup eldoc-box
+  (setup (:package eldoc-box)
     (:option eldoc-box-clear-with-C-g t
              eldoc-box-doc-separator
              (concat "\n"
@@ -2548,7 +2574,8 @@ Its package definition in the Guix official channel is for the "latest" release 
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require ace-window)
+  (setup (:package ace-window)
+    (:require ace-window)
     (:option aw-keys '(?u ?h ?e ?t ?i ?d ?o ?n ?a ?s)
              aw-translate-char-function (lambda (c)
                                           (pcase c
@@ -2702,15 +2729,15 @@ This file provides a somewhat generic infrastructure for cross referencing comma
 
 Although =topsy= recommends to use =org-sticky-header= instead, this snippet for org-mode is good enough for me:
 #+begin_src emacs-lisp
-  (setup topsy
+  (setup (:package topsy)
     (with-eval-after-load 'topsy
       (:option (prepend topsy-mode-functions)
-              '(org-mode . (lambda ()
+               '(org-mode . (lambda ()
                               (save-excursion
-                                  (goto-char (window-start))
-                                  (when (org-at-heading-p)
+                                (goto-char (window-start))
+                                (when (org-at-heading-p)
                                   (forward-line -1))
-                                  (org-get-heading))))))
+                                (org-get-heading))))))
     (:hook-into prog-mode org-mode))
 #+end_src
 
@@ -2740,7 +2767,7 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
 
 Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Steal from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]]:
 #+begin_src emacs-lisp
-  (setup orderless
+  (setup (:package orderless)
     (defun +orderless--consult-suffix ()
       "Regexp which matches the end of string with Consult tofu support."
       (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
@@ -2883,7 +2910,8 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require vertico)
+  (setup (:package vertico)
+    (:require vertico)
     (:option enable-recursive-minibuffers t)
     (:with-map vertico-map
       (:rebind #'evil-goto-first-line #'vertico-first
@@ -2910,7 +2938,7 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require marginalia)
+  (setup (:package marginalia)
     (:enable))
 #+end_src
 
@@ -2928,7 +2956,8 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require consult)
+  (setup (:package consult)
+    (:require consult)
     (:option consult-preview-key "C-j"
              xref-show-definitions-function #'consult-xref
              xref-show-xrefs-function #'consult-xref
@@ -3098,7 +3127,8 @@ Reference:
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require embark)
+  (setup (:package embark)
+    (:require embark)
     ;; Optionally replace the key help with a completing-read interface
     (:option prefix-help-command #'embark-prefix-help-command)
     (:option embark-cycle-key "C-z")
@@ -3123,7 +3153,8 @@ Reference:
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require embark-consult))
+  (setup (:package embark-consult)
+    (:require embark-consult))
 #+end_src
 
 I find typing =embark-cycle-key= both slow (if there are MANY targets) and inconsistent (I need to keep an eye on what is the current target), so I come up with the following advice to make it use ~consult--read~ instead.
@@ -3311,7 +3342,7 @@ Note: Somehow only post-hooks can recognize ~(minibufferp)~.
 
 The functions here come from tempel's README.
 #+begin_src emacs-lisp
-  (setup tempel
+  (setup (:package tempel)
     (defun tempel-include (elt)
       (when (eq (car-safe elt) 'i)
         (if-let (template (alist-get (cadr elt) (tempel--templates)))
@@ -3348,7 +3379,7 @@ This feature is notably useful when you auto-complete a function name, in which 
 Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the name suggests, bridges eglot's snippet interface with tempel. There is also [[https://github.com/svaante/lsp-snippet][lsp-snippet]] that might worth checking later.
 
 #+begin_src emacs-lisp
-  (setup eglot-tempel
+  (setup (:package eglot-tempel)
     (:hook-into eglot-server-initialized-hook))
 #+end_src
 *** Corfu
@@ -3365,7 +3396,7 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup corfu
+  (setup (:package corfu)
     (:option corfu-preview-current nil
              corfu-quit-at-boundary nil)
     (:option tab-always-indent 'complete)
@@ -3396,7 +3427,8 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require vundo)
+  (setup (:package vundo)
+    (:require vundo)
     (:with-map my-leader-map (:bind "u" #'vundo)))
 #+end_src
 
@@ -3449,7 +3481,7 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup aggressive-indent
+  (setup (:package aggressive-indent)
     (:hook-into emacs-lisp-mode scheme-mode)
     (:option aggressive-indent-dont-indent-if '((evil-insert-state-p) (evil-replace-state-p)))
     (defun my-aggressive-indent-after-change ()
@@ -3538,7 +3570,7 @@ When each session ends, append session history instead of replacing the whole hi
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup fish-completion
+  (setup (:package fish-completion)
     (:needs "fish")
     (:option fish-completion-fallback-on-bash-p t)
     (:hook-into eshell-mode))
@@ -3564,7 +3596,7 @@ When each session ends, append session history instead of replacing the whole hi
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup magit
+  (setup (:package magit)
     (:bind "SPC" #'god-execute-with-current-bindings)
     (:with-map (magit-revision-mode-map magit-section-mode-map magit-diff-mode-map) (:bind "SPC" #'god-execute-with-current-bindings))
     (:option magit-display-buffer-function #'display-buffer
@@ -3708,6 +3740,7 @@ Emacs' built-in  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Doc
 
 #+begin_src emacs-lisp
   (setup nov
+    (:system 'gnu/linux)
     (:option nov-save-place-file (exdg-state "nov-save-place.el")
              (prepend auto-mode-alist) `(,(rx ".epub" eos) . nov-mode)))
 #+end_src
@@ -3730,6 +3763,7 @@ Anyway, I use [[https://github.com/vedang/pdf-tools][pdf-tools]] which relies on
 Its Guix package already handles the =pdfinfo= program, so I set it up without letting it re-attempt the build-on-the-fly process.
 #+begin_src emacs-lisp
   (setup pdf-tools
+    (:system 'gnu/linux)
     (pdf-loader-install nil t))
 #+end_src
 
@@ -3884,7 +3918,8 @@ References:
 **** Evil Org
 [[https://github.com/Somelauw/evil-org-mode][evil-org]] is org mode's evil integration. It provides not simply keybindings, but also text objects.
 #+begin_src emacs-lisp
-  (setup (:require evil-org)
+  (setup (:package evil-org)
+    (:require evil-org)
     (:also-load org evil-org-agenda)
     (:hook-into org-mode)
     (evil-org-set-key-theme)
@@ -3916,7 +3951,7 @@ org-log buffer, i.e. the buffer created if you set to take note when state chang
 **** Toc Org
 [[https://github.com/snosov1/toc-org][toc-org]] will automatically update the content of the first heading with a =:TOC:= tag in an org file to show an up-to-date TOC whenever the file is saved. Handy!
 #+begin_src emacs-lisp
-  (setup toc-org
+  (setup (:package toc-org)
     (:also-load org)
     (:hook-into org-mode))
 #+end_src
@@ -3947,7 +3982,7 @@ Its package definition in the Guix Official Channel is for the "latest" release 
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup org-appear
+  (setup (:package org-appear)
     (:option org-appear-trigger 'manual
              org-appear-autolinks t
              org-appear-autosubmarkers t
@@ -4149,7 +4184,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup org-roam
+  (setup (:package org-roam)
     (setq org-roam-db-gc-threshold (* 256 1024 1024)) ;; the type check is buggy
     (:option org-roam-database-connector 'sqlite-builtin
              org-roam-db-location (exdg-state "org-roam.db")
@@ -4306,7 +4341,7 @@ Add consult source:
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup org-roam-ql
+  (setup (:package org-roam-ql)
     (defun my-org-roam-ql--expansion-ft (title &optional exact)
       "Expansion function that query TITLE at top level.
   ft stands for file-title."
@@ -4478,7 +4513,7 @@ A helper function that make org-roam links by matching title:
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup ebib
+  (setup (:package ebib)
     (:option ebib-bibtex-dialect 'biblatex
              ebib-preload-bib-files my-global-bibliography
              ebib-use-timestamp t
@@ -4551,7 +4586,7 @@ There are quite a lot bibliographic packages, among which I use [[https://github
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup citar
+  (setup (:package citar)
     (:option
      citar-library-paths `(,(expand-file-name "resources" (xdg-user-dir "DOCUMENTS")))
      org-cite-global-bibliography my-global-bibliography
@@ -4563,7 +4598,7 @@ There are quite a lot bibliographic packages, among which I use [[https://github
 
 It comes with =embark= integration, where ~citar-embark-mode~ is a global mode that introduce the target and actions, and ~citar-at-point-function~ (the callback called by =org-cite= in ~org-open-at-point~) can also be set to use =embark=. As I understand it, it is meaningless to set ~citar-at-point-function~ this way without turning on ~citar-embark-mode~, since all embark can do is to provides actions to recognized targets.
 #+begin_src emacs-lisp
-  (setup citar-embark
+  (setup (:package citar-embark)
     (:option citar-at-point-function #'embark-act)
     (:enable))
 #+end_src
@@ -4579,7 +4614,7 @@ It comes with =embark= integration, where ~citar-embark-mode~ is a global mode t
 
 As far as I can tell, ~citar-org-roam-mode~ automatically sets up  ~citar-notes-sources~, making the related configuration unnecessary.
 #+begin_src emacs-lisp
-  (setup citar-org-roam
+  (setup (:package citar-org-roam)
     (:option citar-org-roam-note-title-template "${author editor}: ${title}")
     (defun my-citar-org-roam--create-capture-note (citekey entry)
       "Open or create org-roam node for CITEKEY and ENTRY."
@@ -4692,6 +4727,7 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 
 #+begin_src emacs-lisp
   (setup flymake-vale
+    (:system 'gnu/linux)
     (:with-function flymake-vale-load
       (:hook-into text-mode)))
 #+end_src
@@ -4737,7 +4773,8 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require titlecase)
+  (setup (:package titlecase)
+    (:require titlecase)
     (:also-load embark)
     (:with-map embark-heading-map
       (:bind "T" #'titlecase-line))
@@ -4795,7 +4832,8 @@ Its package definition introduces =lsp-mode= and =flycheck=, so I defines a vari
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require rustic)
+  (setup (:package rustic)
+    (:require rustic)
     (:option rustic-lsp-client 'eglot)
     (:option (prepend display-buffer-alist)
              '((derived-mode . rustic-compilation-mode)
@@ -4992,6 +5030,7 @@ Here is How =mu= is initialized. This needs to be run manually.
 ***** Front-end Settings
 #+begin_src emacs-lisp
   (setup mu4e
+    (:system 'gnu/linux)
     (defun my-mu4e-trash-folder-dispatch (msg)
       (if (and msg
                (string= "/feed" (mu4e-message-field msg :maildir)))
@@ -5062,6 +5101,7 @@ Advice ~org-timer-item~ so that when mpv is running it inserts the mpv timestamp
 Add ~mpv-seek-to-position-at-point~ to ~org-open-at-point-functions~ on demand:
 #+begin_src emacs-lisp
   (setup mpv
+    (:system 'gnu/linux)
     (:with-hook mpv-on-start-hook
       (:hook (lambda (&rest r) (add-hook 'org-open-at-point-functions
                                          #'mpv-seek-to-position-at-point))))
@@ -5115,7 +5155,8 @@ Define an embark target and keymap, which can be used when mpv is running.
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup (:require pyim)
+  (setup (:package pyim)
+    (:require pyim)
     (:require pyim-basedict)
     (pyim-basedict-enable)
     (:option default-input-method "pyim"
@@ -5276,7 +5317,7 @@ One thing that dired (with tramp) does it badly is copying files over network. F
 #+end_src
 
 #+begin_src emacs-lisp
-  (setup dired-rsync
+  (setup (:package dired-rsync)
     (:option dired-rsync-options "-azs --info=progress2"))
 #+end_src
 
@@ -5407,6 +5448,7 @@ As far as I can tell, the browser feature depends on the cache feature, so we ha
 The following configuration let a posframe show up whenever there are new notifications. When the posframe is presented, I can use =C-g= to dismiss the latest notification, and when there is none the posframe will be automatically closed (well, invisible actually).
 #+begin_src emacs-lisp
   (setup ednc
+    (:system 'gnu/linux)
     (defvar my-ednc-posframe--buffer "*ednc-posframe*"
       "Buffer used for ednc notification posframe display.")
 
