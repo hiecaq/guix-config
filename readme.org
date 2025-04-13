@@ -4350,10 +4350,15 @@ A helper function that make org-roam links by matching title:
     (defvar my-org-roam-dailies-prelude
       (string-join
        '("#+title: %<%Y-%m-%d>"
-         "#+date:%U"
+         "#+date: %U"
          ""
          "- under %(my-roam-link-make-string \"Daily Notes\" \"under\")"
          ""
+         "* Log"
+         ""
+         "* Done"
+         "#+begin: org-roam-ql :query (and (todo \"DONE\") (closed > \"%<%Y-%m-%d>T04:00:00\") (closed < \"%<%Y-%m-%d>T04:00:00\")) :columns (file-title title closed) :sort \"closed\""
+         "#+end:"
          "")
        "\n")
       "Prelude text at the beginning of my daily notes.")
