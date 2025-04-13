@@ -1580,6 +1580,13 @@ TODO: I should split this out later.
     "Enable the current mode."
     :debug '(form)
     `(,(setup-get 'mode) 1))
+
+  (defsetup :system (type)
+    "If system-type is not TYPE, stop here."
+    :debug '(form)
+    :repeatable t
+    `(unless (eq system-type ,type)
+       ,(setup-quit)))
 #+end_src
 
 *** Some Sane Configurations
@@ -1848,12 +1855,53 @@ TODO: this should not require help.
 
 *** Fonts
 #+begin_src emacs-lisp
-  (set-face-attribute 'default nil :height 140)
-  (set-face-attribute 'variable-pitch nil :weight 'normal :inherit 'default)
-  (when (eq system-type 'gnu/linux)
-    (set-face-attribute 'default nil        :family "Hack")
-    (set-face-attribute 'variable-pitch nil :family "Sans Serif"))
-  (set-face-attribute 'fixed-pitch nil    :family  (internal-get-lisp-face-attribute 'default :family))
+  (defun my-faces-initialize (&rest _)
+    "Initialize faces when the first graphic display is available."
+    (when (display-graphic-p)
+      (let* ((families (font-family-list))
+             (family-p (lambda (family) (member family families)))
+             (first-family-installed
+              (lambda (family-list)
+                (seq-find family-p family-list))))
+
+        (setup faces
+          (when-let* ((family
+                       (funcall first-family-installed '("Hack Nerd Font Mono"
+                                                         "Hack"
+                                                         "Noto Sans Mono"))))
+            (set-face-attribute 'default nil :family family))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans"
+                                                         "Sans Serif"))))
+            (set-face-attribute 'variable-pitch nil :family family)))
+
+        (setup faces
+          (:system 'gnu/linux)
+          (set-face-attribute 'default nil :height 140))
+
+        (setup faces
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans CJK SC"))))
+            (set-fontset-font t 'han (font-spec :family "Noto Sans CJK SC")))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans CJK JP"))))
+            (set-fontset-font t 'kana (font-spec :family "Noto Sans CJK JP")))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans CJK SC"))))
+            (set-fontset-font t 'cjk-misc (font-spec :family "Noto Sans CJK SC")))))
+
+      (setup faces
+        (set-face-attribute 'variable-pitch nil :weight 'normal :inherit 'default)
+        (set-face-attribute 'fixed-pitch nil    :family  (internal-get-lisp-face-attribute 'default :family)))
+
+      (remove-hook 'after-make-frame-functions #'my-faces-initialize)))
+
+  (if (display-graphic-p)
+      (my-faces-initialize)
+    (add-hook 'after-make-frame-functions #'my-faces-initialize))
 #+end_src
 
 *** Modus Themes
