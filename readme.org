@@ -63,10 +63,12 @@
     - [[#packages-2][Packages]]
     - [[#setupel][setup.el]]
     - [[#some-sane-configurations][Some Sane Configurations]]
+      - [[#android-1][Android]]
     - [[#window-management][Window Management]]
     - [[#universal-argument][Universal Argument]]
     - [[#pcre][PCRE]]
     - [[#help][Help]]
+    - [[#info][Info]]
     - [[#xdg][Xdg]]
     - [[#no-littering][No Littering]]
     - [[#fonts-1][Fonts]]
@@ -1834,6 +1836,13 @@ TODO: this should not require help.
 #+begin_src emacs-lisp
   (setup (:require help)
     (:global (:unbind "C-h C-h")))
+#+end_src
+
+*** Info
+Info is a built-in Texinfo browser.
+#+begin_src emacs-lisp
+  (setup Info
+    (:local-set truncate-lines t))
 #+end_src
 
 *** Xdg
