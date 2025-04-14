@@ -1708,6 +1708,14 @@ Time out on remote file access (in seconds), for example if they are offline, so
     (:option remote-file-name-access-timeout 3))
 #+end_src
 
+**** Android
+#+begin_src emacs-lisp
+  (setup touch-screen
+    (:system 'android)
+    (:option overriding-text-conversion-style nil)
+    (:option touch-screen-display-keyboard t))
+#+end_src
+
 *** Window Management
 #+begin_src emacs-lisp
   (setup window
