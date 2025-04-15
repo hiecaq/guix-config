@@ -58,6 +58,7 @@
   - [[#early-initialization][Early Initialization]]
     - [[#packages-1][Packages]]
     - [[#special-key-remapping][Special Key Remapping]]
+    - [[#fonts-1][Fonts]]
     - [[#some-configurations-that-might-make-sense-to-put-here][Some Configurations that might make sense to put here]]
   - [[#main-configurations][Main Configurations]]
     - [[#packages-2][Packages]]
@@ -71,7 +72,6 @@
     - [[#info][Info]]
     - [[#xdg][Xdg]]
     - [[#no-littering][No Littering]]
-    - [[#fonts-1][Fonts]]
     - [[#modus-themes][Modus Themes]]
     - [[#mode-line][Mode Line]]
     - [[#midnight][Midnight]]
@@ -1406,6 +1406,52 @@ grabbed from [[https://emacsnotes.wordpress.com/2022/09/11/three-bonus-keys-c-i-
          (define-key input-decode-map (kbd "C-m") [CTRL-m])))))
 #+end_src
 
+*** Fonts
+#+begin_src emacs-lisp
+  (defun my-faces-initialize (frame)
+    "Initialize faces when the first graphic display is available."
+    (with-selected-frame frame
+      (when (display-graphic-p)
+        (let* ((families (font-family-list))
+               (family-p (lambda (family) (member family families)))
+               (first-family-installed
+                (lambda (family-list)
+                  (seq-find family-p family-list))))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Hack Nerd Font Mono"
+                                                         "Hack"
+                                                         "Noto Sans Mono"))))
+            (set-face-attribute 'default nil :family family))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans"
+                                                         "Sans Serif"))))
+            (set-face-attribute 'variable-pitch nil :family family))
+
+          (when (eq system-type 'gnu/linux)
+            (set-face-attribute 'default nil :height 140))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans CJK SC"))))
+            (set-fontset-font t 'han (font-spec :family "Noto Sans CJK SC")))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans CJK JP"))))
+            (set-fontset-font t 'kana (font-spec :family "Noto Sans CJK JP")))
+
+          (when-let* ((family
+                       (funcall first-family-installed '("Noto Sans CJK SC"))))
+            (set-fontset-font t 'cjk-misc (font-spec :family "Noto Sans CJK SC"))))
+
+        (set-face-attribute 'variable-pitch nil :weight 'normal :inherit 'default)
+        (set-face-attribute 'fixed-pitch nil    :family  (internal-get-lisp-face-attribute 'default :family))
+
+        (remove-hook 'after-make-frame-functions #'my-faces-initialize))))
+
+  (add-hook 'after-make-frame-functions #'my-faces-initialize)
+#+end_src
+
 *** Some Configurations that might make sense to put here
 ~load~ prefers the newest version of a file (when suffix is not given).
 #+begin_src emacs-lisp
@@ -1891,57 +1937,6 @@ Info is a built-in Texinfo browser.
   (def-exdg-home-dir state)
 
   (setq exdg-config-dir (expand-file-name "config/" user-emacs-directory))
-#+end_src
-
-*** Fonts
-#+begin_src emacs-lisp
-  (defun my-faces-initialize (&rest _)
-    "Initialize faces when the first graphic display is available."
-    (when (display-graphic-p)
-      (let* ((families (font-family-list))
-             (family-p (lambda (family) (member family families)))
-             (first-family-installed
-              (lambda (family-list)
-                (seq-find family-p family-list))))
-
-        (setup faces
-          (when-let* ((family
-                       (funcall first-family-installed '("Hack Nerd Font Mono"
-                                                         "Hack"
-                                                         "Noto Sans Mono"))))
-            (set-face-attribute 'default nil :family family))
-
-          (when-let* ((family
-                       (funcall first-family-installed '("Noto Sans"
-                                                         "Sans Serif"))))
-            (set-face-attribute 'variable-pitch nil :family family)))
-
-        (setup faces
-          (:system 'gnu/linux)
-          (set-face-attribute 'default nil :height 140))
-
-        (setup faces
-          (when-let* ((family
-                       (funcall first-family-installed '("Noto Sans CJK SC"))))
-            (set-fontset-font t 'han (font-spec :family "Noto Sans CJK SC")))
-
-          (when-let* ((family
-                       (funcall first-family-installed '("Noto Sans CJK JP"))))
-            (set-fontset-font t 'kana (font-spec :family "Noto Sans CJK JP")))
-
-          (when-let* ((family
-                       (funcall first-family-installed '("Noto Sans CJK SC"))))
-            (set-fontset-font t 'cjk-misc (font-spec :family "Noto Sans CJK SC")))))
-
-      (setup faces
-        (set-face-attribute 'variable-pitch nil :weight 'normal :inherit 'default)
-        (set-face-attribute 'fixed-pitch nil    :family  (internal-get-lisp-face-attribute 'default :family)))
-
-      (remove-hook 'after-make-frame-functions #'my-faces-initialize)))
-
-  (if (display-graphic-p)
-      (my-faces-initialize)
-    (add-hook 'after-make-frame-functions #'my-faces-initialize))
 #+end_src
 
 *** Modus Themes
