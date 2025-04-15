@@ -2587,7 +2587,7 @@ Its package definition in the Guix official channel is for the "latest" release 
 
 #+begin_src emacs-lisp
   (setup (:package ace-window)
-    (:require ace-window)
+    (:also-load ace-window-posframe)
     (:option aw-keys '(?u ?h ?e ?t ?i ?d ?o ?n ?a ?s)
              aw-translate-char-function (lambda (c)
                                           (pcase c
@@ -2617,7 +2617,9 @@ Its package definition in the Guix official channel is for the "latest" release 
                                  (?O delete-other-windows "Delete Other Windows")
                                  (?T aw-transpose-frame "Transpose Frame")
                                  ;; ?i ?r ?t are used by hyperbole.el
-                                 (?? aw-show-dispatch-help)))
+                                 (?? aw-show-dispatch-help))))
+
+  (setup evil
     (:global (:rebind #'evil-window-next #'ace-window
                       #'other-window  #'ace-window)))
 #+end_src
@@ -2625,7 +2627,7 @@ Its package definition in the Guix official channel is for the "latest" release 
 =ace-window= has its =posframe= integration now (which is the main reason why I need more recent commits), which use it to show the keys in the centers of buffers.
 #+begin_src emacs-lisp
   (setup ace-window-posframe
-    (:enable))
+    (:when-loaded (:enable)))
 #+end_src
 
 *** Spell Checking
