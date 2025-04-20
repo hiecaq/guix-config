@@ -2644,7 +2644,6 @@ Emacs comes with a spell checking wrapper...
 #+begin_src emacs-lisp
   (setup flyspell
     (:needs "hunspell")
-    ;; (general-unbind flyspell-mode-map "C-;")
     (:unbind "C-;")
     (:hook-into text-mode)
     (:with-mode flyspell-prog-mode
@@ -3934,6 +3933,7 @@ References:
 #+begin_src emacs-lisp
   (setup (:package evil-org)
     (:require evil-org)
+    (:option (remove evil-org-key-theme) 'textobjects)
     (:also-load org evil-org-agenda)
     (:hook-into org-mode)
     (evil-org-set-key-theme)
