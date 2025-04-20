@@ -1483,8 +1483,8 @@ Use Utf-8 as the default coding system.
 #+end_src
 
 *** Packages
-On Android and Windows, I currently just use =package.el=.
-#+begin_src emacs-lisp
+On Android and Windows, I currently just use =package.el=, because Guix doesn't support them (yet?).
+#+begin_src emacs-lisp :noweb yes
   (setopt package-archives
           (if (eq system-type 'gnu/linux)
               nil
@@ -1492,7 +1492,16 @@ On Android and Windows, I currently just use =package.el=.
               ("nongnu" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
               ("melpa"  . "https://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/"))))
 
-  (defvar package-selected-packages nil)
+  (defvar package-selected-packages '<<current-selected-packages()>>)
+
+  (when package-archives
+    (package-initialize))
+#+end_src
+
+On Linux when I tangle the =init.el=, my generated ~package-selected-packages~ will contains the packages I need on these platforms.  Then after the Emacs on these platforms loading my =init.el=, I can manually call ~package-install-selected-packages~ to get them installed.
+#+name: current-selected-packages
+#+begin_src elisp :exports none
+  package-selected-packages
 #+end_src
 
 *** setup.el
@@ -2503,6 +2512,10 @@ As a side note, which-key default configuration requires there to be at least 1 
      (list
       (specification->package
        "emacs-posframe")))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup (:package posframe))
 #+end_src
 
 *** Eldoc
