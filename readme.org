@@ -105,6 +105,9 @@
     - [[#marginalia][Marginalia]]
     - [[#consult][Consult]]
     - [[#embark][Embark]]
+      - [[#consult-based-embark-cycle][Consult-based Embark Cycle]]
+      - [[#embark-as-the-leader-key][Embark as the leader key]]
+      - [[#open-in-chosen-window][Open in chosen window]]
       - [[#keybindings-for-copy][Keybindings for copy]]
       - [[#copy-file-name-with-line-number][Copy file name with line number]]
     - [[#tempel][Tempel]]
@@ -3185,6 +3188,22 @@ Reference:
     (:require embark-consult))
 #+end_src
 
+With ~embark-live~, a buffer is live-updating to show the candidates of the current completing-read, which means vertico's own view is redundant. Minad Provides [[https://github.com/minad/vertico/wiki#automatically-shrink-vertico-for-embark-live][the following solution]]. Note that this needs ~vertico-multiform-mode~.
+#+begin_src emacs-lisp
+  (setup embark
+    (defun +embark-live-vertico ()
+      "Shrink Vertico minibuffer when `embark-live' is active."
+      (when-let (win (and (string-prefix-p "*Embark Live" (buffer-name))
+                          (active-minibuffer-window)))
+        (with-selected-window win
+          (when (and (bound-and-true-p vertico--input)
+                     (fboundp 'vertico-multiform-unobtrusive))
+            (vertico-multiform-unobtrusive)))))
+    (:with-mode embark-collect-mode
+      (:hook +embark-live-vertico)))
+#+end_src
+
+**** Consult-based Embark Cycle
 I find typing =embark-cycle-key= both slow (if there are MANY targets) and inconsistent (I need to keep an eye on what is the current target), so I come up with the following advice to make it use ~consult--read~ instead.
 
 The way to use it is simply by typing =embark-cycle-key= as usual, or set the universal argument before doing ~embark-act~. In either case, a consult session will be brought up, and we can select targets by their types in it. Once a target is picked, the embark target list will be rotated until the selected target is at front.
@@ -3226,7 +3245,6 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
                 k))))
     (advice-add #'embark--rotate :filter-args #'my-embark--rotate-modify-k))
 #+end_src
-TODO: I'm thinking about binding =c-u embark-act= directly,
 
 After using this set-up for a while, I found it quite annoying that it requires hitting =RET= after filtering to pick targets. This can be fixed with this advice:
 #+begin_src emacs-lisp
@@ -3238,6 +3256,8 @@ After using this set-up for a while, I found it quite annoying that it requires 
       (vertico-exit)))
 #+end_src
 
+**** Embark as the leader key
+The original idea is from [[https://github.com/oantolin/embark/wiki/Additional-Actions#use-embark-like-a-leader-key][the wiki]].
 #+begin_src emacs-lisp
   (cl-defun my-embark--ignore-target (&key action target &allow-other-keys)
     "If the target is empty (introduced by global), do thing."
@@ -3287,21 +3307,7 @@ After using this set-up for a while, I found it quite annoying that it requires 
   (add-to-list 'embark-keymap-alist '(this-file . this-file-map))
 #+end_src
 
-With ~embark-live~, a buffer is live-updating to show the candidates of the current completing-read, which means vertico's own view is redundant. Minad Provides [[https://github.com/minad/vertico/wiki#automatically-shrink-vertico-for-embark-live][the following solution]]. Note that this needs ~vertico-multiform-mode~.
-#+begin_src emacs-lisp
-  (setup embark
-    (defun +embark-live-vertico ()
-      "Shrink Vertico minibuffer when `embark-live' is active."
-      (when-let (win (and (string-prefix-p "*Embark Live" (buffer-name))
-                          (active-minibuffer-window)))
-        (with-selected-window win
-          (when (and (bound-and-true-p vertico--input)
-                     (fboundp 'vertico-multiform-unobtrusive))
-            (vertico-multiform-unobtrusive)))))
-    (:with-mode embark-collect-mode
-      (:hook +embark-live-vertico)))
-#+end_src
-
+**** Open in chosen window
 I found that very often I want the buffer opened by embark to be somewhere I assign. Adapted from [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Karthik Chikmagalur's hack]] and [[https://karthinks.com/software/emacs-window-management-almanac/#a-window-prefix-command-for-ace-window][ace-window-prefix]], I now have a way of picking the window (or splitting on-the-fly) by calling ~my-embark-act-other-window~. For minibuffer things are a little bit complicated, and currently I'm using a toggle outside of Embark directly.
 #+begin_src emacs-lisp
   (setup embark
