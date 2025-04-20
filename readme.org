@@ -4464,6 +4464,9 @@ A helper function that make org-roam links by matching title:
 
 #+begin_src emacs-lisp
   (setup org-roam-dailies
+    (defun my-org-roam-dailies-timestamp (date offset-sec)
+      (format-time-string "%FT%T"
+                          (time-add (date-to-time date) (+ midnight-delay offset-sec))))
     (defvar my-org-roam-dailies-prelude
       (string-join
        '("#+title: %<%Y-%m-%d>"
@@ -4474,7 +4477,7 @@ A helper function that make org-roam links by matching title:
          "* Log"
          ""
          "* Done"
-         "#+begin: org-roam-ql :query (and (todo \"DONE\") (closed > \"%<%Y-%m-%d>T04:00:00\") (closed < \"%<%Y-%m-%d>T04:00:00\")) :columns (file-title title closed) :sort \"closed\""
+         "#+begin: org-roam-ql :query (and (todo \"DONE\") (closed > \"%(my-org-roam-dailies-timestamp \"%<%F>\" 0)\") (closed < \"%(my-org-roam-dailies-timestamp \"%<%F>\" (* 60 60 24))\")) :columns (file-title title closed) :sort \"closed\""
          "#+end:"
          "")
        "\n")
@@ -4499,7 +4502,9 @@ A helper function that make org-roam links by matching title:
       (org-roam-dailies-capture-today nil "l"))
     (defun my-org-roam-dailies-log-today-with-context ()
       (interactive)
-      (org-roam-dailies-capture-today nil "L"))
+      (org-roam-dailies-capture-today nil "L")))
+
+  (setup embark
     (:with-map my-global-consult-map
       (:bind "l" #'my-org-roam-dailies-log-today))
     (:with-map my-global-consult-map
