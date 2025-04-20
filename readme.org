@@ -138,6 +138,7 @@
     - [[#english][English]]
       - [[#linting][Linting]]
       - [[#capitalizing][Capitalizing]]
+      - [[#dictionary][Dictionary]]
     - [[#eglot][Eglot]]
     - [[#haskell][Haskell]]
     - [[#rust][Rust]]
@@ -4886,6 +4887,60 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
       (:bind "T" #'titlecase-line))
     (:with-map embark-region-map
       (:bind "T" #'titlecase-region)))
+#+end_src
+
+**** Dictionary
+#+begin_src scheme
+  (simple-service
+   'home-emacs-sdcv
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package "emacs-quick-sdcv")))))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-quick-sdcv
+    (package
+      (name "emacs-quick-sdcv")
+      (version "1.0.1")
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/jamescherti/quick-sdcv.el")
+                      (commit version)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "19ywfnf5ws40h9iv03xibjfk1hfpnb67zf9702px3yg5j1mhr845"))))
+      (build-system emacs-build-system)
+      (inputs
+       (list (@(gnu packages dictionaries) sdcv)))
+      (arguments
+       `(#:tests? #f
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'set-sdcv-path
+             (lambda* (#:key inputs outputs #:allow-other-keys)
+               (emacs-substitute-variables "quick-sdcv.el"
+                 ("quick-sdcv-program"
+                  (string-append (assoc-ref inputs "sdcv")
+                                 "/bin/sdcv"))))))))
+      (synopsis "front-end to sdcv")
+      (description "Emacs offline dictionary using the 'sdcv'.")
+      (home-page "https://github.com/jamescherti/quick-sdcv.el")
+      (license license:gpl3+)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup quick-sdcv
+    (:option quick-sdcv-dictionary-data-dir (expand-file-name "dictionaries" (xdg-user-dir "DOCUMENTS"))
+             quick-sdcv-only-data-dir t))
+
+  (setup embark
+    (:with-map embark-region-map
+      (:bind "k" #'quick-sdcv-search-input)))
 #+end_src
 
 *** Eglot
