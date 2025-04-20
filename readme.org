@@ -2273,14 +2273,6 @@ I need some latest contributions to the =evil-collection= repository:
      evil-respect-visual-line-mode t ;; When =visual-line-mode= is set (especially in =org-mode=), I want Vim to behave as visual lines are normal lines (i.e. bind =j= to =gj= etc)
      evil-mode-line-format nil
      evil-search-module 'evil-search)
-    (defvar-keymap my-leader-map)
-    (defun my-leader-key ()
-      (interactive)
-      (set-transient-map my-leader-map))
-    (:global
-     (:unbind "C-SPC")
-     ;; (:bind "C-SPC" #'my-leader-key)
-     (:bind "C-SPC" (my-with-universal-argument #'embark-act)))
     (:require evil)
     (:enable)
     (:global
@@ -3259,52 +3251,84 @@ After using this set-up for a while, I found it quite annoying that it requires 
 **** Embark as the leader key
 The original idea is from [[https://github.com/oantolin/embark/wiki/Additional-Actions#use-embark-like-a-leader-key][the wiki]].
 #+begin_src emacs-lisp
-  (cl-defun my-embark--ignore-target (&key action target &allow-other-keys)
-    "If the target is empty (introduced by global), do thing."
-    (when (string-empty-p target)
-      (embark--ignore-target)))
-
-  (defun embark-target-global ()
-    (cons 'global ""))
-  (add-hook 'embark-target-finders #'embark-target-global 100)
-  (add-to-list 'embark-keymap-alist '(global . my-global-consult-map))
-  (map-keymap
-   (lambda (_key cmd)
-     (cl-pushnew 'my-embark--ignore-target
-                 (alist-get cmd embark-target-injection-hooks)))
-   my-global-consult-map)
+  (setup embark
+    (defvar my-embark-leader-target-finder '()
+      "List of embark targets that are used in leader key invocation."))
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun embark-target-this-buffer ()
-    (when-let ((buffer (buffer-name)))
-      (cons 'this-buffer buffer)))
+  (setup embark
+    (cl-defun my-embark--ignore-target (&key action target &allow-other-keys)
+      "If the target is empty (introduced by global), do thing."
+      (when (string-empty-p target)
+        (embark--ignore-target)))
 
-  (add-hook 'embark-target-finders #'embark-target-this-buffer 98)
+    (defun embark-target-global ()
+      (cons 'global ""))
 
-  (defvar-keymap this-buffer-map
-    :doc "Commands to act on current file."
-    :parent embark-buffer-map
-    "g" #'revert-buffer
-    "u" #'vundo
-    "D" #'toggle-window-dedicated)
+    (map-keymap
+     (lambda (_key cmd)
+       (cl-pushnew 'my-embark--ignore-target
+                   (alist-get cmd embark-target-injection-hooks)))
+     my-global-consult-map)
 
-  (add-to-list 'embark-keymap-alist '(this-buffer . this-buffer-map))
+    (:when-loaded
+      (:option (prepend my-embark-leader-target-finder) #'embark-target-global
+               (prepend embark-keymap-alist) '(global . my-global-consult-map))))
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun embark-target-this-file ()
-    (when-let ((file (buffer-file-name)))
-      (cons 'this-file file)))
+  (setup embark
+    (defun embark-target-this-buffer ()
+      (when-let ((buffer (buffer-name)))
+        (cons 'this-buffer buffer)))
 
-  (add-hook 'embark-target-finders #'embark-target-this-file 97)
+    (defvar-keymap this-buffer-map
+      :doc "Commands to act on current file."
+      :parent embark-buffer-map
+      "g" #'revert-buffer
+      "u" #'vundo
+      "D" #'toggle-window-dedicated)
 
-  (defvar-keymap this-file-map
-    :doc "Commands to act on current file."
-    :parent embark-file-map
-    "g" #'revert-buffer)
+    (:when-loaded
+      (:option (prepend my-embark-leader-target-finder) #'embark-target-this-buffer
+               (prepend embark-keymap-alist) '(this-buffer . this-buffer-map))))
+#+end_src
 
-  (add-to-list 'embark-keymap-alist '(this-file . this-file-map))
+#+begin_src emacs-lisp
+  (setup embark
+    (defun embark-target-this-file ()
+      (when-let ((file (buffer-file-name)))
+        (cons 'this-file file)))
+
+    (defvar-keymap this-file-map
+      :doc "Commands to act on current file."
+      :parent embark-file-map
+      "g" #'revert-buffer)
+
+    (:when-loaded
+      (:option (prepend my-embark-leader-target-finder) #'embark-target-this-file
+               (prepend embark-keymap-alist) '(this-file . this-file-map))))
+#+end_src
+
+I realize that when using Embark as the leader key, all the targets I really want are the targets defined in this heading section.  Thus I'd rather get rid of other targets in this situation.  This is actually suggested in the wiki, but I didn't understand the implication on the overall productivity at that time.
+#+begin_src emacs-lisp
+  (setup embark
+    (defun my-embark-leader ()
+      (interactive)
+      (let ((embark-target-finders `(embark--vertico-selected
+                                     embark-target-top-minibuffer-candidate
+                                     embark-target-collect-candidate
+                                     ,@my-embark-leader-target-finder))
+            (current-prefix-arg '(4)))
+        (call-interactively #'embark-act))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup evil
+    (:global
+     (:unbind "C-SPC")
+     (:bind "C-SPC" #'my-embark-leader)))
 #+end_src
 
 **** Open in chosen window
@@ -3505,8 +3529,7 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
 
 #+begin_src emacs-lisp
   (setup (:package vundo)
-    (:require vundo)
-    (:with-map my-leader-map (:bind "u" #'vundo)))
+    (:require vundo))
 #+end_src
 
 *** Hideshow
@@ -3690,7 +3713,6 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
   (setup (:require project)
     (:option project-switch-use-entire-map t
              project-list-file (exdg-state "project-list.el"))
-    (:with-map my-leader-map (:bind "p" project-prefix-map))
     (:with-map project-prefix-map
       (:bind "m" #'magit-project-status
              "v" #'my-project-vterm
@@ -3699,22 +3721,23 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun embark-target-project ()
-    (cons 'project
-          (if-let ((project (project-current nil))
-                   (project-name (project-name project)))
-              project-name
-            "<unknown>")))
+  (setup embark
+    (defun embark-target-project ()
+      (cons 'project
+            (if-let ((project (project-current nil))
+                     (project-name (project-name project)))
+                project-name
+              "<unknown>")))
 
-  (add-hook 'embark-target-finders #'embark-target-project 99)
+    (map-keymap
+     (lambda (_key cmd)
+       (cl-pushnew 'embark--ignore-target
+                   (alist-get cmd embark-target-injection-hooks)))
+     project-prefix-map)
 
-  (add-to-list 'embark-keymap-alist '(project . project-prefix-map))
-
-  (map-keymap
-   (lambda (_key cmd)
-     (cl-pushnew 'embark--ignore-target
-                 (alist-get cmd embark-target-injection-hooks)))
-   project-prefix-map)
+    (:when-loaded
+      (:option (prepend my-embark-leader-target-finder) #'embark-target-project
+               (prepend embark-keymap-alist) '(project . project-prefix-map))))
 #+end_src
 
 ~project-prefixed-buffer-name~ is used for project shells (and Eshells), we can configure it to be used for compilation buffers too:
@@ -5196,26 +5219,25 @@ Add ~mpv-seek-to-position-at-point~ to ~org-open-at-point-functions~ on demand:
 
 Define an embark target and keymap, which can be used when mpv is running.
 #+begin_src emacs-lisp
-  (defun embark-target-mpv ()
-    (when (and (fboundp #'mpv-live-p) (mpv-live-p))
-      (cons 'mpv (mpv-get-property "filename/no-ext"))))
-
-  (add-hook 'embark-target-finders #'embark-target-mpv 10)
-
-  (defvar-keymap embark-mpv-map
-    :doc "Commands to act on current mpv process."
-    :parent embark-general-map
-    "RET" #'mpv-pause
-    "q" #'mpv-quit
-    "k" #'mpv-kill
-    "f" #'mpv-seek-forward
-    "b" #'mpv-seek-backward
-    "-" #'mpv-volume-decrease
-    "+" #'mpv-volume-increase)
-
   (setup embark
+    (defun embark-target-mpv ()
+      (when (and (fboundp #'mpv-live-p) (mpv-live-p))
+        (cons 'mpv (mpv-get-property "filename/no-ext"))))
+
+    (defvar-keymap embark-mpv-map
+      :doc "Commands to act on current mpv process."
+      :parent embark-general-map
+      "RET" #'mpv-pause
+      "q" #'mpv-quit
+      "k" #'mpv-kill
+      "f" #'mpv-seek-forward
+      "b" #'mpv-seek-backward
+      "-" #'mpv-volume-decrease
+      "+" #'mpv-volume-increase)
+
     (:when-loaded
       (:option (prepend embark-keymap-alist) '(mpv . embark-mpv-map)
+               (prepend my-embark-leader-target-finder) #'embark-target-mpv
                (prepend* embark-repeat-actions)
                '(mpv-seek-forward
                  mpv-seek-backward
