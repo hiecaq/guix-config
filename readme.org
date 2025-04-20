@@ -105,6 +105,7 @@
     - [[#marginalia][Marginalia]]
     - [[#consult][Consult]]
     - [[#embark][Embark]]
+      - [[#keybindings-for-copy][Keybindings for copy]]
     - [[#tempel][Tempel]]
       - [[#eglot-tempel][Eglot-tempel]]
     - [[#corfu][Corfu]]
@@ -3346,6 +3347,32 @@ I found that very often I want the buffer opened by embark to be somewhere I ass
       (:bind "M-o" #'ace-window-prefix)))
 #+end_src
 Note: Somehow only post-hooks can recognize ~(minibufferp)~.
+
+**** Keybindings for copy
+As evil user, =w= is too strange for me.
+#+begin_src emacs-lisp
+  (setup embark
+    (:with-map embark-general-map
+      (:unbind "w")
+      (:bind "y" #'embark-copy-as-kill))
+    (:with-map embark-file-map
+      (:unbind "W")
+      (:bind "Y" #'embark-save-relative-path))
+    (:with-map embark-package-map
+      (:unbind "W")
+      (:bind "Y" #'embark-save-package-url))
+    (:with-map embark-unicode-name-map
+      (:unbind "W")
+      (:bind "Y" #'embark-save-unicode-character)))
+
+  (setup embark-org
+    (:with-map embark-org-link-copy-map
+      (:unbind "w")
+      (:bind "y" #'embark-org-copy-link-inner-target))
+    (:with-map embark-org-link-map
+      (:unbind "w")
+      (:bind "y" #'embark-org-link-copy-map)))
+#+end_src
 
 *** Tempel
 [[https://github.com/minad/tempel][tempel]] is a "tiny template package for Emacs", using the built-in template package Tempo's syntax. I use it instead of famous [[https://github.com/joaotavora/yasnippet][YASnippet]] because
