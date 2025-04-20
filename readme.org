@@ -106,6 +106,7 @@
     - [[#consult][Consult]]
     - [[#embark][Embark]]
       - [[#keybindings-for-copy][Keybindings for copy]]
+      - [[#copy-file-name-with-line-number][Copy file name with line number]]
     - [[#tempel][Tempel]]
       - [[#eglot-tempel][Eglot-tempel]]
     - [[#corfu][Corfu]]
@@ -3372,6 +3373,23 @@ As evil user, =w= is too strange for me.
     (:with-map embark-org-link-map
       (:unbind "w")
       (:bind "y" #'embark-org-link-copy-map)))
+#+end_src
+
+**** Copy file name with line number
+This is quite useful for GUD GDB etc.  The original idea is from [[https://mbork.pl/2025-04-14_Copying_the_current_location_on_steroids][Marcin Borkowski]] but I don't need something that fancy.
+#+begin_src emacs-lisp
+  (setup embark
+    (defun my-copy-file-location (buf)
+      "Copy the buffer's file name with line number."
+      (interactive "bBuffer: ")
+      (when-let* ((buffer (if buf buf (current-buffer)))
+                  (file-name (with-current-buffer buffer buffer-file-name))
+                  (line (with-current-buffer buffer
+                          (line-number-at-pos nil 'absolute)))
+                  (s (format "%s:%d" (file-name-nondirectory file-name) line)))
+        (kill-new s)))
+
+    (:with-map embark-buffer-map (:bind "Y" #'my-copy-file-location)))
 #+end_src
 
 *** Tempel
