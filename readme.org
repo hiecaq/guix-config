@@ -4033,19 +4033,24 @@ References:
 org-log buffer, i.e. the buffer created if you set to take note when state changes, is not of a special mode other than just org-mode.  So in order to still use =ZZ= and =ZQ= to finish editing or abort editing, I decide to replace the evil commands:
 #+begin_src emacs-lisp
   (setup org
-    (defun my-org-evil-save-modified-and-close ()
-      (interactive)
+    (evil-define-command my-org-evil-save-modified-and-close (file &optional bang)
+      "Close and saves the log buffer, otherwise call `evil-save-modified-and-close'."
+      :repeat nil
+      (interactive "<f><!>")
       (if (and (local-variable-p 'org-finish-function)
   	         (fboundp org-finish-function))
           (funcall org-finish-function)
-        (evil-save-modified-and-close)))
+        (evil-save-modified-and-close file bang)))
 
-    (defun my-org-evil-quit ()
-      (interactive)
+    (evil-define-command my-org-evil-quit (&optional force)
+      "Close and saves the log buffer, otherwise call `evil-quit'."
+      :repeat nil
+      (interactive "<!>")
       (if (and (local-variable-p 'org-finish-function)
   	         (fboundp org-finish-function))
           (let ((org-note-abort t)) (funcall org-finish-function))
-        (evil-quit)))
+        (evil-quit force)))
+
     (:rebind #'evil-save-modified-and-close #'my-org-evil-save-modified-and-close
              #'evil-quit #'my-org-evil-quit))
 #+end_src
