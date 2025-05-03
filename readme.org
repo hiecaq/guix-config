@@ -4481,13 +4481,15 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
   (setup org-roam
     (:require org-roam-ql)
     (defun my-org-roam--name-table ()
-      "Return a table of id to name."
+      "Return a table of id to a list of name and aliases."
       (let* ((nodes (org-roam-ql-nodes '(level= 0)))
              (table (make-hash-table
                      :test #'equal
                      :size (length nodes))))
         (cl-loop for node in nodes do
-                 (puthash (org-roam-node-id node) (org-roam-node-title node) table))
+                 (puthash (org-roam-node-id node)
+                          (cons (org-roam-node-title node) (org-roam-node-aliases node))
+                          table))
         table))
 
     (defun my-org-roam--node-to-tags-table (name-table type prefix)
@@ -4499,7 +4501,7 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
         (cl-loop for s-d in s-ds do
                  (puthash (car s-d)
                           (cons
-                           (concat prefix (gethash (cadr s-d) name-table))
+                           (concat prefix (car (gethash (cadr s-d) name-table)))
                            (gethash (car s-d) table nil))
                           table))
         table))
@@ -4511,9 +4513,12 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
              (related-table (my-org-roam--node-to-tags-table name-table "related" "#"))
              (under-table (my-org-roam--node-to-tags-table name-table "under" "@"))
              (nodes (let ((nodes-temp nil))
-                      (maphash (lambda (id name) (push
-                                                  (cons (propertize (string-truncate-left name 140) 'node-id id) id)
-                                                  nodes-temp))
+                      (maphash (lambda (id names)
+                                 (mapc (lambda (name)
+                                         (push
+                                          (cons (propertize (string-truncate-left name 140) 'node-id id) id)
+                                          nodes-temp))
+                                       names))
                                name-table)
                       nodes-temp))
              (indent (apply #'max (cl-mapcar (lambda (node) (length (car node))) nodes)))
