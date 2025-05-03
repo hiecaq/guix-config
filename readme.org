@@ -4245,10 +4245,10 @@ Again the packaged version in Guix official packages is quite old, so here is th
 And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]], which has a query syntax and feature set similar to [[https://github.com/alphapapa/org-ql][org-ql]] (It starts as a "spin-off" from org-ql I think, see [[https://github.com/alphapapa/org-ql/issues/303][this]] and [[https://github.com/alphapapa/org-ql/issues/354][this]]). Basically it turns a s-exp query into a series of SQL queries to the org-roam database.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-ql
-    (let ((commit "d891f9a184dd79ad00d064131ace292d22254c32")
+    (let ((commit "8a58edaa107bafb22ff2f944ac16d84f420129a0")
           (last-release-version "0.2")
-          (revision "2")
-          (url "https://github.com/ahmed-shariff/org-roam-ql"))
+          (revision "4")
+          (url "https://github.com/hiecaq/org-roam-ql"))
       (package
        (name "emacs-org-roam-ql")
        (version (git-version last-release-version revision commit))
@@ -4261,7 +4261,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "1fkzyp0b2s4phw4483mpaxwm7380r926l6wy4qrvgjkyjmgagwnq"))))
+           "11gsh611jw044zccn0ycnx992bfx9lbsp9rs4pa8pkhj5a44rh5z"))))
        (build-system emacs-build-system)
        (propagated-inputs
         (list upstream:emacs-magit
@@ -4452,7 +4452,7 @@ Add consult source:
     (defun my-org-roam-ql--expansion-ft (title &optional exact)
       "Expansion function that query TITLE at top level.
   ft stands for file-title."
-      `(and (title ,title ,exact) (level 0)))
+      `(and (title ,title ,exact) (level= 0)))
     (cl-defun my-org-roam-ql--expand-related (&rest tags &key (combine :and) &allow-other-keys)
       "Expansion function for related backlinks.
   Example: (related ``Algo'' ``Hardware'')"
@@ -4482,7 +4482,7 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
     (:require org-roam-ql)
     (defun my-org-roam--name-table ()
       "Return a table of id to name."
-      (let* ((nodes (org-roam-ql-nodes '(level 0)))
+      (let* ((nodes (org-roam-ql-nodes '(level= 0)))
              (table (make-hash-table
                      :test #'equal
                      :size (length nodes))))
@@ -4545,7 +4545,7 @@ A helper function that make org-roam links by matching title:
 #+begin_src emacs-lisp
   (setup org-roam
     (defun my-roam-link-make-string (desc type)
-      (let* ((node (car (org-roam-ql-nodes `(and (level 0) (file-title ,desc 'exact)))))
+      (let* ((node (car (org-roam-ql-nodes `(ft ,desc))))
              (id (org-roam-node-id node)))
         (org-link-make-string
          (concat type ":" id)
