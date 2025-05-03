@@ -4328,6 +4328,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
              '(my-org-roam-node-find my-embark--ignore-target)))
 
   (defun my-org-roam-node-this-file (&optional assert)
+    "Return the top node of this file."
     (save-excursion
       (goto-char (point-min))
       (org-roam-node-at-point assert)))
@@ -4562,12 +4563,16 @@ A helper function that make org-roam links by matching title:
 
 #+begin_src emacs-lisp
   (setup org-roam-dailies
+    (defun my-org-roam-dailies-date (time)
+      (format-time-string "%F"
+                          (time-add (encode-time (parse-time-string time))
+                                    (- midnight-delay))))
     (defun my-org-roam-dailies-timestamp (date offset-sec)
       (format-time-string "%FT%T"
                           (time-add (date-to-time date) (+ midnight-delay offset-sec))))
     (defvar my-org-roam-dailies-prelude
       (string-join
-       '("#+title: %<%Y-%m-%d>"
+       '("#+title: %(my-org-roam-dailies-date \"%<%FT%T>\")"
          "#+date: %U"
          ""
          "- under %(my-roam-link-make-string \"Daily Notes\" \"under\")"
@@ -4577,36 +4582,56 @@ A helper function that make org-roam links by matching title:
          "* Done"
          "#+begin: org-roam-ql :query (and (todo \"DONE\") (closed > \"%(my-org-roam-dailies-timestamp \"%<%F>\" 0)\") (closed < \"%(my-org-roam-dailies-timestamp \"%<%F>\" (* 60 60 24))\")) :columns (file-title title closed) :sort \"closed\""
          "#+end:"
+         ""
+         "* Modified Notes"
+         "#+begin: org-roam-ql :query (and (level= 0) (file-mtime > \"%(my-org-roam-dailies-timestamp \"%<%F>\" 0)\") (file-mtime < \"%(my-org-roam-dailies-timestamp \"%<%F>\" (* 60 60 24))\") (not (function (lambda () (list (my-org-roam-node-this-file)))))) :columns (file-title) :sort \"file-mtime\""
+         "#+end:"
          "")
        "\n")
       "Prelude text at the beginning of my daily notes.")
     (:option org-roam-dailies-capture-templates
              `(("d" "default" entry
                 "* %?"
-                :target (file+head "%<%Y-%m-%d>.org"
+                :target (file+head "%(my-org-roam-dailies-date \"%<%FT%T>\").org"
                                    ,my-org-roam-dailies-prelude))
                ("l" "log" item
                 "- %U %?"
-                :target (file+head+olp "%<%Y-%m-%d>.org"
+                :target (file+head+olp "%(my-org-roam-dailies-date \"%<%FT%T>\").org"
                                        ,my-org-roam-dailies-prelude
                                        ("Log")))
                ("L" "log with context" item
                 "- %U at %a %?"
-                :target (file+head+olp "%<%Y-%m-%d>.org"
+                :target (file+head+olp "%(my-org-roam-dailies-date \"%<%FT%T>\").org"
                                        ,my-org-roam-dailies-prelude
                                        ("Log")))))
     (defun my-org-roam-dailies-log-today ()
       (interactive)
       (org-roam-dailies-capture-today nil "l"))
+
     (defun my-org-roam-dailies-log-today-with-context ()
       (interactive)
-      (org-roam-dailies-capture-today nil "L")))
+      (org-roam-dailies-capture-today nil "L"))
+
+    (defun my-org-roam-dailies-goto-date (&optional prefer-future)
+      "Find the daily-note for a date using the calendar, creating it if necessary.
+  Prefer past dates, unless PREFER-FUTURE is non-nil."
+      (interactive "p")
+      (org-roam-dailies-goto-date prefer-future "d"))
+
+    (:with-function (my-org-roam-dailies-capture-today
+                     my-org-roam-dailies-log-today
+                     my-org-roam-dailies-log-today-with-context
+                     my-org-roam-dailies-goto-date)
+      (:autoload-this)))
 
   (setup embark
     (:with-map my-global-consult-map
-      (:bind "l" #'my-org-roam-dailies-log-today))
-    (:with-map my-global-consult-map
-      (:bind "L" #'my-org-roam-dailies-log-today-with-context)))
+      (:bind "l" #'my-org-roam-dailies-log-today
+             "L" #'my-org-roam-dailies-log-today-with-context
+             "D" #'my-org-roam-dailies-goto-date))
+
+    (cl-pushnew 'my-embark--ignore-target
+                (alist-get #'my-org-roam-dailies-goto-date embark-target-injection-hooks)))
 #+end_src
 
 ***** Bibliography
