@@ -1253,6 +1253,7 @@ The reason for this set-up is
     #:use-module (gnu services)
     #:use-module (gnu services configuration)
     #:use-module (gnu home services)
+    #:use-module (gnu home services xdg)
     #:use-module ((gnu packages emacs) #:prefix upstream:)
     #:use-module (guix packages)
     #:use-module (srfi srfi-1)
@@ -1318,7 +1319,18 @@ The reason for this set-up is
                                home-emacs-profile)
             (service-extension home-environment-variables-service-type
                                (const '(("EDITOR" . "emacsclient -a nvim -c")
-                                        ("VISUAL" . "emacsclient -a nvim -c"))))))
+                                        ("VISUAL" . "emacsclient -a nvim -c"))))
+            ;; See bug#74467
+            (service-extension home-xdg-mime-applications-service-type
+                               (const (home-xdg-mime-applications-configuration
+                                       (default '((x-scheme-handler/org-protocol . emacsclient-uri.desktop)))
+                                       (desktop-entries
+                                        (list (xdg-desktop-entry
+                                               (file "emacsclient-uri")
+                                               (name "Emacs (Client) for URI handling")
+                                               (type 'application)
+                                               (config '((terminal . #f)
+                                                         (exec . "emacsclient --alternate-editor= -- %u")))))))))))
      (compose identity)
      (extend home-emacs-extensions)
      (default-value (home-emacs-configuration))
