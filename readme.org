@@ -5473,6 +5473,23 @@ Define an embark target and keymap, which can be used when mpv is running.
                  mpv-volume-increase))))
 #+end_src
 
+~browse-url~ can dispatch certain matched urls to MPV directly:
+#+begin_src emacs-lisp
+  (setup browse-url
+    (defun browse-url-mpv (url &rest args)
+      (mpv-play-url url))
+
+    (:when-loaded
+      (:option (prepend browse-url-handlers)
+               `(,(rx (or (seq "." (or "mkv" "mp4" "webm") eos)
+                          (seq
+                           bos
+                           (or (seq "https://" (or "www" "m" "live") ".bilibili.com/video/")
+                               "https://youtu.be/"
+                               (seq "https://" (or "www" "m") ".youtube.com/" (or "watch" "embed"))))))
+                 . browse-url-mpv))))
+#+end_src
+
 *** PYIM
 [[https://github.com/tumashu/pyim][pyim]] is an Emacs input method framework for Chinese, similar to fcitx for Linux, which also provides some Chinese-related parsing utilities.
 
