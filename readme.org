@@ -53,6 +53,10 @@
   - [[#d-bus][D-Bus]]
   - [[#xdg-desktop-portal][XDG Desktop Portal]]
   - [[#audio-and-sound][Audio and Sound]]
+- [[#multimedia][Multimedia]]
+  - [[#video][Video]]
+  - [[#yt-dlp][yt-dlp]]
+  - [[#aria2][aria2]]
 - [[#emacs][Emacs]]
   - [[#basics][Basics]]
   - [[#early-initialization][Early Initialization]]
@@ -1232,6 +1236,128 @@ I use a user [[https://gitlab.freedesktop.org/pipewire/pipewire][pipewire]] sess
 
 #+begin_src scheme :noweb-ref de-service
   (service home-pipewire-service-type)
+#+end_src
+
+* Multimedia
+#+begin_src scheme :tangle "build/hiecaq/home/multimedia.scm" :noweb yes
+  (define-module (hiecaq home multimedia)
+    #:use-module (guix gexp)
+    #:use-module (gnu services)
+    #:use-module (gnu home services)
+    #:use-module (gnu home services xdg)
+    <<multimedia-use-module>>)
+
+  (define-public services
+    (list
+     <<multimedia-service>>))
+#+end_src
+
+#+begin_src scheme :tangle no :noweb-ref home-module
+  ((hiecaq home multimedia) #:prefix multimedia:)
+#+end_src
+
+#+begin_src scheme :tangle no :noweb-ref home-environment-service
+  multimedia:services
+#+end_src
+
+** Video
+I use mpv.
+#+begin_src scheme :noweb-ref multimedia-use-module
+  #:use-module (gnu packages video)
+#+end_src
+
+#+begin_src scheme :noweb-ref multimedia-service
+  (service
+   (service-type
+    (name 'home-mpv)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list mpv)))
+      (service-extension
+       home-xdg-configuration-files-service-type
+       (const `(("mpv/mpv.conf" ,(local-file "../../mpv.conf"))
+                ("mpv/input.conf" ,(local-file "../../mpv-input.conf"))
+                ("mpv/script-opts/ytdl_hook.conf" ,(local-file "../../mpv-ytdl.conf"))
+                ("yt-dlp/config" ,(local-file "../../yt-dlp.conf")))))
+      (service-extension
+       home-xdg-mime-applications-service-type
+       (const (home-xdg-mime-applications-configuration
+               (default '((video/webm . mpv.desktop))))))))
+    (default-value #f)
+    (description #f)))
+#+end_src
+
+#+begin_src conf :tangle "build/mpv.conf"
+  # language
+  alang=jp,jpn,Japanese,en
+  slang=chs,cht,ch,jp,jpn,en,eng,sc,tc
+  sub-auto=fuzzy
+
+  no-input-default-bindings
+
+  # screenshot
+  screenshot-format=png
+  # only display error or worse for input
+  msg-level=input=error
+  # GUI
+  no-border
+
+  screenshot-template="%F/%wH_%wM_%wS_%wT"
+  screenshot-directory=~/pictures/videoclip/
+
+#+end_src
+
+recommended settings from [[https://vcb-s.com/archives/7594][VCB-Studio]]:
+#+begin_src conf :tangle "build/mpv.conf"
+  profile=high-quality
+  cscale=catmull_rom
+
+  deband=yes
+
+  icc-profile-auto=yes
+  blend-subtitles=video
+
+  video-sync=display-resample
+  interpolation=yes
+  tscale=oversample
+#+end_src
+
+
+** yt-dlp
+#+begin_src conf :tangle "build/mpv-ytdl.conf"
+  try_ytdl_first=yes
+#+end_src
+
+#+begin_src conf :tangle "build/yt-dlp.conf"
+  -o ~/videos/%(title)s.%(ext)s
+
+  # external downloader
+  --external-downloader aria2c
+  --external-downloader-args '-c -j 3 -x 3 -s 3 -k 1M'
+
+#+end_src
+
+** aria2
+#+begin_src scheme :noweb-ref multimedia-use-module
+  #:use-module (gnu packages bittorrent)
+#+end_src
+
+#+begin_src scheme :noweb-ref multimedia-service
+  (service
+   (service-type
+    (name 'home-aria2)
+    (extensions
+     (list
+      (service-extension
+       home-profile-service-type
+       (const (list aria2)))
+      (service-extension
+       home-xdg-configuration-files-service-type
+       (const `(("aria2/aria2.conf" ,(local-file "../../aria2.conf")))))))
+    (default-value #f)
+    (description #f)))
 #+end_src
 
 * Emacs
