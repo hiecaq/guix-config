@@ -57,6 +57,9 @@
   - [[#video][Video]]
   - [[#yt-dlp][yt-dlp]]
   - [[#aria2][aria2]]
+- [[#web-browser][Web Browser]]
+  - [[#containerized-wrapper][Containerized wrapper]]
+  - [[#tridactyl][Tridactyl]]
 - [[#emacs][Emacs]]
   - [[#basics][Basics]]
   - [[#early-initialization][Early Initialization]]
@@ -1360,6 +1363,170 @@ recommended settings from [[https://vcb-s.com/archives/7594][VCB-Studio]]:
     (description #f)))
 #+end_src
 
+* Web Browser
+#+begin_src scheme :tangle "build/hiecaq/home/browser.scm" :noweb yes
+  (define-module (hiecaq home browser)
+    #:use-module (guix gexp)
+    #:use-module (gnu services)
+    #:use-module (gnu home services)
+    #:use-module (gnu home services xdg)
+    <<browser-use-module>>)
+
+  (define-public services
+    (list
+     <<browser-service>>))
+#+end_src
+
+#+begin_src scheme :tangle no :noweb-ref home-module
+  ((hiecaq home browser) #:prefix browser:)
+#+end_src
+
+#+begin_src scheme :tangle no :noweb-ref home-environment-service
+  browser:services
+#+end_src
+
+** Containerized wrapper
+I use Firefox.
+
+For security and privacy reasons, I wrap it in a script that invokes =guix shell --container=.
+
+This script is based on =nonguix/multiarch-container.scm=, just simplified.
+#+begin_src scheme :tangle "build/hiecaq/packages/browser.scm" :noweb yes
+  (define-module (hiecaq packages browser)
+    #:use-module (guix)
+    #:use-module (gnu packages)
+    #:use-module (gnu packages base)
+    #:use-module (guix build-system)
+    #:use-module (guix build-system trivial)
+    #:use-module ((guix licenses) #:prefix license:))
+
+  (define-public firefox-containered
+    (let ((wrapper (program-file
+                    "firefox"
+                    (with-imported-modules '((guix build utils))
+                      #~(begin
+                          (use-modules (guix build utils))
+                          (let* ((xdg-data-home (getenv "XDG_DATA_HOME"))
+                                 (xdg-runtime (getenv "XDG_RUNTIME_DIR"))
+                                 (home (getenv "HOME"))
+                                 (DEBUG (equal? (getenv "DEBUG") "1"))
+                                 (args (cdr (command-line)))
+                                 (command (if DEBUG '()
+                                              `("--" "firefox" ,@args))))
+                            (format #t "\n* Launching ~a in container.\n\n"
+                                    "firefox")
+                            (when DEBUG
+                              (format #t "* DEBUG set to 1: Starting shell. Launch application manually with: ~a.\n\n"
+                                      "firefox"))
+                            (apply invoke
+                                   `("guix" "shell"
+                                     "--container" "--no-cwd" "--network"
+                                     "--share=/dev/snd/seq"
+                                     "--preserve=^DISPLAY$"
+                                     "--preserve=^XAUTHORITY$"
+                                     "--preserve=^DBUS_"
+                                     "--preserve=XDG_RUNTIME_DIR"
+                                     ,(string-append "--expose=" (getenv "XAUTHORITY"))
+                                     "--expose=/sys/class/input"
+                                     "--expose=/sys/devices"
+                                     "--expose=/sys/dev"
+                                     "--expose=/sys/bus/pci"
+                                     ,(string-append "--expose=" xdg-runtime "/pulse")
+                                     "--expose=/dev/dri"
+                                     "--expose=/run/user/1000/bus"
+                                     ,(string-append "--share=" home "/.mozilla")
+                                     ,(string-append "--share=" home "/downloads" "=" home "/Downloads")
+                                     "firefox"
+                                     "coreutils"
+                                     "which"
+                                     "font-adobe-source-han-sans"
+                                     "fontconfig"
+                                     "dbus"
+                                     ,@command))))))))
+      (package
+        (name "firefox-containered")
+        (version "0.0.1")
+        (source #f)
+        (inputs `(("wrapper" ,wrapper)))
+        (native-inputs (list (@(nongnu packages mozilla) firefox)))
+        (build-system trivial-build-system)
+        (arguments
+         (list
+          #:modules '((guix build utils))
+          #:builder
+          '(begin
+             (use-modules (guix build utils))
+             (let* ((out (assoc-ref %outputs "out"))
+                    (wrapper-target (assoc-ref %build-inputs "wrapper"))
+                    (wrapper-dest (string-append out "/bin/" "firefox"))
+                    (desktop-file-target (string-append (assoc-ref %build-inputs "firefox")
+                                                        "/share/applications/firefox.desktop"))
+                    (desktop-file-destdir (string-append out "/share/applications/")))
+               (mkdir-p (string-append out "/bin"))
+               (symlink wrapper-target wrapper-dest)
+               (install-file desktop-file-target desktop-file-destdir)
+               (substitute* (string-append desktop-file-destdir "firefox.desktop")
+                 (("^Exec=.+/firefox") (string-append "Exec=" out "/bin/firefox"))
+                 (("^(GenericName|Name|Comment|Keywords)\\[.+\\].+$") "")
+                 (("^Icon.+$") ""))))))
+        (home-page "https://www.hiecaq.org")
+        (synopsis "Containerized wrapper for Firefox")
+        (description "Containerized wrapper for Firefox.")
+        (license license:gpl3+))))
+#+end_src
+
+
+#+begin_src scheme :noweb-ref browser-use-module
+  #:use-module (hiecaq packages browser)
+#+end_src
+
+#+begin_src scheme :noweb-ref browser-service
+  (simple-service
+   'home-firefox
+   home-profile-service-type
+   (list
+    firefox-containered))
+#+end_src
+
+** Tridactyl
+[[https://github.com/tridactyl/tridactyl][tridactyl]] is the WebExtension successor of [[https://vimperator.org/][Vimperator]] and [[https://github.com/5digits/dactyl][Pentadactyl]]. 
+
+It can have talk to a native messenger running locally, so that it can
+- Access local files on the file systems, for example to source configuration files
+- Invoke local editors to edit textarea
+- Invoke local applications, for example video player, on given page content.
+
+However, native messenger's exposure is dangerous as it can be utilized by attackers.  Currently I don't use native messenger at my site.
+
+For consistent text-based configuration, tridactyl allows reading it from and saving it to clipboard, which does not need the help of native messenger. The commands are respectively
+#+begin_src vimrc
+  mktridactylrc --clipboard
+  source --clipboard
+#+end_src
+
+My configuration is:
+#+begin_src vimrc
+  " General Settings
+  set hintchar "uhetonasid"
+  set theme default
+
+  " Binds
+  bind ZZ composite sanitise tridactyllocal tridactylsync; qall
+  bind --mode=ex          <C-n>   ex.next_completion
+  bind --mode=ex          <C-p>   ex.prev_completion
+
+  " Autocmds
+  autocmd BeforeRequest https://bbs.saraba1st.com/* (details) => {let url = new URL(details.url); url.hostname = "stage1st.com"; return {redirectUrl: url + ""}; }
+
+  " search engines
+  set searchurls.archpack https://www.archlinux.org/packages/?sort=&q=%s&maintainer=&flagged=
+  set searchurls.archwiki https://wiki.archlinux.org/index.php?search=%s&title=Special:Search&go=Go
+  set searchurls.aur https://aur.archlinux.org/packages/?O=0&K=
+  set searchurls.librs https://lib.rs/search?q=
+  set searchurls.guix https://packages.guix.gnu.org/search/?query=
+  set searchurls.whereis https://toys.whereis.social/?search=
+  set searchurls.melpa https://melpa.org/#/
+#+end_src
 * Emacs
 :PROPERTIES:
 :header-args:emacs-lisp: :lexical t :tangle "build/init.el"
