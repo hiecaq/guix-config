@@ -55,6 +55,7 @@
   - [[#audio-and-sound][Audio and Sound]]
 - [[#multimedia][Multimedia]]
   - [[#video][Video]]
+    - [[#input][Input]]
   - [[#yt-dlp][yt-dlp]]
   - [[#aria2][aria2]]
 - [[#web-browser][Web Browser]]
@@ -1327,6 +1328,127 @@ recommended settings from [[https://vcb-s.com/archives/7594][VCB-Studio]]:
   tscale=oversample
 #+end_src
 
+*** Input
+:PROPERTIES:
+:header-args:conf: :tangle "build/mpv-input.conf"
+:END:
+
+First, disable default bindings.
+#+begin_src conf :tangle "build/mpv.conf"
+  no-input-default-bindings
+#+end_src
+
+Use vim-like keybindings for seek (in seconds):
+#+begin_src conf
+  l seek   5
+  h seek  -5
+  L seek  60
+  H seek -60
+#+end_src
+
+Use vim-like keybindings for volume adjustment (in percentage):
+#+begin_src conf
+  j add volume -2
+  k add volume 2
+
+  J add volume -10
+  K add volume 10
+#+end_src
+
+Toggle mute state.
+#+begin_src conf
+  m cycle mute
+  M set mute yes
+#+end_src
+
+Use both =RET= and =SPC= for toggling pause and play.
+#+begin_src conf
+  SPACE cycle pause
+  ENTER cycle pause
+#+end_src
+
+Toggle full screen.
+#+begin_src conf
+  f cycle fullscreen
+#+end_src
+
+Toggle always-on-top.
+#+begin_src conf
+  T cycle ontop
+#+end_src
+
+Quit.  =quit-watch-later= saves watch state to =$XDG_STATE_HOME/mpv/watch_later=.
+#+begin_src conf
+  q quit
+  Q quit-watch-later
+#+end_src
+
+Adjust play speed
+#+begin_src conf
+  = set speed 1.0 # reset
+  ) multiply speed 1.1
+  ( multiply speed 0.9
+#+end_src
+
+Skip to chapters
+#+begin_src conf
+  ] add chapter 1
+  [ add chapter -1
+#+end_src
+
+Skip to next or previous subtitle
+#+begin_src conf
+  { no-osd sub-seek -1
+  } no-osd sub-seek 1
+#+end_src
+
+Skip to next or previous files.
+#+begin_src conf
+  N playlist-next
+  P playlist-prev
+#+end_src
+
+Adjust subtitle delay
+#+begin_src conf
+  Ctrl+[ add sub-delay       -0.1
+  Ctrl+] add sub-delay       +0.1
+  Ctrl+{ secondary-sub-delay -0.1
+  Ctrl+} secondary-sub-delay +0.1
+#+end_src
+
+Adjust audio delay, to fix audio/video out-of-sync
+#+begin_src conf
+  ctrl++ add audio-delay 0.100
+  ctrl+- add audio-delay -0.100
+#+end_src
+
+Take screenshot with or without subtitle
+#+begin_src conf
+  s async screenshot                     # take a screenshot
+  S async screenshot video # ...without subtitles
+#+end_src
+
+Cycle subtitles.
+#+begin_src conf
+  n cycle sub      # cycle through subtitles
+  p cycle sub down # ...backwards
+#+end_src
+
+Toggle whether disabling ASS style in the subtitle file.
+#+begin_src conf
+  U cycle-values sub-ass-style-override "force" "no"
+#+end_src
+
+Cycle audio.
+#+begin_src conf
+  @ cycle audio
+  ^ cycle audio down
+#+end_src
+
+Show information on the playback.
+#+begin_src conf
+  I script-binding stats/display-stats-toggle
+#+end_src
 
 ** yt-dlp
 #+begin_src conf :tangle "build/mpv-ytdl.conf"
