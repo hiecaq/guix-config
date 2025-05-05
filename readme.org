@@ -5820,6 +5820,15 @@ When moving through lines, skip empty lines, and don't wrap on the last line.
     (:option dired-movement-style 'bounded))
 #+end_src
 
+Dired decompress files by matching against ~dired-compress-file-suffixes~.  However, it misses the rule for uncompressing =.tar.bz2=, and weirdly it compress =.tar= to =.tgz= instead of unarchive it.  For better consistency, here is my config:
+#+begin_src emacs-lisp
+  (setup dired-aux
+    (:when-loaded
+      (:option (prepend* dired-compress-file-suffixes)
+               `((,(rx ".tar.bz2" eos) "" "bunzip2 -kc %i | tar -xf -")
+                 (,(rx ".tar" eos) "" "tar -xf %i")))))
+#+end_src
+
 **** dired-rsync
 One thing that dired (with tramp) does it badly is copying files over network. For small files it is fine, for big files not only is it slow but also it blocks the whole Emacs while copying. [[https://github.com/stsquad/dired-rsync][dired-rsync]] to the rescue, which basically wraps [[https://rsync.samba.org/][rsync]] and does things asynchronously.
 #+begin_src scheme
