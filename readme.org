@@ -156,6 +156,7 @@
     - [[#dart][Dart]]
     - [[#plantuml][PlantUML]]
     - [[#yaml][YAML]]
+    - [[#vimrc][Vimrc]]
     - [[#email][Email]]
       - [[#mu4e][mu4e]]
     - [[#mpv][MPV]]
@@ -5705,6 +5706,19 @@ YAML is a configuration language that mainly uses =-= and indentations.
      (list
       (specification->package
        "emacs-yaml-mode")))))
+#+end_src
+
+*** Vimrc
+Sometimes, I want to edit vimrc-like configurations.  There is [[https://github.com/mcandre/vimrc-mode][vimrc-mode]] for that.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-vimrc-mode
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-vimrc-mode")))))
 #+end_src
 
 *** Email
