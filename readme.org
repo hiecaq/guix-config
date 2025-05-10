@@ -1696,6 +1696,9 @@ The reason for this set-up is
     (packages
      (list '())
      "List of Emacs packages to use.")
+    (rewritten-packages
+     (alist '())
+     "Alist of rewrites from upstream package to local definitions.")
     (configs
      (alist '())
      "Emacs configuration files."))
@@ -1707,10 +1710,12 @@ The reason for this set-up is
        (,upstream:emacs-no-x
         . ,(home-emacs-configuration-emacs config))
        (,upstream:emacs
-        . ,(home-emacs-configuration-emacs config)))))
+        . ,(home-emacs-configuration-emacs config))
+       ,@(home-emacs-configuration-rewritten-packages config))))
 
   (define (home-emacs-profile config)
     `(,(home-emacs-configuration-emacs config)
+      ,@(map cdr (home-emacs-configuration-rewritten-packages config))
       ,@(map (home-emacs-transformed-package config)
              (home-emacs-configuration-packages config))))
 
@@ -1718,6 +1723,9 @@ The reason for this set-up is
     (packages
      (list '())
      "Extra list of Emacs packages to use.")
+    (rewritten-packages
+     (alist '())
+     "Alist of rewrites from upstream package to local definitions.")
     (configs
      (alist '())
      "Extra Emacs configuration files."))
@@ -1731,6 +1739,8 @@ The reason for this set-up is
        (inherit original-config)
        (packages (append-fields home-emacs-configuration-packages
                                 home-emacs-extension-packages))
+       (rewritten-packages (append-fields home-emacs-configuration-rewritten-packages
+                                          home-emacs-extension-rewritten-packages))
        (configs (append-fields home-emacs-configuration-configs
                                home-emacs-extension-configs)))))
 
