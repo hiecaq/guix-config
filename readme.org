@@ -5186,7 +5186,17 @@ A helper function that make org-roam links by matching title:
     (packages
      (list
       (specification->package
-       "emacs-ebib")))))
+       "emacs-ebib-minimal")))))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-ebib-minimal
+    (package
+      (inherit upstream:emacs-ebib)
+      (name "emacs-ebib-minimal")
+      (propagated-inputs
+       (modify-inputs (package-propagated-inputs upstream:emacs-ebib)
+                      (delete "emacs-ivy")))))
 #+end_src
 
 #+begin_src emacs-lisp
