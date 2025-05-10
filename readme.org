@@ -127,6 +127,7 @@
     - [[#pulse][Pulse]]
     - [[#electric-pair-mode][electric-pair-mode]]
     - [[#aggresive-indent][Aggresive Indent]]
+    - [[#comint][Comint]]
     - [[#eshell][Eshell]]
       - [[#fish-completion][fish-completion]]
     - [[#ediff][Ediff]]
@@ -167,7 +168,7 @@
     - [[#dired][Dired]]
       - [[#dired-rsync][dired-rsync]]
     - [[#emms][EMMS]]
-    - [[#guix-1][Guix]]
+    - [[#guix-2][Guix]]
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
 - [[#references-and-recommendations][References and Recommendations]]
 
@@ -221,7 +222,7 @@ This is the main entry point for =guix system=. It can be deployed with
 #+end_src
 
 ** Private Info
-Host name shows up in some places, and I'm not good at naming so I just call it "desktop". 
+Host name shows up in some places, and I'm not good at naming so I just call it "desktop".
 #+begin_src scheme :noweb-ref operating-system
   (host-name "desktop")
 #+end_src
@@ -283,7 +284,7 @@ firstly, we need to declare the mapped devices, which handles our LUKS-encrypted
           (type luks-device-mapping))))
 #+end_src
 
-Then actual file systems are listed in this field: 
+Then actual file systems are listed in this field:
 #+begin_src scheme :noweb yes :noweb-ref operating-system
   (file-systems (append
                  (list
@@ -319,7 +320,7 @@ Next, since I manage my home with guix home, most things do not need to be backe
 #+end_src
 
 The above ~%btrfs~ is defined as
-#+begin_src scheme :noweb-ref system-helper 
+#+begin_src scheme :noweb-ref system-helper
   (define* (%btrfs subvol mount-point dep #:key
                    (flags '(no-atime)))
     (file-system
@@ -712,6 +713,7 @@ I use [[https://fishshell.com/][fish]] as a backup interactive-use-only shell.
   (service
    home-fish-service-type)
 #+end_src
+
 ** COMMENT Zsh
 :PROPERTIES:
 :header-args:scheme: :noweb-ref shell-service
@@ -823,6 +825,7 @@ See the [[https://guix.gnu.org/manual/en/html_node/X_002e509-Certificates.html][
     (default-value #f)
     (description #f)))
 #+end_src
+
 *** bat
 Add [[https://github.com/sharkdp/bat][bat]], which is a =cat= clone with colors.
 #+begin_src scheme
@@ -1623,7 +1626,7 @@ This script is based on =nonguix/multiarch-container.scm=, just simplified.
 #+end_src
 
 ** Tridactyl
-[[https://github.com/tridactyl/tridactyl][tridactyl]] is the WebExtension successor of [[https://vimperator.org/][Vimperator]] and [[https://github.com/5digits/dactyl][Pentadactyl]]. 
+[[https://github.com/tridactyl/tridactyl][tridactyl]] is the WebExtension successor of [[https://vimperator.org/][Vimperator]] and [[https://github.com/5digits/dactyl][Pentadactyl]].
 
 It can have talk to a native messenger running locally, so that it can
 - Access local files on the file systems, for example to source configuration files
@@ -3301,7 +3304,7 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
        "emacs-orderless")))))
 #+end_src
 
-Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Steal from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]]:
+Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Stolen from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]]:
 #+begin_src emacs-lisp
   (setup (:package orderless)
     (defun +orderless--consult-suffix ()
@@ -3855,7 +3858,7 @@ I found that very often I want the buffer opened by embark to be somewhere I ass
       Creates a new window before displaying the buffer.
       When `switch-to-buffer-obey-display-actions' is non-nil,
       `switch-to-buffer' commands are also supported."
-      ;; steal from https://karthinks.com/software/emacs-window-management-almanac/#a-window-prefix-command-for-ace-window
+      ;; stolen from https://karthinks.com/software/emacs-window-management-almanac/#a-window-prefix-command-for-ace-window
       (interactive)
       (display-buffer-override-next-command
        (lambda (buffer _)
@@ -4136,7 +4139,7 @@ I plan on switching to =eshell= as my main shell. Here are some references:
                (window-width . 80))))
 #+end_src
 
-Eshell by default don't bind =C-d= to quitting the shell window and process. To do this, I steal 
+Eshell by default don't bind =C-d= to quitting the shell window and process. To do this, I steal
 [[https://github.com/howardabrams/dot-files/blob/master/emacs-eshell.org#shell-here][a snippet from Howard Abrams]] and modified it a little bit to use the new Emacs 30 features.
 #+begin_src emacs-lisp
   (setup eshell
@@ -5788,6 +5791,7 @@ Here is How =mu= is initialized. This needs to be run manually.
 #+begin_src elisp :exports none
   (rxt-elisp-to-pcre (rx (: (+ (any alnum ".")) "@" "hiecaq" "." "org")))
 #+end_src
+
 ***** Front-end Settings
 #+begin_src emacs-lisp
   (setup mu4e
@@ -6183,7 +6187,7 @@ Always center to the playing song when opening the playlist.
   (setup emms
     (:option emms-track-initialize-functions '(emms-info-initialize-track))
     (:option emms-info-functions '(emms-info-libtag))
-    (:option emms-track-description-function #'emms-info-track-description) 
+    (:option emms-track-description-function #'emms-info-track-description)
     (:option emms-browser-covers #'emms-browser-cache-thumbnail-async))
 #+end_src
 
