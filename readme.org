@@ -2195,7 +2195,15 @@ Emacs comes with a customization interface, which supports setting via function 
       (:hook-into after-init)))
 #+end_src
 
+Don't show =*Warnings*= and just for those elisp compilation errors. Note that they are still logged into the buffer.  Stolen from [[https://protesilaos.com/codelog/2024-11-28-basic-emacs-configuration/#h:5a631dfa-a8db-43f4-bd7a-92ce49c54226][Protesilaos Stavrou]]:
+#+begin_src emacs-lisp
+  (setup window
+    (:option (prepend display-buffer-alist)
+             `(,(rx bos "*" (or "Warnings" "Compile-Log") "*" eos)
+               (display-buffer-no-window)
+               (allow-no-window . t))))
 #+end_src
+Note that if ~switch-to-buffer-obey-display-actions~ is =t=, buffers matched to use ~display-buffer-no-window~ are basically hidden forever unless you use ~display-buffer-override-next-command~.
 
 Allow word-wrap at any CJK character, otherwise it only wraps at spaces when there are also non-CJK characters in the physical lines, producing sparse visual lines.
 #+begin_src emacs-lisp
