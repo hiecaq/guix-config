@@ -2357,8 +2357,27 @@ TODO: this should not require help.
 *** Info
 Info is a built-in Texinfo browser.
 #+begin_src emacs-lisp
-  (setup Info
+  (setup info
     (:local-set truncate-lines t))
+#+end_src
+
+Starting from Emacs 30, we can open the corresponding web page of Info node by ~Info-goto-node-web~.  The variable that dispatches this command is
+#+begin_src emacs-lisp
+  (setup info
+    (:when-loaded
+      (:option (prepend* Info-url-alist)
+               '((("guix") . "https://guix.gnu.org/manual/devel/en/html_node/%e")
+                 (("guile") . "https://www.gnu.org/software/guile/manual/html_node/%e")))))
+#+end_src
+
+In order to handle single-paged manuals, I have this help function:
+#+begin_src emacs-lisp
+  (setup info
+    (defun my-info-url-alist-single-page-entry (url-spec)
+      (lambda (manual node encoded-node)
+        (concat (format-spec url-spec
+                             `((?m . ,manual) (?n . ,node) (?e . ,encoded-node)))
+                "#" (string-remove-suffix ".html" encoded-node)))))
 #+end_src
 
 *** Xdg
@@ -4187,6 +4206,17 @@ When each session ends, append session history instead of replacing the whole hi
        "emacs-magit")))))
 #+end_src
 
+It's manual:
+#+begin_src emacs-lisp
+  (setup info
+    (:when-loaded
+      (:option (prepend Info-url-alist)
+               `(("magit" "forge" "ghub"
+                  "magit-section" "magit-popup"
+                  "transient" "with-editor")
+                 . "https://magit.vc/manual/%m/%e"))))
+#+end_src
+
 #+begin_src emacs-lisp
   (setup (:package magit)
     (:bind "SPC" #'god-execute-with-current-bindings)
@@ -4387,6 +4417,15 @@ Useful References:
   (setup org
     <<org-setup>>
     (:hook visual-line-mode variable-pitch-mode))
+#+end_src
+
+Its manual:
+#+begin_src emacs-lisp
+  (setup info
+    (:when-loaded
+      (:option (prepend* Info-url-alist)
+               '((("org") . "https://orgmode.org/manual/%e")
+                 (("orgguide") . "https://orgmode.org/guide/%e")))))
 #+end_src
 
 **** General Settings
@@ -5699,6 +5738,14 @@ YAML is a configuration language that mainly uses =-= and indentations.
     (description #f)))
 #+end_src
 
+It's manual is
+#+begin_src emacs-lisp
+  (setup info
+    (:when-loaded
+      (:option (prepend Info-url-alist)
+               '(("mu4e") . "https://www.djcbsoftware.nl/code/mu/mu4e/%e"))))
+#+end_src
+
 ***** Back-end Initialization
 Here is How =mu= is initialized. This needs to be run manually.
 #+begin_src sh :noweb yes
@@ -6044,6 +6091,14 @@ One thing that dired (with tramp) does it badly is copying files over network. F
      (list
       (specification->package
        "emacs-emms-with-convert")))))
+#+end_src
+
+It's manual:
+#+begin_src emacs-lisp
+  (setup info
+    (:when-loaded
+      (:option (prepend Info-url-alist)
+               `(("emms") . ,(my-info-url-alist-single-page-entry "https://www.gnu.org/software/%m/manual/")))))
 #+end_src
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
