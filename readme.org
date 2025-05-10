@@ -2666,11 +2666,35 @@ References:
      (map specification->package
           (list
            "emacs-goto-chg"
-           "emacs-evil"
            "emacs-evil-collection-next"
-           "emacs-evil-surround"
+           "emacs-evil-surround-next"
            "emacs-evil-snipe"
-           "emacs-evil-commentary")))))
+           "emacs-evil-commentary")))
+    (rewritten-packages
+     `((,(specification->package "emacs-evil") .
+        ,(specification->package "emacs-evil-next"))))))
+#+end_src
+
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-evil-next
+    (let ((commit "c7043cc7731206aac93090ff266ba9343ed78b2c")
+          (last-release-version "1.15.0")
+          (revision "0"))
+      (package
+        (inherit upstream:emacs-evil)
+        (name "emacs-evil-next")
+        (version (git-version last-release-version revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/hiecaq/evil")
+                 (commit commit)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32
+             "1hzfp9sfvv4isgvbg9cicqhfqqrfzjrms27zn3vzdjqf6nyglxd1")))))))
 #+end_src
 
 [[https://github.com/noctuid/annalist.el][annalist]] is a dependency of =emacs-evil-collection=, and its test dependency [[https://github.com/abo-abo/lispy][lispy]] somehow fail to build under Emacs 30 because of test failures. I simply disable tests for  =annalist= and deletes all its test dependencies.
@@ -2688,7 +2712,7 @@ References:
 I need some latest contributions to the =evil-collection= repository:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-collection-next
-    (let ((commit "20c415aaa07c6541753489b166cd58d6771bd1e1")
+    (let ((commit "fca81ddb2ca1ac3838aa7e8969b2313712807a45")
           (last-release-version "0.0.10")
           (revision "0"))
       (package
@@ -2704,7 +2728,7 @@ I need some latest contributions to the =evil-collection= repository:
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "17ifxk4lpj1l52b3m2x5sj5ywdnrjyy1hbvfbvg4zwa1kc0l3ds1"))))
+           "0grp87nb9pxx47rzclhngqn9gvgbn39yfk0szz6a4xh0pf56f100"))))
        (propagated-inputs
         (modify-inputs (package-propagated-inputs upstream:emacs-evil-collection)
                        (replace "emacs-annalist" emacs-annalist-minimal))))))
@@ -2807,6 +2831,27 @@ I remap them all to =s= for better consistency.
       (turn-off-evil-surround-mode)))
 #+end_src
 
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-evil-surround-next
+    (let ((commit "da05c60b0621cf33161bb4335153f75ff5c29d91")
+          (last-release-version "1.0.4")
+          (revision "0"))
+      (package
+        (inherit upstream:emacs-evil-surround)
+        (name "emacs-evil-surround-next")
+        (version (git-version last-release-version revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                 (url "https://github.com/emacs-evil/evil-surround")
+                 (commit commit)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32
+             "0wgxwvndhfaf0ha4pm392vj6yqyv2431hmvyivp1q16crd5g6bq5")))))))
+#+end_src
+
 **** Evil Replace With Register
 [[https://github.com/Dewdrops/evil-ReplaceWithRegister][evil-replace-with-register]] defines a =replace= operator. However, we can implement its functionality easily with Evil mode itself, see [[https://emacs-china.org/t/evil-replace-with-register/27638][this post]]. I add some simple code to the solution there to make =""= register work as the way I want.
 #+begin_src emacs-lisp
@@ -2830,13 +2875,12 @@ I remap them all to =s= for better consistency.
 **** Evil Snipe
 [[https://github.com/hlissner/evil-snipe][evil-snipe]] is a Evil port of Vim's [[https://github.com/rhysd/clever-f.vim][clever-f]] and [[https://github.com/justinmk/vim-sneak][vim-sneak]]. It currently does not support separating the scope for =f/F/t/T= from for =s/S=, which is a little bit annoying.
 
-There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-scope~, so I forked it. Once the PR is merged, I'll switch back to the upstream version.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-snipe
-    (let ((commit "3ad53b8da0dd23093a3f2f0e5c13ecdb08ba8efa")
-          (last-release-version "2.0.8") ;; from the el file version header
-          (revision "0")
-          (url "https://github.com/hiecaq/evil-snipe"))
+    (let ((commit "16317d7e54313490a0fe8642ed9a1a72498e7ad2")
+          (last-release-version "2.1.3") ;; from the el file version header
+          (revision "1")
+          (url "https://github.com/hlissner/evil-snipe"))
       (package
        (name "emacs-evil-snipe")
        (version (git-version last-release-version revision commit))
@@ -2849,7 +2893,7 @@ There is currently a bug in =evil-snipe='s type declarations for ~evil-snipe-sco
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "0fk9nl0h1j1ig6pvb4aix3injxi2jyw9djixchxf4aky11znivgj"))))
+           "0rg677wdybgjqz8kfr8v7xrcqw53qm1kxcsdsqqq8z0wklb0s29d"))))
        (propagated-inputs
         (list upstream:emacs-evil))
        (build-system emacs-build-system)
