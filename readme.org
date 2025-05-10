@@ -55,6 +55,7 @@
   - [[#audio-and-sound][Audio and Sound]]
 - [[#multimedia][Multimedia]]
   - [[#video][Video]]
+    - [[#configuration][Configuration]]
     - [[#input][Input]]
   - [[#yt-dlp][yt-dlp]]
   - [[#aria2][aria2]]
@@ -1293,28 +1294,37 @@ I use mpv.
     (description #f)))
 #+end_src
 
-#+begin_src conf :tangle "build/mpv.conf"
-  # language
+*** Configuration
+:PROPERTIES:
+:header-args:conf: :tangle "build/mpv.conf"
+:END:
+
+Preferred languages for audio and subtitles.
+#+begin_src conf
   alang=jp,jpn,Japanese,en
   slang=chs,cht,ch,jp,jpn,en,eng,sc,tc
   sub-auto=fuzzy
+#+end_src
 
-  no-input-default-bindings
-
-  # screenshot
+Screenshots.
+#+begin_src conf
   screenshot-format=png
-  # only display error or worse for input
-  msg-level=input=error
-  # GUI
-  no-border
-
   screenshot-template="%F/%wH_%wM_%wS_%wT"
   screenshot-directory=~/pictures/videoclip/
+#+end_src
 
+Only display error or worse for input.
+#+begin_src conf
+  msg-level=input=error
+#+end_src
+
+Disable window borders.
+#+begin_src conf
+  no-border
 #+end_src
 
 recommended settings from [[https://vcb-s.com/archives/7594][VCB-Studio]]:
-#+begin_src conf :tangle "build/mpv.conf"
+#+begin_src conf
   profile=high-quality
   cscale=catmull_rom
 
