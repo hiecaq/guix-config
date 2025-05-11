@@ -109,6 +109,7 @@
       - [[#flyspell-correct][Flyspell Correct]]
     - [[#xref][Xref]]
     - [[#topsy][Topsy]]
+    - [[#re-builder][RE Builder]]
     - [[#orderless][Orderless]]
     - [[#vertico][Vertico]]
     - [[#marginalia][Marginalia]]
@@ -3297,6 +3298,23 @@ Although =topsy= recommends to use =org-sticky-header= instead, this snippet for
      (list
       (specification->package
        "emacs-topsy")))))
+#+end_src
+
+*** RE Builder
+~re-builder~ is a built-in mode that interactively build regexp matching in a buffer.
+
+It can build with =rx= syntax, which is super cool!
+#+begin_src emacs-lisp
+  (setup re-builder
+    (:option reb-re-syntax 'rx))
+#+end_src
+
+Add some keybindings
+#+begin_src emacs-lisp
+  (setup re-builder
+    (:with-mode reb-lisp-mode
+      (:with-state (normal)
+        (:bind "Z Q" #'reb-quit))))
 #+end_src
 
 *** Orderless
