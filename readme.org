@@ -3516,59 +3516,54 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
   `consult-ripgrep' will be used instead of `consult-line'."
       :type 'integer)
 
+
+    (defun my-consult-grep--compile-input (input)
+      (pcase-let* ((split-style (alist-get consult-async-split-style
+                                           consult-async-split-styles-alist))
+                   (`(,first-input-and-flags ,pos . ,_)
+                    (funcall (plist-get split-style :function) input split-style))
+                   (first-input (car (consult--command-split first-input-and-flags)))
+                   (second-input (substring input pos))
+                   (compiled (mapcan (lambda (input) (car (consult--compile-regexp input 'emacs completion-ignore-case)))
+                                     (list first-input second-input))))
+        (consult--join-regexps compiled 'emacs)))
+
+    (defun my-consult-line--compile-input (input)
+      (consult--join-regexps (car (consult--compile-regexp input 'emacs completion-ignore-case)) 'emacs))
+
+
+    (defun my-consult-line-managable-p ()
+      "Which function should be used for matching lines."
+      (or (not buffer-file-name)
+          (buffer-narrowed-p)
+          (ignore-errors
+            (file-remote-p buffer-file-name))
+          (jka-compr-get-compression-info buffer-file-name)
+          (<= (buffer-size)
+              (/ my-consult-ripgrep-or-line-limit
+                 (if (eq major-mode 'org-mode) 2 1)))))
+
     (defun my-consult-ripgrep-or-line ()
       "Call `consult-line' for small buffers or `consult-ripgrep' for large files."
       (interactive)
-      (if (or (not buffer-file-name)
-              (buffer-narrowed-p)
-              (ignore-errors
-                (file-remote-p buffer-file-name))
-              (jka-compr-get-compression-info buffer-file-name)
-              (<= (buffer-size)
-                  (/ my-consult-ripgrep-or-line-limit
-                     (if (eq major-mode 'org-mode) 2 1))))
-          (consult-line)
-        (when (file-writable-p buffer-file-name)
-          (save-buffer))
-        (let ((consult-ripgrep-args
-               (concat consult-ripgrep-args
-                       " --hidden")))
-          (consult-ripgrep (list buffer-file-name)))))
-
-    (defmacro my-consult-with-no-sep (fn)
-      (let* ((fn-value (eval fn))
-             (old-name (symbol-name fn-value))
-             (new-name (concat old-name "-with-no-sep"))
-             (doc (documentation fn-value)))
-        `(progn (defun ,(intern new-name) ()
-                  ,doc
-                  (interactive)
-                  (require 'orderless)
-                  (let ((completion-styles '(orderless))
-                        (completion-category-defaults nil)
-                        (completion-category-overrides nil)
-                        (orderless-component-separator 'list))
-                    (call-interactively ,fn))
-                  #',(intern new-name)))))
-
-    ;; from https://github.com/minad/consult/issues/318#issuecomment-882067919
-    ;; with some tweaks
-    (defun my-consult-line-evil-history (&rest _)
-      "Add latest `consult-line' search pattern to the evil search history ring.
-  This only works with orderless and interprets the whole string as a single
-  component."
-      (when-let ((_ (bound-and-true-p evil-mode))
-                 (_ (eq evil-search-module 'evil-search))
-                 (hist (car consult--line-history))
-                 (orderless-component-separator 'list)
-                 (pattern (cadr (orderless-compile hist))))
-        (evil-push-search-history pattern (eq evil-ex-search-direction 'forward))
-        (setq evil-ex-search-pattern (list pattern t t))
-        (when evil-ex-search-persistent-highlight
-          (evil-ex-search-activate-highlight evil-ex-search-pattern))))
-
-    (my-consult-with-no-sep #'my-consult-ripgrep-or-line)
-    (advice-add #'my-consult-ripgrep-or-line :after #'my-consult-line-evil-history)
+      (let* ((history-p (and (bound-and-true-p evil-mode) (eq evil-search-module 'evil-search)))
+             (pattern (if (my-consult-line-managable-p)
+                          (progn (consult-line)
+                                 (when-let* ((_ history-p)
+                                             (hist (car consult--line-history)))
+                                   (my-consult-line--compile-input hist)))
+                        (when (file-writable-p buffer-file-name)
+                          (save-buffer))
+                        (let ((consult-ripgrep-args (concat consult-ripgrep-args " --hidden")))
+                          (consult-ripgrep (list buffer-file-name)))
+                        (when-let* ((_ history-p)
+                                    (hist (car consult--grep-history)))
+                          (my-consult-grep--compile-input hist)))))
+        (when pattern
+          (evil-push-search-history pattern (eq evil-ex-search-direction 'forward))
+          (setq evil-ex-search-pattern (list pattern t t))
+          (when evil-ex-search-persistent-highlight
+            (evil-ex-search-activate-highlight evil-ex-search-pattern)))))
 
     (defmacro my-ignore-arg (fn)
       "Define a wrapper for an interactive function that ignores its input.
@@ -3609,8 +3604,8 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
                   (call-interactively ,fn))
                 #',(intern new-name))))
 
-    (:global (:rebind #'evil-ex-search-forward (my-evil-ex-search- #'my-consult-ripgrep-or-line-with-no-sep 'forward)
-                      #'evil-ex-search-backward (my-evil-ex-search- #'my-consult-ripgrep-or-line-with-no-sep 'backward))))
+    (:global (:rebind #'evil-ex-search-forward (my-evil-ex-search- #'my-consult-ripgrep-or-line 'forward)
+                      #'evil-ex-search-backward (my-evil-ex-search- #'my-consult-ripgrep-or-line 'backward))))
 #+end_src
 
 For ~consult-grep~ families and ~consult-find~ families, it is possible to convert orderless patterns into their PCRE pattern inputs, as suggested by the [[https://github.com/minad/consult/wiki#use-orderless-as-pattern-compiler-for-consult-grepripgrepfind][Wiki]].
