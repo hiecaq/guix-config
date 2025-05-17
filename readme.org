@@ -3332,7 +3332,8 @@ Add some keybindings
 
 Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Stolen from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]]:
 #+begin_src emacs-lisp
-  (setup (:package orderless)
+  (setup (:require orderless)
+    (:package orderless)
     (defun +orderless--consult-suffix ()
       "Regexp which matches the end of string with Consult tofu support."
       (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
@@ -3402,7 +3403,7 @@ The ~my-orderless-prefix-dispatch~ is a slightly modified version of ~orderless-
 Affix dispatcher can be adjust by setting the ~orderless-affix-dispatch-alist~, which maps the single affix character to matcher.
 #+begin_src emacs-lisp
   (setup orderless
-    (with-eval-after-load 'orderless
+    (:when-loaded
       (:option (prepend orderless-affix-dispatch-alist) `(?_ . ,#'my-orderless-rx)
                (prepend orderless-affix-dispatch-alist) `(?- . ,#'orderless-prefixes))))
 #+end_src
@@ -3424,7 +3425,7 @@ Note that ~completion-category-overrides~ is not really an override, but rather 
 We can also defines our own completion style as used in ~completion-styles~ etc, with the help of orderless.
 #+begin_src emacs-lisp
   (setup orderless
-    (with-eval-after-load 'orderless
+    (:when-loaded
       (orderless-define-completion-style orderless-only-initialism
         (orderless-matching-styles '(orderless-initialism)))))
 #+end_src
