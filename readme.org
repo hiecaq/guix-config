@@ -50,6 +50,9 @@
   - [[#system-service][System service]]
 - [[#desktop-environment][Desktop Environment]]
   - [[#display][Display]]
+  - [[#status-bar][Status Bar]]
+    - [[#amdgpu-temperature-monitor][AmdGPU temperature monitor]]
+    - [[#fan-speed-monitor][Fan speed monitor]]
   - [[#d-bus][D-Bus]]
   - [[#xdg-desktop-portal][XDG Desktop Portal]]
   - [[#audio-and-sound][Audio and Sound]]
@@ -1187,9 +1190,171 @@ So, simply
       (service-extension
        home-files-service-type
        ;; recursive to keep x bits, see https://lists.gnu.org/archive/html/help-guix/2023-03/msg00190.html
-       (const `((".xsession" ,(local-file "../../xsession" #:recursive? #t)))))))
+       (const `((".xsession" ,(local-file "../../xsession" #:recursive? #t)))))
+      (service-extension
+       home-xdg-configuration-files-service-type
+       (const `(("xmobar/xmobar.hs" ,(local-file "../../xmobar.hs"))
+                )))))
     (default-value #f)
     (description #f)))
+#+end_src
+
+** Status Bar
+:PROPERTIES:
+:header-args:haskell: :tangle "build/xmobar.hs"
+:END:
+I use [[https://codeberg.org/xmobar/xmobar][xmobar]] as the status bar.
+
+#+begin_src haskell
+  {-# LANGUAGE OverloadedStrings #-}
+
+  import Xmobar
+  import Xmobar.Plugins.Monitors.Common hiding (template)
+#+end_src
+
+First define the absolute path to devices and drivers in the sysfs:
+#+begin_src haskell
+  nct6683Dir :: String
+  nct6683Dir = "/sys/devices/platform/nct6683.2592/"
+
+  amdgpuDir :: String
+  amdgpuDir = "/sys/bus/pci/drivers/amdgpu/"
+#+end_src
+
+Definitions for monitors, see the subheadings.
+#+begin_src haskell :noweb yes
+  <<xmobar-monitor-funcs>>
+
+  data MyMonitor = Invalid
+    | <<xmobar-monitor-ctor>>
+    deriving (Show,Read,Eq)
+
+  instance Exec MyMonitor where
+    <<xmobar-monitor-alias>>
+
+    <<xmobar-monitor-run>>
+#+end_src
+
+Then, the main configuration:
+#+begin_src haskell
+  sepToRight :: String
+  sepToRight = "\57521"
+
+  sepToLeft :: String
+  sepToLeft = "\57523"
+
+  config :: Config
+  config = defaultConfig
+    {
+   font = "xft:DejavuSansM Nerd Font:size=8:bold:antialias=true,Noto Sans CJK SC:size=8:antialias=true"
+         , bgColor = "black"
+         , fgColor = "#ebdbb2"
+         , alpha = 98
+         , position = TopW C 100
+         , commands = [ Run XMonadLog
+                      , Run $ Cpu ["-L","15","-H","50", "-w", "2", "-c", "0",
+                                   "--normal","#fabd2f","--high","#cc241d",
+                                   "-t", "<total>%"] 10
+                      , Run $ K10Temp "0000:00:18.3" ["-t", "<Tdie>C|<Tccd1>C",
+                                                      "-L", "40", "-H", "60",
+                                                      "--normal","#fabd2f","--high","#cc241d"] 50
+
+                      , Run $ Fan "cpufan" nct6683Dir "fan1_input" [] 50
+                      , Run $ Fan "pumpfan" nct6683Dir "fan2_input" [] 50
+                      , Run $ Fan "sysfan" nct6683Dir "fan3_input" [] 50
+                      , Run $ Fan "gpufan" (amdgpuDir ++ "0000:03:00.0/") "fan1_input" [] 50
+
+                      , Run $ AmdgpuTemp "0000:03:00.0" ["-t", "<edge>C|<junction>C|<mem>C",
+                                                        "-L", "60", "-H", "80",
+                                                        "--normal","#fabd2f","--high","#cc241d"] 50
+
+                      , Run $ Memory ["-c", "0", "-w", "2", "-t","<usedratio>%"] 10
+                      , Run $ Date "%a %Y-%m-%d <fc=#8be9fd>%H:%M</fc>" "date" 10
+                      , Run $ DiskU [("/", "<free>/<size>")]
+                                  ["-L", "10", "-H", "30", "-m", "1", "-p", "3", "--normal","#fabd2f","--low","#cc241d"]
+                                  18000
+                      , Run $ Network "enp16s0" ["-L","10000","-H","100000",
+                                                 "--align", "l",
+                                            "-S", "true",
+                                            "--normal","#fabd2f","--high","#cc241d",
+                                                "-t", "D<rx>/U<tx>"] 10
+                      ]
+         , sepChar = "%"
+         , alignSep = "}{"
+         , template = unwords
+           ["%XMonadLog%"
+           , sepToRight
+           , "}{"
+           , sepToLeft , "%enp16s0%"
+           , sepToLeft , "%disku%"
+           , sepToLeft , "%cpu%"
+           , sepToLeft , "%k10temp%", "[%cpufan% %sysfan% %pumpfan%]"
+           , sepToLeft , "%memory%"
+           , sepToLeft , "%amdgputemp%", "[%gpufan%]"
+           , sepToLeft , "%date%"]
+    }
+
+  main :: IO ()
+  main = configFromArgs config >>= xmobar
+#+end_src
+
+*** AmdGPU temperature monitor
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-funcs
+  amdgpuTempConfig :: IO MConfig
+  amdgpuTempConfig = mkMConfig
+         "Temp: <mem>C" -- template
+         ["edge", "junction", "mem"
+         ] -- available replacements
+
+  runAmdgpuTemp :: [String] -> Monitor String
+  runAmdgpuTemp args = do
+     dn <- getConfigValue decDigits
+     failureMessage <- getConfigValue naString
+     let slot = head args
+         path = [amdgpuDir ++ slot ++ "/hwmon/hwmon", "/temp", "_input"]
+         divisor = 1e3 :: Double
+         show' = showDigits (max 0 dn)
+     checkedDataRetrieval failureMessage [path] Nothing (/divisor) show'
+
+#+end_src
+
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-ctor
+  AmdgpuTemp Slot Args Rate
+#+end_src
+
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-alias
+  alias (AmdgpuTemp _ _ _) = "amdgputemp"
+#+end_src
+
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-run
+  start (AmdgpuTemp s a r) = runM (a ++ [s]) amdgpuTempConfig runAmdgpuTemp r
+#+end_src
+
+*** Fan speed monitor
+Actually this monitor works for any numbered input; but currently I just use it for reading fan speeds.
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-funcs
+  fanConfig :: IO MConfig
+  fanConfig =
+    mkMConfig "<fan>" ["fan"]
+
+  runFan :: FilePath -> String -> [String] -> Monitor String
+  runFan p s _ =
+    let paths = [p ++ "hwmon/hwmon", "/" ++ s]
+        failureMessage = "Cannot read: " ++ show paths
+        fmt x = show (truncate x :: Int)
+    in checkedDataRetrieval failureMessage [paths] Nothing id fmt
+#+end_src
+
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-ctor
+  Fan String FilePath String Args Rate
+#+end_src
+
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-alias
+  alias (Fan s _ _ _ _) = s
+#+end_src
+
+#+begin_src haskell :tangle no :noweb-ref xmobar-monitor-run
+  start (Fan _ p s a r) = runM a fanConfig (runFan p s) r
 #+end_src
 
 ** D-Bus
