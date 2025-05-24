@@ -4966,9 +4966,9 @@ Again the packaged version in Guix official packages is quite old, so here is th
 And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]], which has a query syntax and feature set similar to [[https://github.com/alphapapa/org-ql][org-ql]] (It starts as a "spin-off" from org-ql I think, see [[https://github.com/alphapapa/org-ql/issues/303][this]] and [[https://github.com/alphapapa/org-ql/issues/354][this]]). Basically it turns a s-exp query into a series of SQL queries to the org-roam database.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-ql
-    (let ((commit "8a58edaa107bafb22ff2f944ac16d84f420129a0")
+    (let ((commit "95c8bbe858b3a7a9423053f9c6f2c2db17857330")
           (last-release-version "0.2")
-          (revision "4")
+          (revision "5")
           (url "https://github.com/hiecaq/org-roam-ql"))
       (package
        (name "emacs-org-roam-ql")
@@ -4982,7 +4982,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "11gsh611jw044zccn0ycnx992bfx9lbsp9rs4pa8pkhj5a44rh5z"))))
+           "1gdw81vpjpwfcx85wcw1aij1g9ba0zpczjx7s2hi345vszw5znlv"))))
        (build-system emacs-build-system)
        (propagated-inputs
         (list upstream:emacs-magit
@@ -5179,9 +5179,14 @@ Add consult source:
       "Expansion function for related backlinks.
   Example: (related ``Algo'' ``Hardware'')"
       `(backlink-to (or ,@(cl-mapcar (lambda (tag) `(ft ,tag t)) tags)) :type "related" :combine ,combine))
+    (cl-defun my-org-roam-ql--expand-under (&rest tags &key (combine :and) &allow-other-keys)
+      "Expansion function for under backlinks.
+  Example: (related ``Algo'' ``Hardware'')"
+      `(backlink-to (or ,@(cl-mapcar (lambda (tag) `(ft ,tag t)) tags)) :type "under" :combine ,combine))
     (:when-loaded
       (org-roam-ql-defexpansion 'ft "Compare to `title' of a file node" #'my-org-roam-ql--expansion-ft)
-      (org-roam-ql-defexpansion 'related "Related" #'my-org-roam-ql--expand-related)))
+      (org-roam-ql-defexpansion 'related "Related" #'my-org-roam-ql--expand-related)
+      (org-roam-ql-defexpansion 'under "Under" #'my-org-roam-ql--expand-under)))
 #+end_src
 
 Add =org-roam-ql= support to CLOSED timestamp:
