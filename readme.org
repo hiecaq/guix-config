@@ -4887,13 +4887,13 @@ Based on [[https://karl-voit.at/2022/02/10/lfile/][blog post]] from [[https://gi
 Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in-org-roam-v2/1504][is]] [[https://org-roam.discourse.group/t/link-categorization/2486][an]] [[https://org-roam.discourse.group/t/custom-roam-style-link/39/57][attempt]] [[https://forum.zettelkasten.de/discussion/887/thinking-about-metadata][to]] [[https://forum.zettelkasten.de/discussion/573/idea-for-categorizing-theory-models-definitions-arguments-and-facts][implement]] [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link]] [[https://org-roam.discourse.group/t/the-case-for-custom-link-types/][Tags]].
 #+begin_src emacs-lisp
   (setup ol
-    (defvar my-org-id-link-special-defs '(("related" :follow org-id-open :face 'org-tag
+    (defvar my-org-id-link-special-defs '(("related" :follow org-id-open :face org-tag
                                            :help-echo "Related to the given topic.")
-                                          ("follow" :follow org-id-open :face 'org-tag
+                                          ("follow" :follow org-id-open :face org-tag
                                            :help-echo "Is a Follow-up of the given note.")
-                                          ("under" :follow org-id-open :face 'org-tag
+                                          ("under" :follow org-id-open :face org-tag
                                            :help-echo "Is a sub-topic given note.")
-                                          ("translate" :follow org-id-open :face 'org-tag
+                                          ("translate" :follow org-id-open :face org-tag
                                            :help-echo "Is a translation of the given note.")))
     (dolist (def my-org-id-link-special-defs)
       (apply #'org-link-set-parameters def))
