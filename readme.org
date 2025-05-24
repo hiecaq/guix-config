@@ -4913,7 +4913,7 @@ Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in
          :prompt (or prompt "Types: ")
          :annotate (lambda (target) (concat align (get-pos-property 0 'desc target)))
          :require-match t)))
-    (defun my-org-link-modify-type ()
+    (defun my-org-link-modify-type (&optional type)
       "Modify the type of the org id link at point."
       (interactive)
       (when-let (((org-in-regexp org-link-any-re))
@@ -4925,8 +4925,7 @@ Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in
                  ((string-match type-regex target))
                  (old-type (match-string-no-properties 1 target))
                  (old-type-fancy (propertize old-type 'face 'org-tag))
-                 (prompt (format "Modify from %s: " old-type-fancy))
-                 (type-rep (my-org-id-link-type-read prompt))
+                 (type-rep (or type (my-org-id-link-type-read (format "Modify from %s: " old-type-fancy))))
                  (target (concat type-rep (string-remove-prefix old-type target))))
         (apply #'delete-region remove)
         (org-insert-link nil target desc)))
@@ -5229,9 +5228,8 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
                           table))
         table))
 
-    (defun my-org-roam-node-find ()
+    (defun my-org-roam-node-read ()
       "Find top-level nodes."
-      (interactive)
       (let* ((name-table (my-org-roam--name-table))
              (related-table (my-org-roam--node-to-tags-table name-table "related" "#"))
              (under-table (my-org-roam--node-to-tags-table name-table "under" "@"))
@@ -5250,36 +5248,80 @@ My ~org-roam-node-find~ implementation that is able to show my link tags in anno
                          (let* ((id (get-pos-property 0 'node-id node))
                                 (related (string-join (gethash id related-table)))
                                 (under (string-join (gethash id under-table))))
-                           (concat align under related))))
-             (found (consult--read
-                     nodes
-                     :prompt "Org-Roam: "
-                     :require-match nil
-                     :category 'org-roam-node
-                     :annotate annotate
-                     :lookup (lambda (selected &rest rest)
-                               (if-let (found (apply #'consult--lookup-cdr selected rest))
-                                   (cons 'found found)
-                                 (cons 'new selected))))))
+                           (concat align under related)))))
+        (consult--read
+         nodes
+         :prompt "Org-Roam: "
+         :require-match nil
+         :category 'org-roam-node
+         :annotate annotate
+         :lookup (lambda (selected &rest rest)
+                   (if-let (found (apply #'consult--lookup-cdr selected rest))
+                       (cons 'found found)
+                     (cons 'new selected))))))
+
+    (defun my-org-roam-node-find ()
+      "Open top-level nodes."
+      (interactive)
+      (let ((found (my-org-roam-node-read)))
         (if (eq 'found (car found))
-            (org-roam-id-open (cdr found) nil)
+            (org-id-open (cdr found) nil)
           (org-roam-capture-
            :node (org-roam-node-create :title (cdr found))
            :templates nil
-           :props '(:finalize find-file))))))
+           :props '(:finalize find-file)))))
+
+    (defun my-org-roam-node-insert (&optional type)
+      "Insert link to top-level nodes."
+      (interactive)
+      (let ((found (my-org-roam-node-read))
+            (type (or type "id")))
+        (if (eq 'found (car found))
+            (insert
+             (org-link-make-string (concat type ":" (cdr found))
+                                   (org-roam-node-formatted (car (org-roam-ql-nodes `(id ,(cdr found)))))))
+          (org-roam-capture-
+           :node (org-roam-node-create :title (cdr found))
+           :templates nil
+           :props `(:link-type ,type :link-description ,(cdr found) :finalize my-insert-link))))))
 #+end_src
 
 A helper function that make org-roam links by matching title:
 #+begin_src emacs-lisp
   (setup org-roam
     (defun my-roam-link-make-string (desc type)
-      (let* ((node (car (org-roam-ql-nodes `(ft ,desc))))
+      (let* ((node (car (org-roam-ql-nodes `(ft ,desc 'exact))))
              (id (org-roam-node-id node)))
         (org-link-make-string
          (concat type ":" id)
          desc))))
 #+end_src
 
+To insert link with types for new captured nodes, we need to introduce a new finalizer:
+#+begin_src emacs-lisp
+  (setup org-roam-capture
+    (:when-loaded
+      (:option (prepend org-roam-capture--template-keywords)
+               :link-type))
+
+    (defun org-roam-capture--finalize-my-insert-link ()
+      "A modified version of `org-roam-capture--finalize-insert-link' that insert the given type link."
+      (when-let* ((mkr (org-roam-capture--get :call-location))
+                  (buf (marker-buffer mkr)))
+        (with-current-buffer buf
+          (let* ((id (org-roam-capture--get :id))
+                 (description (org-roam-capture--get :link-description))
+                 (link (org-link-make-string (concat
+                                              (org-roam-capture--get :link-type) ":" id)
+                                             description)))
+            (if (eq (point) (marker-position mkr))
+                (insert link)
+              (org-with-point-at mkr
+                (insert link)))
+            (run-hook-with-args 'org-roam-post-node-insert-hook
+                                id
+                                description))))))
+#+end_src
 ****** org-roam-dailies
 =org-roam-dailies= is =org-roam='s lightweight implementation of a subset of features from [[https://github.com/bastibe/org-journal][org-journal]]. I plan on building on top of this with some elisp code to fit into my need.
 
