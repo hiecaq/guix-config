@@ -4887,13 +4887,26 @@ Based on [[https://karl-voit.at/2022/02/10/lfile/][blog post]] from [[https://gi
 Here [[https://org-roam.discourse.group/t/implementing-hierarchies-namespaces-in-org-roam-v2/1504][is]] [[https://org-roam.discourse.group/t/link-categorization/2486][an]] [[https://org-roam.discourse.group/t/custom-roam-style-link/39/57][attempt]] [[https://forum.zettelkasten.de/discussion/887/thinking-about-metadata][to]] [[https://forum.zettelkasten.de/discussion/573/idea-for-categorizing-theory-models-definitions-arguments-and-facts][implement]] [[https://org-roam.discourse.group/t/add-link-tags-feature/][Link]] [[https://org-roam.discourse.group/t/the-case-for-custom-link-types/][Tags]].
 #+begin_src emacs-lisp
   (setup ol
+    (defun my-org-id-link-special-export (id desc backend info)
+      (let* ((node (car (org-roam-ql-nodes `(id ,id))))
+             (path (org-roam-node-file node))
+             (link (with-temp-buffer
+                     (save-excursion (insert "[[file:" path "][" desc "]]"))
+                     (org-element-link-parser))))
+        (funcall
+         (cdr (assoc 'link (plist-get info :translate-alist)))
+         link desc info)))
     (defvar my-org-id-link-special-defs '(("related" :follow org-id-open :face org-tag
+                                           :export my-org-id-link-special-export
                                            :help-echo "Related to the given topic.")
                                           ("follow" :follow org-id-open :face org-tag
+                                           :export my-org-id-link-special-export
                                            :help-echo "Is a Follow-up of the given note.")
                                           ("under" :follow org-id-open :face org-tag
+                                           :export my-org-id-link-special-export
                                            :help-echo "Is a sub-topic given note.")
                                           ("translate" :follow org-id-open :face org-tag
+                                           :export my-org-id-link-special-export
                                            :help-echo "Is a translation of the given note.")))
     (dolist (def my-org-id-link-special-defs)
       (apply #'org-link-set-parameters def))
@@ -5592,6 +5605,337 @@ I mainly use it to keep images referenced in org-roam notes. There is no other p
              org-download-method 'directory
              org-download-heading-lvl nil
              org-download-screenshot-method "maim -s %s"))
+#+end_src
+
+***** Blogging
+From my points of view, blogging is a subtopic of PIM instead of a separate one. Basically by following Zettelkasten, we can publish those notes that worth sharing as posts in blogs. The only things we need is
+- to pick notes that should be published
+- to generate this website with the set of selected notes
+
+I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been using [[https://github.com/ChrisPenner/slick][slick]], with the help of [[https://pandoc.org/][pandoc]] as a library.  Now I moved to a pure Emacs hand-made solution, based on a subset of functions from org-publish.
+#+begin_src emacs-lisp
+  (setup ox-html
+    (defun my-org-roam-node-date (node)
+      (thread-first
+        (org-roam-node-file node)
+        (file-name-base)
+        (string-split "T")
+        (car)
+        (org-roam-ql--read-date-to-ts)))
+
+    (defun my-org-roam--file-to-ref-table ()
+      "Return a table from file to ref."
+      (let* ((nodes (org-roam-ql-nodes '([:select nodes:id :from nodes :right :join refs :on (= nodes:id refs:node_id)])))
+             (table (make-hash-table
+                     :test #'equal
+                     :size (length nodes))))
+        (cl-loop for node in nodes do
+                 (puthash (org-roam-node-file node)
+                          (car (org-roam-node-refs node))
+                          table))
+        table))
+
+    (defvar my-org-roam--file-to-ref-table nil)
+
+
+    (defun my-org-roam--hidden-file-to-id-table ()
+      "Return a table of hidden file, from file name to id."
+      (let* ((nodes (org-roam-ql-nodes '(under "Private" "Daily Notes"
+                                               :combine :or)))
+             (table (make-hash-table
+                     :test #'equal
+                     :size (length nodes))))
+        (cl-loop for node in nodes do
+                 (puthash (org-roam-node-file node)
+                          (org-roam-node-id node)
+                          table))
+        table))
+
+    (defvar my-org-roam--hidden-file-to-id-table nil)
+
+    (defun my-org-export-before-processing-add-reference (backend)
+      (save-excursion
+        (goto-char (point-max))
+        (insert "\n* Reference\n#+print_bibliography:\n")))
+
+    (defun my-org-export-before-processing-replace-link (backend)
+      (org-with-point-at 1
+        (while (re-search-forward org-link-any-re nil :no-error)
+          (when-let* ((begin (match-beginning 0))
+                      (desc (or (match-string-no-properties 3) ""))
+                      (element (org-element-context))
+                      ((eq 'link (org-element-type element)))
+                      (id (org-element-property :path element))
+                      (node (car (org-roam-ql-nodes `(id ,id))))
+                      (file (org-roam-node-file node)))
+            (let ((ref (gethash file my-org-roam--file-to-ref-table))
+                  (hidden (gethash file my-org-roam--hidden-file-to-id-table)))
+              (cond
+               (ref
+                (delete-region (point) begin)
+                (when desc
+                  (insert "_" desc "_"))
+                (insert "[cite:@" ref "]"))
+               (hidden
+                (delete-region (point) begin)
+                (insert desc))))))))
+
+    (defun org-export-filter-final-output-remove-ids (output backend info)
+      "Remove auto generated ids that pollutes the commit."
+      (replace-regexp-in-string
+       (rx " id=" "\""
+           (or
+            "outline-container-org"
+            "org"
+            "text-org")
+           (>= 7 alnum)
+           "\"")
+       ""
+       output
+       t))
+
+    (defun org-export-filter-final-output-fix-images (output backend info)
+      "Fix broken image links."
+      (replace-regexp-in-string
+       (rx "src=" "\"images/" (group (+ (or alnum "."))) "\"")
+       "src=\"../images/\\1\""
+       output
+       t))
+
+    (defun my-blog-html--attr (attr)
+      (pcase attr
+        ('nil nil)
+        ((and `(,p ,v . ,rest)
+              (guard (symbolp p))
+              (guard (stringp v)))
+         (concat " " (substring (symbol-name p) 1) "=\"" (org-html-convert-special-strings v) "\""
+                 (my-blog-html--attr rest)))
+        (_ (error "Invalid: %s" attr))))
+
+    (defun my-blog-html (exp)
+      "A simple DSL that generate `(a \"foo\" :href \"test.html\")' into `<a href=\"test.html\">foo</a>'."
+      (pcase exp
+        (`(seq . ,rest)
+         (mapconcat #'my-blog-html rest))
+        ((and `(,tag ,content . ,rest)
+              (guard (symbolp tag))
+              (guard (or (stringp content) (listp content)))
+              (guard content))
+         (concat "<" (symbol-name tag) (my-blog-html--attr rest) ">"
+                 (my-blog-html content)
+                 "</" (symbol-name tag) ">"))
+        ((and `(,tag . ,rest) (guard (symbolp tag)))
+         (concat "<" (symbol-name tag) (my-blog-html--attr rest) ">"))
+        ((pred stringp) exp)))
+
+    (defun my-blog-post-file-name (node config &optional relative)
+      (let ((file (concat
+                   (file-name-sans-extension
+                    (file-relative-name
+                     (org-roam-node-file node)
+                     (plist-get config :base-directory)))
+                   ".html")))
+        (if relative
+            file
+          (expand-file-name
+           file
+           (plist-get config :publishing-directory)))))
+
+
+    (defun my-blog-linked-nodes (nodes-in-file direction type)
+      (let* ((nodes (org-roam-ql-nodes `(,direction
+                                         ,nodes-in-file
+                                         :type ,type :combine :or)))
+             (publics (seq-remove (lambda (node)
+                                    (let ((file (org-roam-node-file node)))
+                                      (or (gethash file my-org-roam--file-to-ref-table)
+                                          (gethash file my-org-roam--hidden-file-to-id-table))))
+                                  nodes))
+             (unique (seq-uniq publics (lambda (n1 n2) (equal (org-roam-node-file n1)
+                                                              (org-roam-node-file n2))))))
+        unique))
+
+
+
+    (defun my-blog-links (node config)
+      (let ((nodes (org-roam-ql-nodes `(file ,(org-roam-node-file node))))
+            (types (cons "id" (mapcar #'car my-org-id-link-special-defs))))
+        (mapcan
+         (lambda (direction)
+           (mapcan
+            (lambda (type)
+              (mapcar
+               (lambda (node) `(,direction
+                                ,type
+                                ,(my-blog-post-file-name node config :relative)
+                                ,(org-roam-node-file-title node)))
+               (my-blog-linked-nodes nodes direction type)))
+            types))
+         '(backlink-from backlink-to))))
+
+    (defun my-blog-render-tag-link (link &optional prefix)
+      (pcase-let ((`(,_ ,type ,path ,title) link))
+        `(seq
+          " "
+          (span
+           (a ,(concat type ":" title) :href ,(if prefix
+                                                  (file-name-concat prefix path)
+                                                path))
+           :class "tag"))))
+
+    (defun my-blog-render-post-links (top-node config)
+      "Render blog content as bare HTML without header."
+      (let* ((links (my-blog-links top-node config))
+             (forwards (seq-filter (lambda (link) (eq (car link) 'backlink-from)) links))
+             (backwards (seq-filter (lambda (link) (eq (car link) 'backlink-to)) links)))
+        (my-blog-html
+         `(div
+           (seq
+            "Forward links:"
+            ,@(mapcar #'my-blog-render-tag-link forwards)
+            "Backward links:"
+            ,@(mapcar #'my-blog-render-tag-link backwards))
+           :class "tags"))))
+
+    (defun my-blog-render-post-content (config)
+      "Render blog content as bare HTML without header."
+      (let ((org-html-doctype "html5")
+            (org-html-html5-fancy t)
+            (org-cite-export-processors `((t . (csl ,(plist-get config :csl-style)))))
+            (org-export-before-processing-functions '(my-org-export-before-processing-add-reference
+                                                      my-org-export-before-processing-replace-link))
+            (org-export-filter-final-output-functions '(org-export-filter-final-output-remove-ids
+                                                        org-export-filter-final-output-fix-images)))
+        (org-export-as 'html nil nil :body-only config)))
+
+    (defun my-blog-html-post (top-node config)
+      (org-with-file-buffer (org-roam-node-file top-node)
+        (let* ((page (my-blog-html
+                      `(seq
+                        "<!DOCTYPE html>"
+                        (html
+                         (seq
+                          (head
+                           (seq
+                            (meta :charset "utf-8")
+                            (meta :name "description" :content ,(plist-get config :blog-name))
+                            (meta :name "author" :content ,(plist-get config :author))
+                            (meta :name "viewport" :content "width=device-width, initial-scale=1")
+                            (title ,(org-roam-node-file-title top-node)))
+                           :profile "http://www.w3.org/2005/10/profile")
+
+                          (body
+                           (seq
+                            (header
+                             (nav
+                              (a "TOP" :href "/")))
+
+                            (div
+                             (seq
+                              (div
+                               (seq
+                                (h1 (span ,(org-roam-node-file-title top-node) :class "title"))
+                                (div ,(format-time-string "%F" (my-org-roam-node-date top-node))  :class "date")
+                                ,(my-blog-render-post-links top-node config))
+                               :class "masthead")
+                              (article ,(my-blog-render-post-content config) :class "post"))
+                             :id "page")
+
+                            (footer (seq "Built with " ,org-html-creator-string)))))
+
+                         :lang "en")))))
+          (with-temp-buffer
+            (insert page)
+            (write-region nil nil
+                          (my-blog-post-file-name top-node config))))))
+
+
+    (defun my-blog-render-index-content (config)
+      (let ((posts nil)
+            (f (lambda (post)
+                 (pcase-let* ((`(,tags ,node) post))
+                   `(li
+                     (seq
+                      (a
+                       (seq
+                        (span ,(org-roam-node-file-title node) :class "title")
+                        " "
+                        (span ,(format-time-string "%F" (my-org-roam-node-date node)) :class "date")
+                        " ")
+                       :href ,(file-name-concat "posts" (my-blog-post-file-name node config :relative)))
+                      ,@(mapcar (lambda (tag) (my-blog-render-tag-link tag "posts")) tags)))))))
+
+        (mapc (lambda (node)
+                (push `(,(seq-filter
+                          (lambda (link)
+                            (and (eq (car link) 'backlink-from)
+                                 (not (equal (cadr link) "id"))))
+                          (my-blog-links node config))
+                        ,node)
+                      posts))
+              (org-roam-ql-nodes '(under "Blog") "file"))
+        (my-blog-html
+         `(ul
+           (seq
+            ,@(mapcar f posts))))))
+
+
+    (defun my-blog-html-index (config)
+      (let* ((page (my-blog-html
+                    `(seq
+                      "<!DOCTYPE html>"
+                      (html
+                       (seq
+                        (head
+                         (seq
+                          (meta :charset "utf-8")
+                          (meta :name "description" :content ,(plist-get config :blog-name))
+                          (meta :name "author" :content ,(plist-get config :author))
+                          (meta :name "viewport" :content "width=device-width, initial-scale=1")
+                          (title ,(plist-get config :blog-name)))
+                         :profile "http://www.w3.org/2005/10/profile")
+
+                        (body
+                         (seq
+                          (header
+                           (nav
+                            (a "TOP" :href "/")))
+
+                          (div
+                           (seq
+                            (div
+                             (h1 (span "All Posts" :class "title"))
+                             :class "masthead")
+                            (div ,(my-blog-render-index-content config) :class "index"))
+                           :id "page")
+
+                          (footer (seq "Built with " ,org-html-creator-string)))))
+
+                       :lang "en")))))
+        (with-temp-buffer
+          (insert page)
+          (write-region nil nil
+                        (expand-file-name
+                         "../index.html"
+                         (plist-get config :publishing-directory))))))
+
+    (defun my-blog-html-publish (nodes)
+      (let ((my-org-roam--file-to-ref-table (my-org-roam--file-to-ref-table))
+            (my-org-roam--hidden-file-to-id-table (my-org-roam--hidden-file-to-id-table))
+            (config '(:author
+                      "hiecaq"
+                      :blog-name
+                      "hiecaq's nest"
+                      :with-toc nil
+                      :section-numbers nil)))
+        (dolist (node nodes)
+          (let ((file (org-roam-node-file node)))
+            (unless (or (gethash file my-org-roam--file-to-ref-table)
+                        (gethash file my-org-roam--hidden-file-to-id-table))
+              (my-blog-html-post node config))))
+        (my-blog-html-index config)))
+    (:with-function my-blog-html-publish
+      (:autoload-this)))
 #+end_src
 
 **** Style and Faces
