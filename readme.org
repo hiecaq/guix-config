@@ -5919,21 +5919,24 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
                          "../index.html"
                          (plist-get config :publishing-directory))))))
 
-    (defun my-blog-html-publish (nodes)
-      (let ((my-org-roam--file-to-ref-table (my-org-roam--file-to-ref-table))
-            (my-org-roam--hidden-file-to-id-table (my-org-roam--hidden-file-to-id-table))
-            (config `(:author
-                      ,user-full-name
-                      :blog-name
-                      "Airship of Whims"
-                      :base-directory
-                      ,org-roam-directory
-                      :publishing-directory
-                      ,(expand-file-name "/tmp/posts/")
-                      :csl-style
-                      ,(expand-file-name "default.csl" org-roam-directory)
-                      :with-toc nil
-                      :section-numbers nil)))
+    (defun my-blog-html-publish (nodes &optional expand)
+      (let* ((my-org-roam--file-to-ref-table (my-org-roam--file-to-ref-table))
+             (my-org-roam--hidden-file-to-id-table (my-org-roam--hidden-file-to-id-table))
+             (config `(:author
+                       ,user-full-name
+                       :blog-name
+                       "Airship of Whims"
+                       :base-directory
+                       ,org-roam-directory
+                       :publishing-directory
+                       ,(expand-file-name "/tmp/posts/")
+                       :csl-style
+                       ,(expand-file-name "default.csl" org-roam-directory)
+                       :with-toc nil
+                       :section-numbers nil))
+             (nodes (if expand
+                        (my-blog-expand-nodes nodes)
+                      nodes)))
         (dolist (node nodes)
           (let ((file (org-roam-node-file node)))
             (unless (or (gethash file my-org-roam--file-to-ref-table)
@@ -5941,7 +5944,17 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
               (my-blog-html-post node config))))
         (my-blog-html-index config)))
     (:with-function my-blog-html-publish
-      (:autoload-this)))
+      (:autoload-this))
+
+    (defun my-blog-expand-nodes (nodes)
+      "Expand the node list to all posts that needs to be re-generated."
+      (let ((types (cons "id" (mapcar #'car my-org-id-link-special-defs))))
+        (seq-uniq (thread-last (mapcan (lambda (type) (my-blog-linked-nodes nodes 'backlink-from type)) types)
+                               (append nodes)
+                               (seq-filter (lambda (node) (equal (org-roam-node-level node) 0))))
+                  (lambda (n1 n2) (equal (org-roam-node-file n1)
+                                         (org-roam-node-file n2)))))))
+
 #+end_src
 
 **** Style and Faces
