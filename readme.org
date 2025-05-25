@@ -5793,7 +5793,7 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
            (seq
             "Forward links:"
             ,@(mapcar #'my-blog-render-tag-link forwards)
-            "Backward links:"
+            " Backward links:"
             ,@(mapcar #'my-blog-render-tag-link backwards))
            :class "tags"))))
 
@@ -5922,10 +5922,16 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
     (defun my-blog-html-publish (nodes)
       (let ((my-org-roam--file-to-ref-table (my-org-roam--file-to-ref-table))
             (my-org-roam--hidden-file-to-id-table (my-org-roam--hidden-file-to-id-table))
-            (config '(:author
-                      "hiecaq"
+            (config `(:author
+                      ,user-full-name
                       :blog-name
-                      "hiecaq's nest"
+                      "Airship of Whims"
+                      :base-directory
+                      ,org-roam-directory
+                      :publishing-directory
+                      ,(expand-file-name "/tmp/posts/")
+                      :csl-style
+                      ,(expand-file-name "default.csl" org-roam-directory)
                       :with-toc nil
                       :section-numbers nil)))
         (dolist (node nodes)
