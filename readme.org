@@ -5615,6 +5615,18 @@ From my points of view, blogging is a subtopic of PIM instead of a separate one.
 - to generate this website with the set of selected notes
 
 I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been using [[https://github.com/ChrisPenner/slick][slick]], with the help of [[https://pandoc.org/][pandoc]] as a library.  Now I moved to a pure Emacs hand-made solution, based on a subset of functions from org-publish.
+
+#+begin_src scheme
+  (simple-service
+   'home-emacs-htmlize
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-htmlize")))))
+#+end_src
+
 #+begin_src emacs-lisp
   (setup ox-html
     (defun my-org-roam-node-date (node)
@@ -5719,6 +5731,8 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
       (pcase exp
         (`(seq . ,rest)
          (mapconcat #'my-blog-html rest))
+        (`(seqn . ,rest)
+         (mapconcat #'my-blog-html rest "\n"))
         ((and `(,tag ,content . ,rest)
               (guard (symbolp tag))
               (guard (or (stringp content) (listp content)))
@@ -5727,7 +5741,7 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
                  (my-blog-html content)
                  "</" (symbol-name tag) ">"))
         ((and `(,tag . ,rest) (guard (symbolp tag)))
-         (concat "<" (symbol-name tag) (my-blog-html--attr rest) ">"))
+         (concat "<" (symbol-name tag) (my-blog-html--attr rest) "/>"))
         ((pred stringp) exp)))
 
     (defun my-blog-post-file-name (node config &optional relative)
@@ -5803,6 +5817,7 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
       "Render blog content as bare HTML without header."
       (let ((org-html-doctype "html5")
             (org-html-html5-fancy t)
+            (org-html-htmlize-output-type 'css)
             (org-cite-export-processors `((t . (csl ,(plist-get config :csl-style)))))
             (org-export-before-processing-functions '(my-org-export-before-processing-add-reference
                                                       my-org-export-before-processing-replace-link))
@@ -5816,18 +5831,19 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
                       `(seq
                         "<!DOCTYPE html>"
                         (html
-                         (seq
+                         (seqn
                           (head
-                           (seq
+                           (seqn
                             (meta :charset "utf-8")
                             (meta :name "description" :content ,(plist-get config :blog-name))
                             (meta :name "author" :content ,(plist-get config :author))
                             (meta :name "viewport" :content "width=device-width, initial-scale=1")
+                            (link :rel "stylesheet" :type "text/css" :href "/css/htmlize.css")
                             (title ,(org-roam-node-file-title top-node)))
                            :profile "http://www.w3.org/2005/10/profile")
 
                           (body
-                           (seq
+                           (seqn
                             (header
                              (nav
                               (a "TOP" :href "/")))
@@ -5887,18 +5903,19 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
                     `(seq
                       "<!DOCTYPE html>"
                       (html
-                       (seq
+                       (seqn
                         (head
-                         (seq
+                         (seqn
                           (meta :charset "utf-8")
                           (meta :name "description" :content ,(plist-get config :blog-name))
                           (meta :name "author" :content ,(plist-get config :author))
                           (meta :name "viewport" :content "width=device-width, initial-scale=1")
+                          (link :rel "stylesheet" :type "text/css" :href "/css/htmlize.css")
                           (title ,(plist-get config :blog-name)))
                          :profile "http://www.w3.org/2005/10/profile")
 
                         (body
-                         (seq
+                         (seqn
                           (header
                            (nav
                             (a "TOP" :href "/")))
