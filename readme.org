@@ -167,6 +167,7 @@
       - [[#mu4e][mu4e]]
     - [[#mpv][MPV]]
     - [[#pyim][PYIM]]
+      - [[#rime][Rime]]
     - [[#vterm][vterm]]
     - [[#eat][Eat]]
     - [[#dired][Dired]]
@@ -1989,6 +1990,7 @@ My Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a c
     #:use-module ((gnu packages textutils) #:prefix upstream:) ;; for vale
     #:use-module ((gnu packages emacs) #:prefix upstream:)
     #:use-module ((gnu packages emacs-xyz) #:prefix upstream:)
+    #:use-module ((gnu packages ibus) #:prefix upstream:) ;; for rime-data
     #:use-module ((guix licenses) #:prefix license:))
 #+end_src
 
@@ -6545,8 +6547,6 @@ Define an embark target and keymap, which can be used when mpv is running.
 #+begin_src emacs-lisp
   (setup (:package pyim)
     (:require pyim)
-    (:require pyim-basedict)
-    (pyim-basedict-enable)
     (:option default-input-method "pyim"
              pyim-dcache-directory (exdg-cache "pyim/")
              pyim-page-length 5
@@ -6589,6 +6589,128 @@ Map Dvorak programmer number key rows to the number they corresponding to, so th
              (lambda ()
                (interactive)
                (pyim-select-word-by-number (1+ d))))))
+#+end_src
+
+**** Rime
+I only use rime through PYIM.  It talks to [[https://github.com/rime/librime][rime]] via [[https://github.com/merrickluo/liberime/][liberime]].
+#+begin_src emacs-lisp
+  (setup liberime
+    (:option liberime-user-data-dir (exdg-data "rime/"))
+    (:when-loaded
+      (liberime-try-select-schema "rime_ice")))
+
+  (setup pyim-liberime
+    (:also-load liberime)
+    (:when-loaded
+      (pyim-scheme-add
+       '(rime-quanpin-hiecaq
+         :document
+         "rime 全拼输入法。"
+         :class rime
+         :code-prefix "rime/"
+         :code-prefix-history ("&")
+         :first-chars "abcdefghijklmnopqrstuwxyz"
+         :rest-chars "vmpfwckzyjqdltxuognbhsrei'-a"
+         :prefer-triggers ("v")))
+
+      (:option pyim-default-scheme 'rime-quanpin-hiecaq)))
+
+  (setup pyim-basedict
+    (:when-loaded
+      (pyim-basedict-enable)))
+
+  (setup pyim
+    (:also-load pyim-liberime))
+#+end_src
+
+To use rime, here are the needed packages:
+#+begin_src scheme
+  (simple-service
+   'home-emacs-liberime
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-liberime-hiecaq")))))
+#+end_src
+
+=rime-data= is a collection of schemata (input method configurations) and dictionaries (possible candidates with frequencies).  I add 2 schemata to it:
+- [[https://github.com/iDvel/rime-ice][rime-ice]], an optimized configuration for Simplified Chinese
+- [[https://github.com/gkovacs/rime-japanese][rime-japanese]]
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public rime-data-hiecaq
+    (package
+     (inherit upstream:rime-data)
+     (name "rime-data-hiecaq")
+     (inputs
+      (modify-inputs (package-inputs upstream:rime-data)
+                     (append
+                      (origin
+                       (method git-fetch)
+                       (uri (git-reference
+                             (url "https://github.com/iDvel/rime-ice")
+                             (commit "a5f5404e369100fcfc5562f86f1205827453e31c")))
+                       (file-name "rime-ice")
+                       (sha256
+                        (base32
+                         "0v2x6a3v9xks5qml56km14vbvc6j49lf2fkb57kj72i5s5qzqymk"))
+                       (modules '((guix build utils)))
+                       (snippet '(begin
+                                   (map delete-file (find-files "." "double.*\\.schema\\.yaml$"))
+                                   (for-each delete-file '("squirrel.yaml" "weasel.yaml" "default.yaml"))
+                                   (substitute* "others/recipes/cn_dicts.recipe.yaml"
+                                                (("^\\s*radical_pinyin.dict.yaml\\s*$") "")))))
+                      (origin
+                       (method git-fetch)
+                       (uri (git-reference
+                             (url "https://github.com/gkovacs/rime-japanese")
+                             (commit "4c1e65135459175136f380e90ba52acb40fdfb2d")))
+                       (file-name "rime-japanese")
+                       (sha256
+                        (base32
+                         "0v64a4y7mw2z00glz6nli7q86258ny2bqgxami0dwmxw5g40hqpy"))))))
+     (arguments
+      (substitute-keyword-arguments
+       (package-arguments upstream:rime-data)
+       ((#:phases phases)
+        `(modify-phases ,phases
+                        (add-after 'unpack 'disable-recipe-download
+                                   (lambda _
+                                     (substitute* "scripts/recipe.sh"
+                                                  (("^\\s*apply_download_files\\s$") ""))))
+                        (add-after 'unpack 'install-extra-dir
+                                   (lambda _
+                                     (substitute* "Makefile"
+                                                  (("clean:\\s$")
+                                                   (string-append "\t@if [ -d \"$(OUTPUT)/cn_dicts\" ]; then install -d $(DESTDIR)$(RIME_DATA_DIR)/cn_dicts; install -m 644 $(OUTPUT)/cn_dicts/*.* $(DESTDIR)$(RIME_DATA_DIR)/cn_dicts; fi\n"
+                                                                  "\t@if [ -d \"$(OUTPUT)/en_dicts\" ]; then install -d $(DESTDIR)$(RIME_DATA_DIR)/en_dicts; install -m 644 $(OUTPUT)/en_dicts/*.* $(DESTDIR)$(RIME_DATA_DIR)/en_dicts; fi\n"
+                                                                  "\n"
+                                                                  "clean:\n")))))
+                        (add-after 'unpack 'patch-package-list
+                                   (lambda _
+                                     (substitute* "extra-packages.conf"
+                                                  (("^\\s*emoji\\s$") "")
+                                                  (("^\\)") (string-append
+                                                             "    ice:others/recipes/en_dicts\n"
+                                                             "    ice:others/recipes/cn_dicts\n"
+                                                             "    ice\n"
+                                                             "    japanese\n"
+                                                             ")"
+                                                             )))))))))))
+
+
+#+end_src
+
+=liberime= is the actual binding.
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-liberime-hiecaq
+    (package
+     (inherit upstream:emacs-liberime)
+     (name "emacs-liberime-hiecaq")
+     (inputs
+      (modify-inputs (package-inputs upstream:emacs-liberime)
+                     (replace "rime-data" rime-data-hiecaq)))))
 #+end_src
 
 *** vterm
