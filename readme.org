@@ -4659,15 +4659,45 @@ Disable org-mode's own window arrangement when editing source block and have it 
 #+end_src
 
 Templates:
+#+begin_src emacs-lisp
+  (defun my-tempel-org-src-code-save (content)
+    (org-edit-src-code content)
+    (org-edit-src-save)
+    (org-edit-src-exit))
+
+  (defun my-tempel-org-src-code-edit ()
+    (evil-normal-state)
+    (org-edit-src-code)
+    (evil-append 0))
+#+end_src
+
 #+begin_src lisp-data
+  org-mode :when (use-region-p)
+
+  (ex (rs reg) > "#+begin_example" n> "#+end_example" :post (my-tempel-org-src-code-save reg))
+  (elisp (rs reg) > "#+begin_src emacs-lisp" n> "#+end_src" :post (my-tempel-org-src-code-save reg))
+  (scheme (rs reg) > "#+begin_src scheme" n> "#+end_src" :post (my-tempel-org-src-code-save reg))
+  (sh (rs reg) > "#+begin_src sh" n> "#+end_src" :post (my-tempel-org-src-code-save reg))
+
+  org-mode :when (not (use-region-p))
+
+  (elisp "#+begin_src emacs-lisp" n q n> "#+end_src" :post (my-tempel-org-src-code-edit))
+  (scheme "#+begin_src scheme" n q n> "#+end_src" :post (my-tempel-org-src-code-edit))
+  (sh "#+begin_src sh" n q n> "#+end_src" :post (my-tempel-org-src-code-edit))
+
+  (src "#+begin_src " (s lang) n q n> "#+end_src")
+  (begin "#+begin_" (s name) n q n "#+end_" name)
+
   org-mode
 
-  (begin "#+begin_" (s name) n r n "#+end_" name)
-  (elisp "#+begin_src emacs-lisp" n r n "#+end_src" :post (org-edit-src-code))
-  (scheme "#+begin_src scheme" n r n "#+end_src" :post (org-edit-src-code))
-  (sh "#+begin_src sh" n r n "#+end_src" :post (org-edit-src-code))
+  (quote > "#+begin_quote" n r> n> "#+end_quote")
+
   (id :post (org-roam-node-insert))
   (cite :post (call-interactively #'citar-insert-citation))
+  (related :post (my-org-roam-node-insert "related"))
+  (under :post (my-org-roam-node-insert "under"))
+  (translate :post (my-org-roam-node-insert "translate"))
+  (follow :post (my-org-roam-node-insert "follow"))
 #+end_src
 
 **** Task Management
