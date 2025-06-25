@@ -4182,6 +4182,20 @@ The functions here come from tempel's README.
              "M-n" #'tempel-next)))
 #+end_src
 
+I find that I want to call some functions on the exact content of the active region, so here is the hack:
+#+begin_src emacs-lisp
+  (setup tempel
+    (define-advice tempel--element (:before-until (st region elt) save-region)
+      (pcase elt
+        (`(rs ,name)
+         (when (and (not (alist-get name (cdr st)))
+                    region)
+           (setf (alist-get name (cdr st))
+                 (buffer-substring-no-properties (car region) (cdr region)))
+           (delete-region (car region) (cdr region))
+           t)))))
+#+end_src
+
 global templates
 #+begin_src lisp-data
   fundamental-mode
