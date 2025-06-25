@@ -1973,8 +1973,8 @@ I'm currently using =emacs= from Guix official channel.
 #+begin_src scheme
   (service home-emacs-service-type
            (home-emacs-configuration
-            (emacs upstream:emacs-next)
-            (emacs-compiler upstream:emacs-next-minimal)))
+            (emacs upstream:emacs)
+            (emacs-compiler upstream:emacs-minimal)))
 #+end_src
 
 My Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a channel!
@@ -1983,12 +1983,14 @@ My Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a c
     #:use-module (guix utils)
     #:use-module (guix gexp)
     #:use-module (guix packages)
+    #:use-module (guix download)
     #:use-module (guix git-download)
     #:use-module (guix build utils)
     #:use-module (guix build-system emacs)
     #:use-module (gnu packages)
     #:use-module ((gnu packages textutils) #:prefix upstream:) ;; for vale
     #:use-module ((gnu packages emacs) #:prefix upstream:)
+    #:use-module ((gnu packages emacs-build) #:prefix upstream:)
     #:use-module ((gnu packages emacs-xyz) #:prefix upstream:)
     #:use-module ((gnu packages ibus) #:prefix upstream:) ;; for rime-data
     #:use-module ((guix licenses) #:prefix license:))
@@ -2528,6 +2530,7 @@ Emacs comes with an [[info:elisp#Rx Notation][Rx Notation]] that converts sexp D
       (specification->package
        "emacs-pcre2el")))))
 #+end_src
+
 *** Help
 TODO: this should not require help.
 #+begin_src emacs-lisp
@@ -2776,25 +2779,27 @@ In order to handle single-paged manuals, I have this help function:
           (revision "0")
           (url "https://git.sr.ht/~tsdh/highlight-parentheses.el"))
       (package
-        (name "emacs-highlight-parentheses")
-        (version version)
-        (source
-         (origin
-           (method git-fetch)
-           (uri
-            (git-reference
-             (url url)
-             (commit version)))
-           (file-name (git-file-name name version))
-           (sha256
-            (base32 "0wvhr5gzaxhn9lk36mrw9h4qpdax5kpbhqj44745nvd75g9awpld"))))
-        (build-system emacs-build-system)
-        (home-page url)
-        (synopsis "Highlights parentheses surrounding point in Emacs")
-        (description "Highlight-parentheses.el dynamically highlights
+       (name "emacs-highlight-parentheses")
+       (version version)
+       (source
+        (origin
+         (method git-fetch)
+         (uri
+          (git-reference
+           (url url)
+           (commit version)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "0wvhr5gzaxhn9lk36mrw9h4qpdax5kpbhqj44745nvd75g9awpld"))))
+       (build-system emacs-build-system)
+       (arguments
+        '(#:tests? #f))
+       (home-page url)
+       (synopsis "Highlights parentheses surrounding point in Emacs")
+       (description "Highlight-parentheses.el dynamically highlights
   the parentheses surrounding point based on nesting-level using configurable
   lists of colors, background colors, and other properties.")
-        (license license:gpl3))))
+       (license license:gpl3))))
 #+end_src
 
 #+begin_src scheme
@@ -2880,7 +2885,7 @@ References:
   (define-public emacs-evil-next
     (let ((commit "c7043cc7731206aac93090ff266ba9343ed78b2c")
           (last-release-version "1.15.0")
-          (revision "0"))
+          (revision "1"))
       (package
         (inherit upstream:emacs-evil)
         (name "emacs-evil-next")
@@ -2894,7 +2899,10 @@ References:
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "1hzfp9sfvv4isgvbg9cicqhfqqrfzjrms27zn3vzdjqf6nyglxd1")))))))
+             "1hzfp9sfvv4isgvbg9cicqhfqqrfzjrms27zn3vzdjqf6nyglxd1"))))
+        (arguments
+         (append '(#:tests? #f)
+                 (package-arguments upstream:emacs-evil))))))
 #+end_src
 
 [[https://github.com/noctuid/annalist.el][annalist]] is a dependency of =emacs-evil-collection=, and its test dependency [[https://github.com/abo-abo/lispy][lispy]] somehow fail to build under Emacs 30 because of test failures. I simply disable tests for  =annalist= and deletes all its test dependencies.
@@ -2904,9 +2912,9 @@ References:
       (inherit upstream:emacs-annalist)
       (name "emacs-annalist-minimal")
       (native-inputs '())
-      (arguments (substitute-keyword-arguments
-                     (package-arguments upstream:emacs-annalist)
-                   ((#:tests? t) #f)))))
+      (arguments
+       (append '(#:tests? #f)
+               (package-arguments upstream:emacs-annalist)))))
 #+end_src
 
 I need some latest contributions to the =evil-collection= repository:
@@ -3097,6 +3105,8 @@ I remap them all to =s= for better consistency.
        (propagated-inputs
         (list upstream:emacs-evil))
        (build-system emacs-build-system)
+       (arguments
+        '(#:tests? #f))
        (home-page url)
        (synopsis "2-char searching ala vim-sneak & vim-seek, for evil-mode")
        (description "This library It provides 2-character motions for quickly
@@ -3378,7 +3388,8 @@ I drop the unused dependencies. It is ridiculous to have to propagate =ivy=, =he
        (inherit upstream:emacs-flyspell-correct)
        (name "emacs-flyspell-correct-next")
        (arguments
-        `(#:exclude '("flyspell-correct-.*\\.el")))
+        `(#:tests? #f
+          #:exclude '("flyspell-correct-.*\\.el")))
        (propagated-inputs (list))
        (version (git-version last-release-version revision commit))
        (source
@@ -4493,7 +4504,8 @@ Emacs 30 has introduced ~uniquify-dirname-transform~ that customize how buffer n
       (propagated-inputs (list))
       (build-system emacs-build-system)
       (arguments
-       '(#:include '("emacsql.el" "emacsql-compiler.el" "emacsql-sqlite.el" "emacsql-sqlite-common.el")))))
+       '(#:tests? #f
+         #:include '("emacsql.el" "emacsql-compiler.el" "emacsql-sqlite.el" "emacsql-sqlite-common.el")))))
 #+end_src
 
 =emacsql-sqlite-builtin=, on the other hand, is the built-in integration shipped with Emacs 29.  We have to use Emacs 29 to compile it, instead of =emacs-minimal=, to makes the build phase happy.
@@ -4505,7 +4517,8 @@ Emacs 30 has introduced ~uniquify-dirname-transform~ that customize how buffer n
       (propagated-inputs (list emacs-emacsql-minimal))
       (build-system emacs-build-system)
       (arguments
-       `(#:include '("emacsql-sqlite-builtin.el")))))
+       `(#:tests? #f
+         #:include '("emacsql-sqlite-builtin.el")))))
 #+end_src
 
 #+begin_src scheme
