@@ -6697,6 +6697,28 @@ I only use rime through PYIM.  It talks to [[https://github.com/rime/librime][ri
     (:also-load pyim-liberime))
 #+end_src
 
+When the input is partially decided, PYIM use a hack to determine the unused input left (~pyim-liberime--get-code~), but it is triggered based on a fixed set of schemata, which only includes RIME's default ones.  Since schemata I used are all quanpin-like, I force it to take the corresponding branch:
+#+begin_src emacs-lisp
+  (define-advice pyim-liberime--get-code
+      (:override (word input &optional _limit)
+                 force-quanpin-split)
+    "Always use quanpin-like hack."
+    (unless (liberime-get-preedit)
+      (liberime-search input 1))
+    (let* ((n (length word))
+           (preedit (split-string (liberime-get-preedit) "[ ']+"))
+           (preedit-list (cl-subseq preedit 0 (min n (length preedit))))
+           (i (min (length input) (* n 5)))
+           str)
+      (while (> i 0)
+        (setq str (substring input 0 i))
+        (liberime-search str 1)
+        (if (equal preedit-list (split-string (liberime-get-preedit) "[ ']+"))
+            (setq i 0)
+          (setq i (- i 1))))
+      str))
+#+end_src
+
 To use rime, here are the needed packages:
 #+begin_src scheme
   (simple-service
