@@ -6842,7 +6842,7 @@ To use rime, here are the needed packages:
             (evil-collection-vterm-insert))))))
 #+end_src
 
-*** COMMENT Eat
+*** Eat
 [[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator for Emacs, similar to =vterm=, but implemented fully in Elisp.
 #+begin_src scheme
   (simple-service
@@ -6852,10 +6852,27 @@ To use rime, here are the needed packages:
     (packages
      (list
       (specification->package
-       "emacs-eat")))))
+       "emacs-eat-next")))))
 #+end_src
 
-Note that I disable Eat for now, because ~eat-eshell-mode~ hang the whole Emacs when some non-ASCII characters are printed. Nevertheless, here is the config:
+~eat-eshell-mode~ hang the whole Emacs when some non-ASCII characters are printed.  There is an [[https://codeberg.org/akib/emacs-eat/pulls/228][unmerged patch]] that fixes it.  With Guix we can apply the patch without forking, as the following code demonstrates (Steal from [[https://github.com/rakino/Rosenthal/blob/9e51ad4215461702056e57557b89d56d9123713f/modules/rosenthal/packages/emacs-xyz.scm#L43][hako's configuration]]):
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-eat-next
+    (package
+     (inherit
+      (package-with-extra-patches
+       upstream:emacs-eat
+       (list
+        (origin
+         (method url-fetch)
+         (uri "https://codeberg.org/akib/emacs-eat/pulls/228.patch")
+         (sha256
+          (base32
+           "14d6nvagcri0r687y3m179ijmnad89m5d5dj2rn2p6rpfc5nssr0"))))))
+     (name "emacs-eat-next")))
+#+end_src
+
+
 #+begin_src emacs-lisp
   (setup eat
     (:option eshell-visual-commands nil
