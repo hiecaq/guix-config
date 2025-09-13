@@ -3702,7 +3702,9 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
 #+begin_src emacs-lisp
   (setup (:package consult)
     (:require consult)
-    (:option consult-preview-key "C-j"
+    (:option consult-preview-key "C-."
+             consult-narrow-key "C-+"
+             consult-widen-key "C--"
              xref-show-definitions-function #'consult-xref
              xref-show-xrefs-function #'consult-xref
              consult-locate-args "plocate --ignore-case --regex")
@@ -3825,26 +3827,10 @@ For ~consult-grep~ families and ~consult-find~ families, it is possible to conve
                #'Info-search-case-sensitively #'consult-info)))
 
   (setup consult
-    (defun consult-info-emacs ()
-      "Search through Emacs info pages."
-      (interactive)
-      (consult-info "emacs" "efaq" "elisp" "eintr" "cl"))
-
-    (defun consult-info-org ()
-      "Search through the Org info page."
-      (interactive)
-      (consult-info "org" "orgguide" "org-roam" "org-super-agenda"))
-
-    (defun consult-info-completion ()
-      "Search through completion info pages."
-      (interactive)
-      (consult-info "vertico" "consult" "marginalia" "orderless" "embark"
-                    "corfu" "tempel"))
-
-    (defun consult-info-guix ()
-      "Search through guix info pages."
-      (interactive)
-      (consult-info "guix" "guix-cookbook" "emacs-guix" "guile")))
+    (consult-info-define "emacs" "efaq" "elisp" "eintr" "cl" "compat" "eshell")
+    (consult-info-define "org" "orgguide" "org-roam" "org-super-agenda")
+    (consult-info-define 'completion "vertico" "consult" "marginalia" "orderless" "embark" "corfu" "tempel")
+    (consult-info-define "guix" "guix-cookbook" "emacs-guix" "guile"))
 #+end_src
 
 *** Embark
