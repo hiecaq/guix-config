@@ -6267,6 +6267,8 @@ Eglot is Emacs' built-in LSP client.
     (packages
      (list
       (specification->package
+       "tree-sitter-rust")
+      (specification->package
        "emacs-eglot")
       (specification->package
        "emacs-rustic-minimal")))))
@@ -6287,6 +6289,12 @@ Its package definition introduces =lsp-mode= and =flycheck=, so I defines a vari
 
 #+end_src
 
+Enable Tree-sitter support:
+#+begin_src emacs-lisp
+  (setup rust-mode
+    (:option rust-mode-treesitter-derive t))
+#+end_src
+
 #+begin_src emacs-lisp
   (setup (:package rustic)
     (:require rustic)
@@ -6297,6 +6305,7 @@ Its package definition introduces =lsp-mode= and =flycheck=, so I defines a vari
                (side . right)
                (slot . 0)
                (window-width . 80)))
+    (:option rust-rustfmt-switches '("--edition" "2024"))
     (defun my-rustic-fix-colors ()
       (kill-local-variable 'compilation-message-face)
       (kill-local-variable 'compilation-error-face)
@@ -6739,7 +6748,7 @@ I only use rime through PYIM.  It talks to [[https://github.com/rime/librime][ri
     (:also-load pyim-liberime))
 #+end_src
 
-When the input is partially decided, PYIM use a hack to determine the unused input left (~pyim-liberime--get-code~), but it is triggered based on a fixed set of schemata, which only includes RIME's default ones.  Since schemata I used are all quanpin-like, I force it to take the corresponding branch:
+When the input is partially decided, PYIM use a hack to determine the unused input left (~pyim-liberime--get-code~), but it is triggered based on a fixed set of schemata, which only includes RIME's default ones.  Since schemata I use are all quanpin-like, I force it to take the corresponding branch:
 #+begin_src emacs-lisp
   (define-advice pyim-liberime--get-code
       (:override (word input &optional _limit)
