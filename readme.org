@@ -6646,13 +6646,17 @@ Define an embark target and keymap, which can be used when mpv is running.
 
     (:when-loaded
       (:option (prepend browse-url-handlers)
-               `(,(rx (or (seq "." (or "mkv" "mp4" "webm") eos)
-                          (seq
-                           bos
-                           (or (seq "https://" (or "www" "m" "live") ".bilibili.com/video/")
-                               "https://youtu.be/"
-                               (seq "https://" (or "www" "m") ".youtube.com/" (or "watch" "embed"))))))
+               `(,(rx-let ((suffix (seq "." (or "mkv" "mp4" "webm"))))
+                    (rx (or (seq suffix eos)
+                            (seq
+                             bos
+                             (or (seq "https://" (or "www" "m" "live") ".bilibili.com/video/")
+                                 "https://youtu.be/"
+                                 (seq "https://" (or "www" "m") ".youtube.com/" (or "watch" "embed"))
+                                 (seq "https://cdn.discordapp.com/attachments/" (+ (not "?")) suffix))))))
                  . browse-url-mpv))))
+
+
 #+end_src
 
 *** PYIM
