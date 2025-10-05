@@ -5025,9 +5025,9 @@ Again the packaged version in Guix official packages is quite old, so here is th
 And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]], which has a query syntax and feature set similar to [[https://github.com/alphapapa/org-ql][org-ql]] (It starts as a "spin-off" from org-ql I think, see [[https://github.com/alphapapa/org-ql/issues/303][this]] and [[https://github.com/alphapapa/org-ql/issues/354][this]]). Basically it turns a s-exp query into a series of SQL queries to the org-roam database.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-org-roam-ql
-    (let ((commit "95c8bbe858b3a7a9423053f9c6f2c2db17857330")
+    (let ((commit "92730786c21743365985017a6d9a0de9a45d9ffd")
           (last-release-version "0.2")
-          (revision "5")
+          (revision "7")
           (url "https://github.com/hiecaq/org-roam-ql"))
       (package
        (name "emacs-org-roam-ql")
@@ -5041,7 +5041,7 @@ And a missing gem [[https://github.com/ahmed-shariff/org-roam-ql/][org-roam-ql]]
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "1gdw81vpjpwfcx85wcw1aij1g9ba0zpczjx7s2hi345vszw5znlv"))))
+           "09qy9vsj8qpdy88iysyqnm1slamgqsjca98avqqsca4qgpwxjjhg"))))
        (build-system emacs-build-system)
        (propagated-inputs
         (list upstream:emacs-magit
