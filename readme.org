@@ -85,7 +85,9 @@
     - [[#xdg][Xdg]]
     - [[#no-littering][No Littering]]
     - [[#modus-themes][Modus Themes]]
+    - [[#display-time][Display time]]
     - [[#mode-line][Mode Line]]
+    - [[#tab-bar][Tab bar]]
     - [[#midnight][Midnight]]
     - [[#auto-save][Auto Save]]
     - [[#recentf][Recentf]]
@@ -2624,6 +2626,16 @@ In order to handle single-paged manuals, I have this help function:
     (load-theme 'modus-vivendi :no-confirm))
 #+end_src
 
+*** Display time
+=display-time-mode= is a built-in mode that show the current time (in real life) among other misc things inside ~global-mode-string~.
+#+begin_src emacs-lisp
+  (setup time
+    (:option display-time-24hr-format t
+             display-time-default-load-average nil)
+    (:with-feature display-time
+      (:enable)))
+#+end_src
+
 *** Mode Line
 #+begin_src emacs-lisp
   (defvar-local my-mode-line-format nil
@@ -2686,6 +2698,36 @@ In order to handle single-paged manuals, I have this help function:
     (:option mode-line-buffer-identification (propertized-buffer-identification "%b")
              mode-line-format my-mode-line-format
              mode-line-right-align-edge 'right-fringe))
+#+end_src
+
+*** Tab bar
+The built-in =tab-bar-mode= is similar to how tab works in Vim: each tab is a standalone multi-window layout, similar to frames.  There is also a built-in =tab-line-mode= which enables one tab per window ("window" in Emacs' terminology) workflow.
+
+Tab-bar format is also constomizable, similar to ~mode-line-format~.  When it contains ~tab-bar-format-global~, ~global-mode-string~ will no longer be showed in  ~mode-line-misc-info~, but in ~tab-bar-format-global~ instead.
+#+begin_src emacs-lisp
+  (defvar-local my-tab-bar-format nil
+    "My `tab-bar-format', for easy toggle between the default version.")
+
+  (defun my-toggle-tab-bar-format ()
+    (interactive)
+    (let* ((standard (eval (car (get 'tab-bar-format 'standard-value))))
+           (new-format (if (eq standard (default-value 'tab-bar-format))
+                           my-tab-bar-format
+                         standard)))
+      (setq-default tab-bar-format new-format)
+      (kill-local-variable 'tab-bar-format)
+      (force-tab-bar-update)))
+
+  (setopt my-tab-bar-format '(tab-bar-format-history
+                              tab-bar-format-tabs
+                              tab-bar-separator
+                              tab-bar-format-align-right
+                              tab-bar-format-global))
+
+  (setup tab-bar
+    (:option tab-bar-format my-tab-bar-format
+             tab-bar-close-button-show nil)
+    (:enable))
 #+end_src
 
 *** Midnight
