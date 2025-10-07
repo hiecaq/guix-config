@@ -6310,6 +6310,35 @@ Eglot is Emacs' built-in LSP client.
       (set-face-attribute 'eglot-highlight-symbol-face nil :inherit 'highlight)))
 #+end_src
 
+Integrate it with =embark=:
+#+begin_src emacs-lisp
+  (setup embark
+    (defun embark-target-eglot-symbol-at-point ()
+      (when-let* ((face (get-char-property (point) 'face))
+                  ((eq face 'eglot-highlight-symbol-face))
+                  (bounds (bounds-of-thing-at-point 'symbol))
+                  (name (buffer-substring (car bounds) (cdr bounds))))
+        `(eglot-symbol ,name . ,bounds)))
+
+    (defvar-keymap embark-eglot-symbol-map
+      :doc "Commands to act on current eglot-awared symbol."
+      :parent embark-identifier-map
+      "A" #'eglot-code-actions
+      "R" #'eglot-rename
+      "D" #'eglot-find-declaration
+      "t" #'eglot-find-typeDefinition
+      "i" #'eglot-find-implementation)
+
+    (:when-loaded
+      (:option (prepend embark-target-finders) #'embark-target-eglot-symbol-at-point
+               (prepend embark-keymap-alist) '(eglot-symbol . embark-eglot-symbol-map))
+      (mapc
+       (lambda (cmd)
+         (cl-pushnew 'embark--ignore-target
+                     (alist-get cmd embark-target-injection-hooks)))
+       '(eglot-rename eglot-code-actions))))
+#+end_src
+
 *** Haskell
 #+begin_src scheme
   (simple-service
