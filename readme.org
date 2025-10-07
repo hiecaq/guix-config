@@ -4024,11 +4024,11 @@ The original idea is from [[https://github.com/oantolin/embark/wiki/Additional-A
 
 #+begin_src emacs-lisp
   (setup embark
-    (defun embark-target-this-buffer ()
+    (defun embark-target-buffer-current ()
       (when-let ((buffer (buffer-name)))
-        (cons 'this-buffer buffer)))
+        (cons 'buffer-current buffer)))
 
-    (defvar-keymap this-buffer-map
+    (defvar-keymap buffer-current-map
       :doc "Commands to act on current file."
       :parent embark-buffer-map
       "g" #'revert-buffer
@@ -4036,25 +4036,48 @@ The original idea is from [[https://github.com/oantolin/embark/wiki/Additional-A
       "D" #'toggle-window-dedicated)
 
     (:when-loaded
-      (:option (prepend my-embark-leader-target-finder) #'embark-target-this-buffer
-               (prepend embark-keymap-alist) '(this-buffer . this-buffer-map))))
+      (:option (prepend my-embark-leader-target-finder) #'embark-target-buffer-current
+               (prepend embark-keymap-alist) '(buffer-current . buffer-current-map))))
 #+end_src
 
 #+begin_src emacs-lisp
   (setup embark
-    (defun embark-target-this-file ()
+    (defun embark-target-file-current ()
       (when-let ((file (buffer-file-name)))
-        (cons 'this-file file)))
+        (cons 'file-current file)))
 
-    (defvar-keymap this-file-map
+    (defvar-keymap file-current-map
       :doc "Commands to act on current file."
       :parent embark-file-map
       "g" #'revert-buffer)
 
     (:when-loaded
-      (:option (prepend my-embark-leader-target-finder) #'embark-target-this-file
-               (prepend embark-keymap-alist) '(this-file . this-file-map))))
+      (:option (prepend my-embark-leader-target-finder) #'embark-target-file-current
+               (prepend embark-keymap-alist) '(file-current . file-current-map))))
 #+end_src
+
+
+#+begin_src emacs-lisp
+  (setup embark
+    (defun embark-target-tab-current ()
+      (when-let* ((tab-bar-mode)
+                  (fboundp #'tab-bar--current-tab-find)
+                  (current-tab (tab-bar--current-tab-find))
+                  (tab (cdr current-tab))
+                  (tab-name (alist-get 'name tab)))
+        (cons 'tab-current tab-name)))
+
+    (:when-loaded
+      (:option (prepend my-embark-leader-target-finder) #'embark-target-tab-current
+               (prepend embark-keymap-alist) '(tab-current . tab-prefix-map))
+
+      (map-keymap
+       (lambda (_key cmd)
+         (cl-pushnew 'embark--ignore-target
+                     (alist-get cmd embark-target-injection-hooks)))
+       tab-prefix-map)))
+#+end_src
+
 
 I realize that when using Embark as the leader key, all the targets I really want are the targets defined in this heading section.  Thus I'd rather get rid of other targets in this situation.  This is actually suggested in the wiki, but I didn't understand the implication on the overall productivity at that time.
 #+begin_src emacs-lisp
@@ -4499,15 +4522,14 @@ Since Emacs 28, the built-in =project.el= implements most functionalities needed
                 project-name
               "<unknown>")))
 
-    (map-keymap
-     (lambda (_key cmd)
-       (cl-pushnew 'embark--ignore-target
-                   (alist-get cmd embark-target-injection-hooks)))
-     project-prefix-map)
-
     (:when-loaded
       (:option (prepend my-embark-leader-target-finder) #'embark-target-project
-               (prepend embark-keymap-alist) '(project . project-prefix-map))))
+               (prepend embark-keymap-alist) '(project . project-prefix-map))
+      (map-keymap
+       (lambda (_key cmd)
+         (cl-pushnew 'embark--ignore-target
+                     (alist-get cmd embark-target-injection-hooks)))
+       project-prefix-map)))
 #+end_src
 
 ~project-prefixed-buffer-name~ is used for project shells (and Eshells), we can configure it to be used for compilation buffers too:
