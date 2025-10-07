@@ -120,6 +120,7 @@
     - [[#marginalia][Marginalia]]
     - [[#consult][Consult]]
     - [[#embark][Embark]]
+      - [[#fix-symbol-target-in-elisp][Fix symbol target in Elisp]]
       - [[#consult-based-embark-cycle][Consult-based Embark Cycle]]
       - [[#embark-as-the-leader-key][Embark as the leader key]]
       - [[#open-in-chosen-window][Open in chosen window]]
@@ -3938,6 +3939,19 @@ With ~embark-live~, a buffer is live-updating to show the candidates of the curr
             (vertico-multiform-unobtrusive)))))
     (:with-mode embark-collect-mode
       (:hook +embark-live-vertico)))
+#+end_src
+
+**** Fix symbol target in Elisp
+The default behavior of embark in elisp buffers is quite confusing: if the symbol has the same name as anything special (a library, a package, etc), the target at point will be those instead.  That is, the symbol target is not produced.
+
+For example, if the cursor is at the symbol =button=, the default behavior selects =face=, =library= and =file=, except for =symbol=.  This for example forbid I to highlight the word =button= with =H=.  I find this behavior super confusing, so let's fix it:
+#+begin_src emacs-lisp
+  (define-advice embark--identifier-types (:filter-return (ret) fix-elisp-symbol)
+    "Produce symbol target in `emacs-lisp-mode' when appropriate."
+    (if (or (memq 'symbol ret)
+            (memq 'identifier ret))
+        ret
+      (cons 'symbol ret)))
 #+end_src
 
 **** Consult-based Embark Cycle
