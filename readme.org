@@ -139,6 +139,7 @@
       - [[#fish-completion][fish-completion]]
     - [[#ediff][Ediff]]
     - [[#magit][Magit]]
+    - [[#difftastic][Difftastic]]
     - [[#project][Project]]
     - [[#emacsql][Emacsql]]
     - [[#epub][Epub]]
@@ -1995,6 +1996,7 @@ My Guix packages definition is at =(hiecaq packages emacs-xyz)=. TODO: makes a c
     #:use-module ((gnu packages emacs) #:prefix upstream:)
     #:use-module ((gnu packages emacs-build) #:prefix upstream:)
     #:use-module ((gnu packages emacs-xyz) #:prefix upstream:)
+    #:use-module ((gnu packages rust-apps) #:select (difftastic))
     #:use-module ((gnu packages ibus) #:prefix upstream:) ;; for rime-data
     #:use-module ((guix licenses) #:prefix license:))
 #+end_src
@@ -2963,7 +2965,7 @@ References:
 I need some latest contributions to the =evil-collection= repository:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-collection-next
-    (let ((commit "fca81ddb2ca1ac3838aa7e8969b2313712807a45")
+    (let ((commit "00e71118ab43d8eebf619c8ac00d165b21b9c1e7")
           (last-release-version "0.0.10")
           (revision "0"))
       (package
@@ -2979,7 +2981,7 @@ I need some latest contributions to the =evil-collection= repository:
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "0grp87nb9pxx47rzclhngqn9gvgbn39yfk0szz6a4xh0pf56f100"))))
+           "16yrp140hnij647jnqxi73ny7y78qnasf2ihgdr6bf43vpzkzw13"))))
        (propagated-inputs
         (modify-inputs (package-propagated-inputs upstream:emacs-evil-collection)
                        (replace "emacs-annalist" emacs-annalist-minimal))))))
@@ -4512,6 +4514,60 @@ It's manual:
 #+end_src
 
 Its Evil integration is now a part of evil-collection.
+
+*** Difftastic
+#+begin_src scheme
+  (simple-service
+   'home-emacs-difftastic-el
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-difftastic-el")))))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-difftastic-el
+    (let ((commit "63d31f62617da25b9c77afd0fe88b26e095d506d")
+          (last-release-version "0.0.0") ;; from the el file version header
+          (revision "0")
+          (url "https://github.com/pkryger/difftastic.el"))
+      (package
+        (name "emacs-difftastic-el")
+        (version (git-version last-release-version revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                  (url url)
+                  (commit commit)))
+           (file-name (git-file-name name version))
+           (sha256
+            (base32
+             "105q2477lwhfzhrgpc6nhjxax868nv28k8kif2q27djsh9i37wh4"))))
+        (propagated-inputs
+         (list upstream:emacs-compat upstream:emacs-magit upstream:emacs-transient))
+        (inputs (list difftastic))
+        (build-system emacs-build-system)
+        (arguments
+         (list
+          #:tests? #f
+          #:phases
+          #~(modify-phases %standard-phases
+              (add-after 'unpack 'embed-path-to-difft
+                (lambda* (#:key inputs #:allow-other-keys)
+                  (emacs-substitute-variables "difftastic.el"
+                    ("difftastic-executable" (search-input-file inputs "/bin/difft"))))))))
+        (home-page url)
+        (synopsis "Wrapper for difftastic")
+        (description "This Emacs package is designed to integrate @code{difftastic} - a
+  structural diff tool - into your Emacs workflow, enhancing your code review
+  and comparison experience.  This package automatically displays
+  @code{difftastic}'s output within Emacs using faces from your user theme,
+  ensuring consistency with your overall coding environment.")
+        (license license:gpl3))))
+#+end_src
 
 *** Project
 Since Emacs 28, the built-in =project.el= implements most functionalities needed for project management, which makes [[https://github.com/bbatsov/projectile][projectile]] unnecessary.
