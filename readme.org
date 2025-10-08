@@ -3559,11 +3559,9 @@ Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatch
     (:package orderless)
     (defun +orderless--consult-suffix ()
       "Regexp which matches the end of string with Consult tofu support."
-      (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
-          (format "[%c-%c]*$"
-                  consult--tofu-char
-                  (+ consult--tofu-char consult--tofu-range -1))
-        "$"))
+      (if (boundp 'consult--tofu-regexp)
+          (concat consult--tofu-regexp "*\\'")
+        "\\'"))
 
     ;; Recognizes the following patterns:
     ;; * .ext (file extension)
@@ -3597,9 +3595,9 @@ For a normal orderless matching, which is triggered when ~completion-styles~ tri
 - listed directly in ~orderless-matching-styles~, which is basically the catch-all dispatcher at the end of the chain.
 #+begin_src emacs-lisp
   (setup orderless
-    (:option orderless-style-dispatchers '(+orderless-consult-dispatch
-                                           orderless-kwd-dispatch
-                                           my-orderless-prefix-dispatch)
+    (:option orderless-style-dispatchers '(orderless-kwd-dispatch
+                                           my-orderless-prefix-dispatch
+                                           +orderless-consult-dispatch)
              orderless-matching-styles '(orderless-regexp)))
 #+end_src
 
@@ -3627,8 +3625,10 @@ Affix dispatcher can be adjust by setting the ~orderless-affix-dispatch-alist~, 
 #+begin_src emacs-lisp
   (setup orderless
     (:when-loaded
-      (:option (prepend orderless-affix-dispatch-alist) `(?_ . ,#'my-orderless-rx)
-               (prepend orderless-affix-dispatch-alist) `(?- . ,#'orderless-prefixes))))
+      (:option (prepend* orderless-affix-dispatch-alist)
+               `((?' . ,#'my-orderless-rx)
+                 (?- . ,#'orderless-prefixes)
+                 (?_ . ,#'orderless-regexp)))))
 #+end_src
 
 Note that =file= no longer needs special treat for recent Emacs and Tramp, see [[https://github.com/minad/vertico?tab=readme-ov-file#tramp-hostname-and-username-completion][here]].
