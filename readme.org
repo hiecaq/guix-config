@@ -3553,7 +3553,7 @@ Add some keybindings
        "emacs-orderless")))))
 #+end_src
 
-Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Stolen from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]]:
+Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatchers-ensure-that-the--regexp-works-with-consult-buffer][some hack]] to work with ~consult-buffer~ and friends. Stolen the basics from [[https://github.com/minad/consult/wiki#minads-orderless-configuration][minad's]].  It breaks =$= in =consult-grep= family, so I fix it with a dynamic-scoped variable.
 #+begin_src emacs-lisp
   (setup (:require orderless)
     (:package orderless)
@@ -3563,11 +3563,15 @@ Orderless needs [[https://github.com/minad/consult/wiki#orderless-style-dispatch
           (concat consult--tofu-regexp "*\\'")
         "\\'"))
 
+    (defvar +orderless-consult-dispatch-enabled t
+      "Whether enable `+orderless-consult-dispatch' hack or not.")
+
     ;; Recognizes the following patterns:
     ;; * .ext (file extension)
     ;; * regexp$ (regexp matching at end)
     (defun +orderless-consult-dispatch (word _index _total)
       (cond
+       ((not +orderless-consult-dispatch-enabled) nil)
        ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
        ((string-suffix-p "$" word)
         `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
@@ -3852,11 +3856,13 @@ By default, =C-b= allows the cursor to moves onto the prompt, which is not good 
                       #'evil-ex-search-backward (my-evil-ex-search- #'my-consult-ripgrep-or-line 'backward))))
 #+end_src
 
-For ~consult-grep~ families and ~consult-find~ families, it is possible to convert orderless patterns into their PCRE pattern inputs, as suggested by the [[https://github.com/minad/consult/wiki#use-orderless-as-pattern-compiler-for-consult-grepripgrepfind][Wiki]].
+For ~consult-grep~ families and ~consult-find~ families, it is possible to convert orderless patterns into their PCRE pattern inputs, as suggested by the [[https://github.com/minad/consult/wiki#use-orderless-as-pattern-compiler-for-consult-grepripgrepfind][Wiki]].  I modified it to disable ~+orderless-consult-dispatch~.
 #+begin_src emacs-lisp
   (setup consult
     (defun consult--orderless-regexp-compiler (input type &rest _config)
-      (setq input (cdr (orderless-compile input)))
+      (setq input
+            (cdr (let ((+orderless-consult-dispatch-enabled nil))
+                   (orderless-compile input))))
       (cons
        (mapcar (lambda (r) (consult--convert-regexp r type)) input)
        (lambda (str) (orderless--highlight input t str))))
