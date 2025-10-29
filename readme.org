@@ -4457,6 +4457,17 @@ When each session ends, append session history instead of replacing the whole hi
     (:option eshell-history-append t))
 #+end_src
 
+Evil's eshell integration, provided by =evil-collection=, introduces some operators that should be known by =evil-surround=:
+#+begin_src emacs-lisp
+  (setup evil-surround
+    (:when-loaded
+      (:option (prepend* evil-surround-operator-alist)
+               '((evil-collection-eshell-evil-change . change)
+                 (evil-collection-eshell-evil-change-line . change)
+                 (evil-collection-eshell-evil-delete . delete)
+                 (evil-collection-eshell-evil-delete-line . delete)))))
+#+end_src
+
 **** fish-completion
 [[https://gitlab.com/Ambrevar/emacs-fish-completion][fish-completion]] is a cool package that empowers Eshell with auto-completion feature from the fish shell. This package even has the ability to fallback on auto-completion provided by bash shell, although I'm not using that right now.
 #+begin_src scheme
