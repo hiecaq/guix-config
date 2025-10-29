@@ -2325,12 +2325,6 @@ Turn off lockfiles. They cannot be moved to a different directory, and they cons
     (:option create-lockfiles nil))
 #+end_src
 
-4-space indentation:
-#+begin_src emacs-lisp
-  (setup simple
-    (:option tab-width 4))
-#+end_src
-
 General programming set up:
 #+begin_src emacs-lisp
   (setup prog-mode
