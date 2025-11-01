@@ -3021,6 +3021,14 @@ And Dired EPA integration's keybindings conflicts with =;=, so I'd like to unbin
       (:unbind ";")))
 #+end_src
 
+**** Split windows in Emacs way
+Evil by default follows Vim's behaviors when splitting windows, which is opposite to Emacs'.  However, other Emacs packages usually follow the Emacs' way, so for better consistency Evil should do it too.
+#+begin_src emacs-lisp
+  (setup evil
+    (:option evil-split-window-below t
+             evil-vsplit-window-right t))
+#+end_src
+
 **** Noun-Verb Editing
 See [[https://www.hiecaq.org/posts/20250409T225608M449.html][my blog post]] for details.
 #+begin_src emacs-lisp
