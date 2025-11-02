@@ -180,6 +180,7 @@
     - [[#emms][EMMS]]
     - [[#guix-2][Guix]]
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
+    - [[#oauth2][OAUTH2]]
 - [[#references-and-recommendations][References and Recommendations]]
 
 * Introduction
@@ -7353,6 +7354,52 @@ The following configuration let a posframe show up whenever there are new notifi
       (:with-hook ednc-notification-presentation-functions
         (:hook #'my-ednc-posframe--update)))
     (:enable))
+#+end_src
+
+*** OAUTH2
+[[https://elpa.gnu.org/packages/oauth2.html][oauth2]] implements an OAUTH2 client in Emacs.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-oauth2
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-oauth2")))))
+#+end_src
+
+Under the hood, it uses =plstore=, which is a library providing (optionally encrypted) persistent plist stores.  It uses =epa= and =epg=, which then talk to GPG.  By setting ~plstore-encrypt-to~ it'll silently use the GPG key matches the given string.
+#+begin_src emacs-lisp
+  (setup plstore
+    (:option plstore-encrypt-to "hiecaq"))
+#+end_src
+
+BTW, to test if GPG/ =epg= / =epa= is working as intended,
+#+begin_src elisp :exports none
+  (epg-list-keys (epg-make-context 'OpenPGP) `(,plstore-encrypt-to))
+#+end_src
+
+No littering!
+#+begin_src emacs-lisp
+  (setup oauth2
+    (:option oauth2-token-file (exdg-state "oauth2.plstore")))
+#+end_src
+
+It supports PCKE but unfortunately only with S256 method at time of writing.   However, the websites I use require the plain method:
+#+begin_src emacs-lisp
+  (setup oauth2
+    (define-advice oauth2--build-url (:filter-args (args) use-pkce-plain)
+      "Modify `code_challenge_method' to be plain if presented."
+      (let ((address (car args))
+            (data (cdr args)))
+        `(,address ,@(if (plist-get data "code_challenge_method" #'equal)
+                         (plist-put data "code_challenge_method" "plain" #'equal)
+                       data))))
+
+    (define-advice oauth2--get-challenge-from-verifier (:override (code-verifier) use-pkce-plain)
+      "Return code-verifier as-is."
+      code-verifier))
 #+end_src
 
 * References and Recommendations
