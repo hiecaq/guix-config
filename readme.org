@@ -55,7 +55,6 @@
     - [[#amdgpu-temperature-monitor][AmdGPU temperature monitor]]
     - [[#fan-speed-monitor][Fan speed monitor]]
   - [[#d-bus][D-Bus]]
-  - [[#xdg-desktop-portal][XDG Desktop Portal]]
   - [[#audio-and-sound][Audio and Sound]]
 - [[#securities][Securities]]
   - [[#gnupg][GnuPG]]
@@ -1392,7 +1391,7 @@ Start a session-specific D-Bus for unprivileged apps:
   (service home-dbus-service-type)
 #+end_src
 
-** XDG Desktop Portal
+** COMMENT XDG Desktop Portal
 [[https://flatpak.github.io/xdg-desktop-portal/][xdg-desktop-portal]] exposes a series of D-bus interface to give sandboxed application access to some host system functionalities, most notably file-picker, in a way similar to Android nowadays.
 
 There are several daemons involved, and all of them will be automatically started the first time related D-bus events happen:
@@ -1726,7 +1725,7 @@ Show information on the playback.
 #+end_src
 
 ** Containerized wrapper
-I use Firefox.
+This is an attempt to use containerized firefox.  XDG Desktop Portal does not work correctly with it, so I've temporarily switched to using librewolf on the host directly.  It should still work if you don't need features provided by XDG Desktop Portal, so I keep the code here for reference.
 
 For security and privacy reasons, I wrap it in a script that invokes =guix shell --container=.
 
@@ -1761,6 +1760,7 @@ This script is based on =nonguix/multiarch-container.scm=, just simplified.
                             (apply invoke
                                    `("guix" "shell"
                                      "--container" "--no-cwd" "--network"
+                                     "--writable-root"
                                      "--share=/dev/snd/seq"
                                      "--preserve=^DISPLAY$"
                                      "--preserve=^XAUTHORITY$"
@@ -1817,7 +1817,7 @@ This script is based on =nonguix/multiarch-container.scm=, just simplified.
 
 
 #+begin_src scheme :noweb-ref browser-use-module
-  #:use-module (hiecaq packages browser)
+  #:use-module (gnu packages librewolf)
 #+end_src
 
 #+begin_src scheme :noweb-ref browser-service
@@ -1825,7 +1825,7 @@ This script is based on =nonguix/multiarch-container.scm=, just simplified.
    'home-firefox
    home-profile-service-type
    (list
-    firefox-containered))
+    librewolf))
 #+end_src
 
 ** Tridactyl
