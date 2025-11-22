@@ -56,6 +56,8 @@
   - [[#d-bus][D-Bus]]
   - [[#xdg-desktop-portal][XDG Desktop Portal]]
   - [[#audio-and-sound][Audio and Sound]]
+- [[#securities][Securities]]
+  - [[#gnupg][GnuPG]]
 - [[#multimedia][Multimedia]]
   - [[#video][Video]]
     - [[#configuration][Configuration]]
@@ -1420,6 +1422,18 @@ I use a user [[https://gitlab.freedesktop.org/pipewire/pipewire][pipewire]] sess
 
 #+begin_src scheme :noweb-ref de-service
   (service home-pipewire-service-type)
+#+end_src
+
+* Securities
+This includes encryption, signing, password management, etc.
+
+** GnuPG
+#+begin_src scheme :noweb-ref guix-service
+  (service home-gpg-agent-service-type
+           (home-gpg-agent-configuration
+            (pinentry-program
+             (file-append pinentry-qt "/bin/pinentry-qt"))
+            (ssh-support? #f)))
 #+end_src
 
 * Multimedia
