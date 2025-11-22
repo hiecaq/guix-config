@@ -6319,33 +6319,6 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 
 **** Capitalizing
 [[https://github.com/duckwork/titlecase.el][titlecase]] solves one of the hardest problem in (English) writing: capitalizing titles. its most impressing feature is that it supports many standard styles, like [[https://www.chicagomanualofstyle.org/book/ed17/part2/ch08/toc.html][Chicago]] and [[https://blog.apastyle.org/apastyle/capitalization/][APA]]. I mainly use it with embark.
-#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
-  (define-public emacs-titlecase
-    (let ((commit "eb8d23925fb8ccbd3b2e3804fb0a312ee227610b")
-          (last-release-version "0.4.1") ;; from the tags in git repo; .el's version is incorrect
-          (revision "0")
-          (url "https://codeberg.org/acdw/titlecase.el"))
-      (package
-       (name "emacs-titlecase")
-       (version (git-version last-release-version revision commit))
-       (source
-        (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url (string-append url ".git"))
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32
-           "1j696incblnqhz7yi8xmshiz2p5kp910288j513sj8rknlykpr4n"))))
-       (build-system emacs-build-system)
-       (home-page url)
-       (synopsis "Titlecase Things in Emacs")
-       (description "This library only does it in English, and even then, it's pretty jankily put-together.
-  Titlecase is the best-effort attempt at capitalizing titles, in English, in Emacs.")
-       (license license:gpl3))))
-#+end_src
-
 #+begin_src scheme
   (simple-service
    'home-emacs-titlecase
