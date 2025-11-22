@@ -1513,6 +1513,11 @@ Preferred languages for audio and subtitles.
   sub-auto=fuzzy
 #+end_src
 
+Load audio files with the exact same names:
+#+begin_src conf
+  audio-file-auto=exact
+#+end_src
+
 Screenshots.
 #+begin_src conf
   screenshot-format=png
@@ -1629,8 +1634,8 @@ Adjust subtitle delay
 #+begin_src conf
   Ctrl+[ add sub-delay       -0.1
   Ctrl+] add sub-delay       +0.1
-  Ctrl+{ secondary-sub-delay -0.1
-  Ctrl+} secondary-sub-delay +0.1
+  Ctrl+{ add secondary-sub-delay -0.1
+  Ctrl+} add secondary-sub-delay +0.1
 #+end_src
 
 Adjust audio delay, to fix audio/video out-of-sync
