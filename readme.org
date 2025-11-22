@@ -35,6 +35,7 @@
 - [[#cross-desktop-group-xdg][Cross-Desktop Group (XDG)]]
   - [[#base-directories][Base Directories]]
   - [[#user-directories][User Directories]]
+  - [[#mime][MIME]]
 - [[#shells][Shells]]
   - [[#fish][Fish]]
   - [[#tools][Tools]]
@@ -679,6 +680,20 @@ As declared in [[https://www.freedesktop.org/wiki/Software/xdg-user-dirs/][xdg-u
     (templates   "$HOME/templates")
     (videos      "$HOME/videos")))
 #+end_src
+
+** MIME
+This defines how file association works.
+
+To use MIME associations, we need tools like =xdg-mime= and =xdg-open=, which are provided by:
+#+begin_src scheme :noweb-ref xdg-service
+  (simple-service
+   'home-xdg-utils
+   home-profile-service-type
+   (list
+    (specification->package
+     "xdg-utils")))
+#+end_src
+
 
 * Shells
 #+begin_src scheme :tangle "build/hiecaq/home/shell.scm"
