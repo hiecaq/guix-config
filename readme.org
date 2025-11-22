@@ -98,6 +98,7 @@
     - [[#highlight-parentheses][Highlight Parentheses]]
     - [[#transient][Transient]]
     - [[#evil][Evil]]
+      - [[#split-windows-in-emacs-way][Split windows in Emacs way]]
       - [[#noun-verb-editing][Noun-Verb Editing]]
       - [[#move-up-and-down-a-list][Move up and down a list]]
       - [[#evil-surround][Evil Surround]]
@@ -115,6 +116,7 @@
     - [[#xref][Xref]]
     - [[#topsy][Topsy]]
     - [[#re-builder][RE Builder]]
+    - [[#wgrep][WGrep]]
     - [[#orderless][Orderless]]
     - [[#vertico][Vertico]]
     - [[#marginalia][Marginalia]]
@@ -3526,6 +3528,19 @@ Add some keybindings
     (:with-mode reb-lisp-mode
       (:with-state (normal)
         (:bind "Z Q" #'reb-quit))))
+#+end_src
+
+*** WGrep
+[[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] enables editing grep buffers, and the updates will be applied to the actual buffers/files. (especially useful for =embark= exports of ~consult-grep~ families).
+#+begin_src scheme
+  (simple-service
+   'home-emacs-wgrep
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-wgrep")))))
 #+end_src
 
 *** Orderless
