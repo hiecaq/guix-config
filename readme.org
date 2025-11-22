@@ -7089,10 +7089,15 @@ To use rime, here are the needed packages:
    home-fish-service-type
    (home-fish-extension
     (config
-     (list (mixed-text-file "fish-vterm.fish"
-                            "if test \"$INSIDE_EMACS\" = 'vterm';"
-                            "  source $EMACS_VTERM_PATH/etc/emacs-vterm.fish;"
-                            "end")))))
+     (list (mixed-text-file
+            "fish-vterm.fish"
+            "if test \"$INSIDE_EMACS\" = 'vterm';"
+            "  source $EMACS_VTERM_PATH/etc/emacs-vterm.fish;"
+            "end"
+            "\n"
+            "if string match -q '*eat' \"$INSIDE_EMACS\";"
+            "  source $EAT_SHELL_INTEGRATION_DIR/fish;"
+            "end")))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -7152,7 +7157,14 @@ To use rime, here are the needed packages:
          (uri "https://codeberg.org/akib/emacs-eat/pulls/228.patch")
          (sha256
           (base32
-           "14d6nvagcri0r687y3m179ijmnad89m5d5dj2rn2p6rpfc5nssr0"))))))
+           "14d6nvagcri0r687y3m179ijmnad89m5d5dj2rn2p6rpfc5nssr0")))
+        (origin
+         (method url-fetch)
+         (uri "https://codeberg.org/akib/emacs-eat/pulls/133.patch")
+         (sha256
+          (base32
+           "0rn2xf2jq9i42ndcd3wxrr5lid8r4kxqiyr84dasv5ihqg8as5d5")))
+        )))
      (name "emacs-eat-next")))
 #+end_src
 
@@ -7162,9 +7174,27 @@ To use rime, here are the needed packages:
     (:option eshell-visual-commands nil
              eshell-visual-subcommands nil
              eshell-visual-options nil)
-    (:with-map eat-eshell-semi-char-mode-map
+    (:with-map (eat-eshell-semi-char-mode-map
+                eat-semi-char-mode-map)
       (:unbind "C-SPC"))
     (eat-eshell-mode +1))
+#+end_src
+
+For =eat-mode= (i.e. the virtual terminal), its shell integration pushes command histories to ~shell-command-history~.  We can tell =consult= to utilize it:
+#+begin_src emacs-lisp
+  (setup consult
+    (:when-loaded
+      (:option (prepend consult-mode-histories)
+               '(eat-mode shell-command-history nil beginning-of-line))))
+
+  (setup eat
+    (:rebind #'eat-line-history-isearch-backward-regexp #'consult-history))
+#+end_src
+
+Directory tracking seems to be broken if the path contains CJK characters.  We can turn it off:
+#+begin_src emacs-lisp
+  (setup eat
+    (:option eat-enable-directory-tracking nil))
 #+end_src
 
 *** Dired
