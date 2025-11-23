@@ -2366,7 +2366,6 @@ Turn off lockfiles. They cannot be moved to a different directory, and they cons
 General programming set up:
 #+begin_src emacs-lisp
   (setup prog-mode
-    (:hook #'display-line-numbers-mode)
     (:local-set truncate-lines t))
 #+end_src
 
@@ -3057,6 +3056,23 @@ And Dired EPA integration's keybindings conflicts with =;=, so I'd like to unbin
   (setup dired
     (:with-state (normal)
       (:unbind ";")))
+#+end_src
+
+=g8= in Vim and Evil displays the info of the character under cursor (I think that =8= stands for UTF-8).  We can do better by displaying the line number too, which diminishing the usefulness of =display-line-numbers-mode=.  Line number information is not very useful for structural editing so we don't have to display it all the time.
+#+begin_src emacs-lisp
+  (setup simple
+    (defun my-what-cursor-position (&optional detail)
+      (interactive "P")
+      (let ((cursor-position (let ((inhibit-message t)
+                                   (message-log-max nil))
+                               (what-cursor-position detail)))
+            (line-position (let ((inhibit-message t)
+                                 (message-log-max nil))
+                             (what-line))))
+        (message "%s, %s" cursor-position line-position)))
+    (:global
+     (:with-state (normal)
+       (:bind "g !" #'my-what-cursor-position))))
 #+end_src
 
 **** Split windows in Emacs way
