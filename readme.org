@@ -2694,12 +2694,29 @@ In order to handle single-paged manuals, I have this help function:
       '(:eval (my-mode-line-recursion--indicator)))
   (put 'my-mode-line-recursion-indicator 'risky-local-variable t)
 
+  (defvar-local my-mode-line-coding-system-indicator
+      '(:eval
+        (unless (memq (coding-system-type buffer-file-coding-system)
+                      '(undecided utf-8))
+          (concat (symbol-name (coding-system-base buffer-file-coding-system)) " "))))
+
+  (put 'my-mode-line-coding-system-indicator 'risky-local-variable t)
+
+  (defvar-local my-mode-line-eol-indicator
+      '(:eval
+        (unless (eq (coding-system-eol-type buffer-file-coding-system) 0)
+          (concat (coding-system-eol-type-mnemonic buffer-file-coding-system) " "))))
+
+  (put 'my-mode-line-eol-indicator 'risky-local-variable t)
+
   (defvar-local my-mode-line-indicators (list my-mode-line-recursion-indicator
+                                              my-mode-line-coding-system-indicator
+                                              my-mode-line-eol-indicator
                                               '(:eval (when find-file-literally "L "))
                                               '(:eval (when buffer-read-only "RO "))
                                               '(:eval (unless (string-equal (format-mode-line "%@") "-") "Remote "))
                                               '(:eval (when (buffer-narrowed-p) '(:propertize "Narrow " face warning)))
-                                              '(:eval (when (window-dedicated-p) "Dedi "))
+                                              '(:eval (pcase (window-dedicated-p) ('t "DEDI ") ('nil nil) (_ "Dedi ")))
                                               '(:eval (when (window-parameter (selected-window) 'window-side) "Side "))
                                               '(current-input-method current-input-method-title)
                                               '(god-local-mode "God ")
