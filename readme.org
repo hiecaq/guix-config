@@ -40,7 +40,6 @@
   - [[#fish][Fish]]
   - [[#tools][Tools]]
     - [[#certificates][Certificates]]
-    - [[#bat][bat]]
     - [[#eza][eza]]
     - [[#ripgrep][ripgrep]]
     - [[#fd][fd]]
@@ -851,26 +850,6 @@ See the [[https://guix.gnu.org/manual/en/html_node/X_002e509-Certificates.html][
                 ("SSL_CERT_FILE" . "$SSL_CERT_DIR/ca-certificates.crt")
                 ("GIT_SSL_CAINFO" . "$SSL_CERT_FILE")
                 ("CURL_CA_BUNDLE" . "$SSL_CERT_FILE"))))))
-    (default-value #f)
-    (description #f)))
-#+end_src
-
-*** bat
-Add [[https://github.com/sharkdp/bat][bat]], which is a =cat= clone with colors.
-#+begin_src scheme
-  (service
-   (service-type
-    (name 'home-bat)
-    (extensions
-     (list
-      (service-extension
-       home-profile-service-type
-       (const (list
-               (specification->package
-                "bat"))))
-      (service-extension
-       home-environment-variables-service-type
-       (const '(("BAT_THEME" . "TwoDark"))))))
     (default-value #f)
     (description #f)))
 #+end_src
