@@ -2546,6 +2546,15 @@ Emacs comes with an [[info:elisp#Rx Notation][Rx Notation]] that converts sexp D
        "emacs-pcre2el")))))
 #+end_src
 
+stolen from [[https://howardism.org/Technical/Emacs/eshell-why.html][Howard Abrams]], we can define a wrapper for PCRE-flavored rx.  Notably this is usable in eshell!
+#+begin_src emacs-lisp
+  (setup pcre2el
+    (defmacro prx (&rest expressions)
+      "Convert the rx-compatible regular EXPRESSIONS to PCRE.
+      Most shell applications accept Perl Compatible Regular Expressions."
+      `(rxt-elisp-to-pcre (rx ,@expressions))))
+#+end_src
+
 *** Help
 TODO: this should not require help.
 #+begin_src emacs-lisp
