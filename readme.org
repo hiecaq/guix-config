@@ -2579,6 +2579,14 @@ In order to handle single-paged manuals, I have this help function:
                 "#" (string-remove-suffix ".html" encoded-node)))))
 #+end_src
 
+I find that =-= is more consistent for going "up" than =u= in Evil:
+#+begin_src emacs-lisp
+  (setup info
+    (:with-map Info-mode-map
+      (:with-state (normal)
+        (:bind "-" #'Info-up))))
+#+end_src
+
 *** Xdg
 #+begin_src emacs-lisp
   (setup (:require xdg))
