@@ -139,6 +139,7 @@
     - [[#electric-pair-mode][electric-pair-mode]]
     - [[#aggresive-indent][Aggresive Indent]]
     - [[#comint][Comint]]
+    - [[#compile][Compile]]
     - [[#eshell][Eshell]]
       - [[#fish-completion][fish-completion]]
     - [[#ediff][Ediff]]
@@ -4483,6 +4484,21 @@ Comint is the base major mode for all kinds of interactive REPLs.
 #+begin_src emacs-lisp
   (setup comint
     (:rebind #'comint-history-isearch-backward-regexp #'consult-history))
+#+end_src
+
+*** Compile
+Compilation mode is the mode used in =M-x compile= and =grep=.
+#+begin_src emacs-lisp
+  (setup compile
+    (defun my-compilation-finish-notification (buffer string)
+      (notifications-notify
+       :title (buffer-name buffer)
+       :body string
+       :urgency (if (get-text-property 0 'face (car mode-line-process))
+                    'critical
+                  'normal)))
+    (:with-hook compilation-finish-functions
+      (:hook my-compilation-finish-notification)))
 #+end_src
 
 *** Eshell
