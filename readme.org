@@ -142,6 +142,7 @@
     - [[#compile][Compile]]
     - [[#eshell][Eshell]]
       - [[#fish-completion][fish-completion]]
+      - [[#notifications][Notifications]]
     - [[#ediff][Ediff]]
     - [[#magit][Magit]]
     - [[#difftastic][Difftastic]]
@@ -4589,6 +4590,43 @@ Evil's eshell integration, provided by =evil-collection=, introduces some operat
     (:hook-into eshell-mode))
 #+end_src
 
+**** Notifications
+Eshell can also notify us when a command is finished.  The idea is from [[https://old.reddit.com/r/emacs/comments/1owx72v/eshell_automatic_notification_when_command/][this reddit thread]].
+#+begin_src emacs-lisp
+  (setup eshell
+    (defvar-local my-eshell-notification-command-start-time nil
+      "The time when the command starts.")
+
+    (defun my-notification-time-significant-p (start-time)
+      "Whether the time elapsed is significant."
+      (let ((second (time-convert (time-since start-time) 'integer)))
+        (> second 3)))
+
+    (defun eshell-pre-command-hook@set-time ()
+      (setq my-eshell-notification-command-start-time (current-time)))
+
+    (defun eshell-post-command-hook@notify ()
+      (when-let* ((eshell (current-buffer))
+                  (selected (window-buffer (selected-window)))
+                  ((not (eq eshell selected)))
+                  (start-time (or my-eshell-notification-command-start-time 0))
+                  ((my-notification-time-significant-p start-time)))
+        (notifications-notify
+         :title (buffer-name eshell)
+         :body (format "done with %d" eshell-last-command-status)
+         :urgency (if (eshell-exit-success-p)
+                      'normal
+                    'critical))))
+
+    (:local-hook eshell-pre-command-hook eshell-pre-command-hook@set-time)
+    (:local-hook eshell-post-command-hook eshell-post-command-hook@notify))
+#+end_src
+
+This makes the built-in mode-line indicator no longer needed.
+#+begin_src emacs-lisp
+  (setup eshell
+    (:option eshell-status-in-mode-line nil))
+#+end_src
 *** Ediff
 #+begin_src emacs-lisp
   (setup ediff
