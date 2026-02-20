@@ -4369,12 +4369,12 @@ The functions here come from tempel's README.
 I find that I want to call some functions on the exact content of the active region, so here is the hack:
 #+begin_src emacs-lisp
   (setup tempel
-    (define-advice tempel--element (:before-until (st region elt) save-region)
+    (define-advice tempel--element (:before-until (region elt) save-region)
       (pcase elt
         (`(rs ,name)
-         (when (and (not (alist-get name (cdr st)))
+         (when (and (not (alist-get name (cdar tempel--active)))
                     region)
-           (setf (alist-get name (cdr st))
+           (setf (alist-get name (cdar tempel--active))
                  (buffer-substring-no-properties (car region) (cdr region)))
            (delete-region (car region) (cdr region))
            t)))))
