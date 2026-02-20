@@ -23,6 +23,7 @@
     - [[#game-controllers][Game Controllers]]
     - [[#android][Android]]
     - [[#hardware-monitor][Hardware monitor]]
+    - [[#qemu][QEMU]]
   - [[#default-services-modification][Default Services Modification]]
     - [[#guix][Guix]]
     - [[#gdm][GDM]]
@@ -204,13 +205,14 @@ This is the main entry point for =guix system=. It can be deployed with
   (use-modules (gnu)
                (guix channels)
                (gnu system nss)
+               (gnu system privilege)
                (gnu packages haskell)
                (hiecaq services search)
                <<system-module>>
                )
 
   (use-service-modules desktop ssh xorg linux security-token sound)
-  (use-package-modules bootloaders fonts games android)
+  (use-package-modules bootloaders fonts games android virtualization firmware)
 
   <<system-helper>>
 
@@ -229,6 +231,10 @@ This is the main entry point for =guix system=. It can be deployed with
     (packages (cons*
                <<system-packages>>
                %base-packages))
+
+    (privileged-programs (cons*
+                          <<privileged-programs>>
+                          %default-privileged-programs))
 
     (services (cons*
                <<system-services>>
@@ -395,7 +401,7 @@ I only have one explicit user:
    (group "users")
    (supplementary-groups '("wheel" "netdev"
                            "input" "audio" "video"
-                           "plocate" "adbusers")))
+                           "plocate" "adbusers" "kvm")))
 #+end_src
 
 ** Packages
@@ -438,6 +444,26 @@ To show the system fan speeds, my device need this kernel module:
 #+begin_src scheme
   (service kernel-module-loader-service-type
            '("nct6683"))
+#+end_src
+
+*** QEMU
+See the cookbook for details about setting up the bridge.
+#+begin_src scheme :noweb-ref privileged-programs
+  (privileged-program
+   (program (file-append qemu "/libexec/qemu-bridge-helper"))
+   (setuid? #t))
+#+end_src
+
+#+begin_src scheme
+  (extra-special-file "/etc/qemu/bridge.conf"
+                      (plain-file "qemu-bridge.conf" "allow br0\n"))
+#+end_src
+
+Then, add the needed packages:
+#+begin_src scheme :noweb-ref system-packages
+  qemu
+  (list qemu "doc")
+  ovmf-x86-64
 #+end_src
 
 ** Default Services Modification
