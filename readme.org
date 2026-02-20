@@ -4698,55 +4698,13 @@ Its Evil integration is now a part of evil-collection.
 *** Difftastic
 #+begin_src scheme
   (simple-service
-   'home-emacs-difftastic-el
+   'home-emacs-difftastic
    home-emacs-service-type
    (home-emacs-extension
     (packages
      (list
       (specification->package
-       "emacs-difftastic-el")))))
-#+end_src
-
-#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
-  (define-public emacs-difftastic-el
-    (let ((commit "63d31f62617da25b9c77afd0fe88b26e095d506d")
-          (last-release-version "0.0.0") ;; from the el file version header
-          (revision "0")
-          (url "https://github.com/pkryger/difftastic.el"))
-      (package
-        (name "emacs-difftastic-el")
-        (version (git-version last-release-version revision commit))
-        (source
-         (origin
-           (method git-fetch)
-           (uri (git-reference
-                  (url url)
-                  (commit commit)))
-           (file-name (git-file-name name version))
-           (sha256
-            (base32
-             "105q2477lwhfzhrgpc6nhjxax868nv28k8kif2q27djsh9i37wh4"))))
-        (propagated-inputs
-         (list upstream:emacs-compat upstream:emacs-magit upstream:emacs-transient))
-        (inputs (list difftastic))
-        (build-system emacs-build-system)
-        (arguments
-         (list
-          #:tests? #f
-          #:phases
-          #~(modify-phases %standard-phases
-              (add-after 'unpack 'embed-path-to-difft
-                (lambda* (#:key inputs #:allow-other-keys)
-                  (emacs-substitute-variables "difftastic.el"
-                    ("difftastic-executable" (search-input-file inputs "/bin/difft"))))))))
-        (home-page url)
-        (synopsis "Wrapper for difftastic")
-        (description "This Emacs package is designed to integrate @code{difftastic} - a
-  structural diff tool - into your Emacs workflow, enhancing your code review
-  and comparison experience.  This package automatically displays
-  @code{difftastic}'s output within Emacs using faces from your user theme,
-  ensuring consistency with your overall coding environment.")
-        (license license:gpl3))))
+       "emacs-difftastic")))))
 #+end_src
 
 *** Project
@@ -4849,27 +4807,6 @@ Emacs 30 has introduced ~uniquify-dirname-transform~ that customize how buffer n
 *** Epub
 Emacs' built-in  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Document-View.html][doc-view-mode]] is said to support Epub format, but I've never got it to work. [[https://depp.brause.cc/nov.el/][nov.el]] to the rescue.
 
-#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
-  (define-public emacs-nov-el-next
-    (let ((commit "cc31ce0356226c3a2128119b08de6107e38fdd17")
-          (last-release-version "0.4.0")
-          (revision "0"))
-      (package
-       (inherit upstream:emacs-nov-el)
-       (name "emacs-nov-el-next")
-       (version (git-version last-release-version revision commit))
-       (source
-        (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url "https://depp.brause.cc/nov.el.git")
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32
-           "0k09dd0j8m8607dv61qm4q1jk9hvn39sxzk5ckcalafjanp7l0r6")))))))
-#+end_src
-
 #+begin_src scheme
   (simple-service
    'home-emacs-nov-el
@@ -4878,7 +4815,7 @@ Emacs' built-in  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Doc
     (packages
      (list
       (specification->package
-       "emacs-nov-el-next")))))
+       "emacs-nov-el")))))
 #+end_src
 
 #+begin_src emacs-lisp
