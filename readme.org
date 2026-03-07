@@ -70,6 +70,7 @@
 - [[#emacs][Emacs]]
   - [[#basics][Basics]]
   - [[#early-initialization][Early Initialization]]
+    - [[#android-exec-path][Android Exec Path]]
     - [[#packages-1][Packages]]
     - [[#special-key-remapping][Special Key Remapping]]
     - [[#fonts-1][Fonts]]
@@ -2064,6 +2065,15 @@ NOTE: the hash for git-based packages is got by following [[https://guix.gnu.org
 
 #+begin_src emacs-lisp :comments no
   ;;; early-init.el --- Configurations before package systems and UI systems -*- lexical-binding: t; buffer-read-only: t; eval: (auto-revert-mode 1) -*-
+#+end_src
+
+*** Android Exec Path
+See [[https://ftp.gnu.org/gnu/emacs/android/README][Android README]].
+#+begin_src emacs-lisp
+  (when (eq system-type 'android)
+    (setenv "PATH" (format "%s:%s" "/data/data/com.termux/files/usr/bin"
+    		       (getenv "PATH")))
+    (push "/data/data/com.termux/files/usr/bin" exec-path))
 #+end_src
 
 *** Packages
