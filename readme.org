@@ -4110,6 +4110,8 @@ The way to use it is simply by typing =embark-cycle-key= as usual, or set the un
         (list targets
               (if-let (((cdr targets)) ;; len >= 2
                        ((plistp (car targets))) ;; is target list
+                       ((or (and prefix-arg (listp prefix-arg))
+                            (and current-prefix-arg (listp current-prefix-arg))))
                        ((not (embark--action-repeatable-p this-command))) ;; is not auto rotate after repeat
                        (target (my-consult-embark--target-read targets))
                        (step (cl-position target targets)))
