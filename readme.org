@@ -2118,7 +2118,7 @@ grabbed from [[https://emacsnotes.wordpress.com/2022/09/11/three-bonus-keys-c-i-
                                                          "Sans Serif"))))
             (set-face-attribute 'variable-pitch nil :family family))
 
-          (when (eq system-type 'gnu/linux)
+          (when (memq system-type '(gnu/linux android))
             (set-face-attribute 'default nil :height 140))
 
           (when-let* ((family
