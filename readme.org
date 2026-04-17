@@ -528,10 +528,6 @@ The fix is from https://forums.linuxmint.com/viewtopic.php?t=424779
 Remove pulseaudio.
 #+begin_src scheme
   (delete pulseaudio-service-type)
-  (alsa-service-type
-   config => (alsa-configuration
-              (inherit config)
-              (pulseaudio? #f)))
 #+end_src
 
 * Home Configuration
