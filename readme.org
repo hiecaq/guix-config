@@ -27,6 +27,8 @@
   - [[#default-services-modification][Default Services Modification]]
     - [[#guix][Guix]]
     - [[#gdm][GDM]]
+      - [[#fix-cursor][Fix cursor]]
+      - [[#fix-screen-tearing][Fix screen tearing]]
     - [[#audio][Audio]]
 - [[#home-configuration][Home Configuration]]
 - [[#guix-1][Guix]]
@@ -500,7 +502,7 @@ We modify the system-wide channels (which will be used if a user does not have a
 #+end_src
 
 *** GDM
-Somehow after log-in my mouse cursor disappears.  We need to add a configuration to =/etc/X11/xorg.conf.d/= to fix it, here is how to do that in Guix's way:
+ here is how to do that in Guix's way to add configurations to =/etc/X11/xorg.conf.d/=.  
 #+begin_src scheme
   (gdm-service-type
    config => (gdm-configuration
@@ -510,16 +512,32 @@ Somehow after log-in my mouse cursor disappears.  We need to add a configuration
                (let ((xorg-config ((@@(gnu services xorg) gdm-configuration-xorg) config)))
                  (xorg-configuration
                   (inherit xorg-config)
-                  (extra-config (list %fix-amd-disappearing-cursor-conf)))))))
+                  (extra-config (list %fix-amd-disappearing-cursor-conf
+                                      %fix-amd-screen-tearing)))))))
 #+end_src
 
-The fix is from https://forums.linuxmint.com/viewtopic.php?t=424779
+**** Fix cursor
+Somehow after log-in my mouse cursor disappears.  To fix it, apply the fix from https://forums.linuxmint.com/viewtopic.php?t=424779:
 #+begin_src scheme :noweb-ref system-helper
   (define %fix-amd-disappearing-cursor-conf "
-  Section \"Device\"
-    Identifier \"AMD\"
+    Section \"OutputClass\"
+      Identifier \"AMD fix cursor\"
+      MatchDriver \"amdgpu\"
+      Driver \"amdgpu\"
+      Option \"SWCursor\" \"true\"
+    EndSection
+    ")
+#+end_src
+
+**** Fix screen tearing
+See https://wiki.archlinux.org/title/AMDGPU for details.
+#+begin_src scheme :noweb-ref system-helper
+  (define %fix-amd-screen-tearing "
+  Section \"OutputClass\"
+    Identifier \"AMD fix screen tearing\"
+    MatchDriver \"amdgpu\"
     Driver \"amdgpu\"
-    Option \"SWCursor\" \"true\"
+    Option \"TearFree\" \"true\"
   EndSection
   ")
 #+end_src
