@@ -4688,6 +4688,7 @@ This makes the built-in mode-line indicator no longer needed.
   (setup eshell
     (:option eshell-status-in-mode-line nil))
 #+end_src
+
 *** Ediff
 #+begin_src emacs-lisp
   (setup ediff
@@ -4844,13 +4845,13 @@ Emacs' built-in  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Doc
 
 #+begin_src scheme
   (simple-service
-   'home-emacs-nov-el
+   'home-emacs-nov
    home-emacs-service-type
    (home-emacs-extension
     (packages
      (list
       (specification->package
-       "emacs-nov-el")))))
+       "emacs-nov")))))
 #+end_src
 
 #+begin_src emacs-lisp
