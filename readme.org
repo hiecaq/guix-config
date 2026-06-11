@@ -98,6 +98,8 @@
     - [[#auto-save][Auto Save]]
     - [[#recentf][Recentf]]
     - [[#save-history][Save History]]
+    - [[#url][URL]]
+      - [[#plz][plz]]
     - [[#editorconfig][Editorconfig]]
     - [[#envrc][Envrc]]
     - [[#subword][Subword]]
@@ -267,6 +269,12 @@ Nowadays locale should be just UTF-8.
 I use standard keyboard layout too.
 #+begin_src scheme :noweb-ref operating-system
     (keyboard-layout (keyboard-layout "us"))
+#+end_src
+
+This is the proxy I'm using, to access things outside of my company.
+#+name: my-proxy
+#+begin_src bash :exports none
+  127.0.0.1
 #+end_src
 
 ** Kernel, Firmware and Initial RAM Disk
@@ -1574,6 +1582,10 @@ recommended settings from [[https://vcb-s.com/archives/7594][VCB-Studio]]:
   tscale=oversample
 #+end_src
 
+#+begin_src conf :noweb yes
+  http-proxy=http://<<my-proxy>>
+#+end_src
+
 *** Input
 :PROPERTIES:
 :header-args:conf: :tangle "build/mpv-input.conf"
@@ -1701,13 +1713,14 @@ Show information on the playback.
   try_ytdl_first=yes
 #+end_src
 
-#+begin_src conf :tangle "build/yt-dlp.conf"
+#+begin_src conf :tangle "build/yt-dlp.conf" :noweb yes
   -o ~/videos/%(title)s.%(ext)s
 
   # external downloader
   --external-downloader aria2c
   --external-downloader-args '-c -j 3 -x 3 -s 3 -k 1M'
 
+  --proxy http://<<my-proxy>>
 #+end_src
 
 ** aria2
@@ -2877,6 +2890,45 @@ Tab-bar format is also constomizable, similar to ~mode-line-format~.  When it co
   (setup saveplace
     (:option save-place-forget-unreadable-files nil)
     (save-place-mode 1))
+#+end_src
+
+*** URL
+~url-configuration-directory~, despite the name, is used as the parent directory for cookies and histories.
+#+begin_src emacs-lisp
+  (setup url
+    (:option url-cache-directory (exdg-cache "url/"))
+    (:option url-configuration-directory (exdg-state "url/"))
+    (:option url-cookie-file (exdg-state "url/cookies.el"))
+    (:option url-history-file (exdg-state "url/history.el")))
+#+end_src
+
+#+begin_src emacs-lisp :noweb yes
+  (setup url-vars
+    (:system 'gnu/linux)
+    (:option url-proxy-services
+             '(("http" . "<<my-proxy>>")
+               ("https" . "<<my-proxy>>"))))
+#+end_src
+
+**** plz
+[[https://github.com/alphapapa/plz.el][plz]] is an library that provides simple APIs to make HTTP requests.  It utilizes CURL when available.
+#+begin_src scheme
+  (simple-service
+   'home-emacs-plz
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-plz")))))
+#+end_src
+
+#+begin_src emacs-lisp :noweb yes
+  (setup (:package plz)
+    (:option plz-curl-default-args
+             '("-x" "http://<<my-proxy>>" "--silent" "--compressed" "--location"))
+    (:with-mode plz
+      (:autoload-this)))
 #+end_src
 
 *** Editorconfig
