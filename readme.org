@@ -7103,7 +7103,7 @@ When the input is partially decided, PYIM use a hack to determine the unused inp
     (let* ((n (length word))
            (preedit (split-string (liberime-get-preedit) "[ ']+"))
            (preedit-list (cl-subseq preedit 0 (min n (length preedit))))
-           (i (min (length input) (* n 5)))
+           (i (min (length input) (* n 6)))
            str)
       (while (> i 0)
         (setq str (substring input 0 i))
