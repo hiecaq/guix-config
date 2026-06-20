@@ -2480,6 +2480,12 @@ Time out on remote file access (in seconds), for example if they are offline, so
     (:option remote-file-name-access-timeout 3))
 #+end_src
 
+Disable =ffap= pinging hostnames (from [[https://emacsredux.com/blog/2026/04/07/stealing-from-the-best-emacs-configs/][here]]).
+#+begin_src emacs-lisp
+  (setup ffap
+    (:option ffap-machine-p-known 'reject))
+#+end_src
+
 **** Android
 #+begin_src emacs-lisp
   (setup touch-screen
