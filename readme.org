@@ -3091,7 +3091,7 @@ References:
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-next
-    (let ((commit "c7043cc7731206aac93090ff266ba9343ed78b2c")
+    (let ((commit "729d9a58b387704011a115c9200614e32da3cefc")
           (last-release-version "1.15.0")
           (revision "1"))
       (package
@@ -3107,7 +3107,7 @@ References:
            (file-name (git-file-name name version))
            (sha256
             (base32
-             "1hzfp9sfvv4isgvbg9cicqhfqqrfzjrms27zn3vzdjqf6nyglxd1"))))
+             "0scdws40fg4k9lqyznjghnn8svn7l0c6mq7h2aq5pzkm6hanzqn3"))))
         (arguments
          (append '(#:tests? #f)
                  (package-arguments upstream:emacs-evil))))))
@@ -3128,8 +3128,8 @@ References:
 I need some latest contributions to the =evil-collection= repository:
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-evil-collection-next
-    (let ((commit "00e71118ab43d8eebf619c8ac00d165b21b9c1e7")
-          (last-release-version "0.0.10")
+    (let ((commit "94e317cedf97a2fc2d6d67e6f0260c8101ac8d00")
+          (last-release-version "0.0.12")
           (revision "0"))
       (package
        (inherit upstream:emacs-evil-collection)
@@ -3144,7 +3144,7 @@ I need some latest contributions to the =evil-collection= repository:
          (file-name (git-file-name name version))
          (sha256
           (base32
-           "16yrp140hnij647jnqxi73ny7y78qnasf2ihgdr6bf43vpzkzw13"))))
+           "0nayvnnq7ywv9xqa94fdp0vydm3cdnv5svr7g8rcib0if8p2pcky"))))
        (propagated-inputs
         (modify-inputs (package-propagated-inputs upstream:emacs-evil-collection)
                        (replace "emacs-annalist" emacs-annalist-minimal))))))
