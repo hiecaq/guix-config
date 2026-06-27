@@ -7060,10 +7060,11 @@ Map Dvorak programmer number key rows to the number they corresponding to, so th
 #+begin_src emacs-lisp
   (setup pyim
     (dolist (d (number-sequence 0 9))
-      (:bind (alist-get d my-dvp-digit-row-alist)
-             (lambda ()
-               (interactive)
-               (pyim-select-word-by-number (1+ d))))))
+      (let ((f (lambda ()
+                 (interactive)
+                 (pyim-select-word-by-number (1+ d)))))
+        (:bind (number-to-string d) f
+               (alist-get d my-dvp-digit-row-alist) f))))
 #+end_src
 
 **** Rime
