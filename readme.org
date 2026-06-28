@@ -793,7 +793,17 @@ Add this module and its services:
 I use [[https://fishshell.com/][fish]] as a backup interactive-use-only shell.
 #+begin_src scheme
   (service
-   home-fish-service-type)
+   home-fish-service-type
+   (home-fish-configuration
+     (config
+      (list
+       (plain-file
+        "fish-keybinding.fish"
+        "
+  bind alt-p up-or-search
+  bind alt-n down-or-search
+  bind alt-r history-pager
+  ")))))
 #+end_src
 
 ** COMMENT Zsh
