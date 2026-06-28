@@ -82,6 +82,7 @@
     - [[#packages-2][Packages]]
     - [[#setupel][setup.el]]
     - [[#some-sane-configurations][Some Sane Configurations]]
+      - [[#d-bus-support][D-Bus Support]]
       - [[#android-1][Android]]
     - [[#window-management][Window Management]]
     - [[#universal-argument][Universal Argument]]
@@ -2503,6 +2504,12 @@ Increase process output buffer to 4MB (from [[https://emacsredux.com/blog/2026/0
 #+begin_src emacs-lisp
   (setup emacs
     (:option read-process-output-max (* 4 1024 1024)))
+#+end_src
+
+**** D-Bus Support
+#+begin_src emacs-lisp
+  (setup (:if-feature dbusbind)
+    (:require notifications))
 #+end_src
 
 **** Android
