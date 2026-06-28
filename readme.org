@@ -76,6 +76,7 @@
     - [[#packages-1][Packages]]
     - [[#special-key-remapping][Special Key Remapping]]
     - [[#fonts-1][Fonts]]
+    - [[#gc-optimization][GC optimization]]
     - [[#some-configurations-that-might-make-sense-to-put-here][Some Configurations that might make sense to put here]]
   - [[#main-configurations][Main Configurations]]
     - [[#packages-2][Packages]]
@@ -2168,6 +2169,18 @@ grabbed from [[https://emacsnotes.wordpress.com/2022/09/11/three-bonus-keys-c-i-
   (add-hook 'after-make-frame-functions #'my-faces-initialize)
 #+end_src
 
+*** GC optimization
+#+begin_src emacs-lisp
+  (setq gc-cons-threshold (* 100 1024 1024)
+        gc-cons-percentage 0.3)
+#+end_src
+
+Also, optimizing redisplay:
+#+begin_src emacs-lisp
+  (setq inhibit-compacting-font-caches t)
+  (setq redisplay-skip-fontification-on-input t)
+#+end_src
+
 *** Some Configurations that might make sense to put here
 ~load~ prefers the newest version of a file (when suffix is not given).
 #+begin_src emacs-lisp
@@ -2484,6 +2497,12 @@ Disable =ffap= pinging hostnames (from [[https://emacsredux.com/blog/2026/04/07/
 #+begin_src emacs-lisp
   (setup ffap
     (:option ffap-machine-p-known 'reject))
+#+end_src
+
+Increase process output buffer to 4MB (from [[https://emacsredux.com/blog/2026/04/07/stealing-from-the-best-emacs-configs/][here]] too)
+#+begin_src emacs-lisp
+  (setup emacs
+    (:option read-process-output-max (* 4 1024 1024)))
 #+end_src
 
 **** Android
