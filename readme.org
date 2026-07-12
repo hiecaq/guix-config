@@ -123,6 +123,7 @@
     - [[#ace-window][Ace Window]]
     - [[#spell-checking][Spell Checking]]
       - [[#flyspell-correct][Flyspell Correct]]
+    - [[#linting][Linting]]
     - [[#xref][Xref]]
     - [[#topsy][Topsy]]
     - [[#re-builder][RE Builder]]
@@ -170,7 +171,7 @@
       - [[#embedded-images][Embedded Images]]
       - [[#style-and-faces][Style and Faces]]
     - [[#english][English]]
-      - [[#linting][Linting]]
+      - [[#linting-1][Linting]]
       - [[#capitalizing][Capitalizing]]
       - [[#dictionary][Dictionary]]
     - [[#eglot][Eglot]]
@@ -3663,6 +3664,18 @@ I drop the unused dependencies. It is ridiculous to have to propagate =ivy=, =he
     (:needs "hunspell")
     (:also-load flyspell)
     (:global (:rebind #'ispell-word #'flyspell-correct-wrapper)))
+#+end_src
+
+*** Linting
+=flymake= is the Emacs built-in way to display lintings.
+
+By default in GUI mode, it display some symbol at the left fringe of lines that has linting labels.  I think just display a "bar" is better aesthetically, so:
+#+begin_src emacs-lisp
+  (setup flymake
+    (define-fringe-bitmap 'my-flymake-fringe (vector 0))
+    (:option flymake-note-bitmap '(my-flymake-fringe flymake-note-fringe)
+             flymake-warning-bitmap '(my-flymake-fringe flymake-warning-fringe)
+             flymake-error-bitmap '(my-flymake-fringe flymake-error-fringe)))
 #+end_src
 
 *** Xref
