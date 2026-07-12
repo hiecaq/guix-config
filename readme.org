@@ -153,6 +153,7 @@
     - [[#eshell][Eshell]]
       - [[#fish-completion][fish-completion]]
       - [[#notifications][Notifications]]
+      - [[#comint-like-c-c-m-o][Comint-like C-c M-o]]
     - [[#ediff][Ediff]]
     - [[#magit][Magit]]
     - [[#difftastic][Difftastic]]
@@ -4620,7 +4621,7 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
 #+begin_src emacs-lisp
   (setup elec-pair
     (:with-mode electric-pair-local-mode
-      (:hook-into prog-mode minibuffer-setup)))
+      (:hook-into prog-mode minibuffer-setup comint-mode eshell-mode)))
 #+end_src
 
 *** Aggresive Indent
@@ -4804,6 +4805,22 @@ This makes the built-in mode-line indicator no longer needed.
 #+begin_src emacs-lisp
   (setup eshell
     (:option eshell-status-in-mode-line nil))
+#+end_src
+
+**** Comint-like C-c M-o
+Somehow eshell's =C-c M-o= keybinding is not consistent with comints' (like ielm, python, etc).  Here is the fix:
+#+begin_src emacs-lisp
+  (setup eshell
+    (defun my-eshell-clear-buffer ()
+      "Clear the whole buffer and insert a new prompt.
+  Old input will be kept."
+      (interactive)
+      (goto-char (point-max))
+      (let ((input (buffer-substring eshell-last-output-end (point))))
+        (eshell/clear-scrollback)
+        (eshell-reset)
+        (insert input)))
+    (:bind "C-c M-o" #'my-eshell-clear-buffer))
 #+end_src
 
 *** Ediff
