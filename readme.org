@@ -111,6 +111,7 @@
       - [[#split-windows-in-emacs-way][Split windows in Emacs way]]
       - [[#noun-verb-editing][Noun-Verb Editing]]
       - [[#move-up-and-down-a-list][Move up and down a list]]
+      - [[#expand-or-shrink-visual-selection][Expand or shrink visual selection]]
       - [[#evil-surround][Evil Surround]]
       - [[#evil-replace-with-register][Evil Replace With Register]]
       - [[#evil-snipe][Evil Snipe]]
@@ -3287,6 +3288,28 @@ See [[https://www.hiecaq.org/posts/20250409T225608M449.html][my blog post]] for 
      (:with-state (motion)
        (:bind "-" #'backward-up-list
               "+" #'down-list))))
+#+end_src
+
+**** Expand or shrink visual selection
+[[https://github.com/casouri/expreg][expreg]] does so in tree-sitter mode and default to a behavior similar to [[https://github.com/magnars/expand-region.el][expand-region]].
+#+begin_src scheme
+  (simple-service
+   'home-emacs-expreg
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (list
+      (specification->package
+       "emacs-expreg")))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup evil
+    (:package expreg)
+    (:global
+     (:with-state (visual)
+       (:bind "-" #'expreg-expand
+              "+" #'expreg-contract))))
 #+end_src
 
 **** Evil Surround
