@@ -199,6 +199,7 @@
     - [[#guix-2][Guix]]
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
     - [[#oauth2][OAUTH2]]
+    - [[#ai-for-coding][AI for coding]]
 - [[#references-and-recommendations][References and Recommendations]]
 
 * Introduction
@@ -7708,6 +7709,78 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
     (define-advice oauth2--get-challenge-from-verifier (:override (code-verifier) use-pkce-plain)
       "Return code-verifier as-is."
       code-verifier))
+#+end_src
+
+
+*** AI for coding
+#+begin_src scheme
+  (simple-service
+   'home-emacs-agent-shell
+   home-emacs-service-type
+   (home-emacs-extension
+    (packages
+     (map specification->package
+          (list
+           "emacs-agent-shell-remote-fix"
+           "emacs-agent-shell-tramp")))))
+#+end_src
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-agent-shell-remote-fix
+    (package
+      (inherit upstream:emacs-agent-shell)
+      (name "emacs-agent-shell-remote-fix")
+      (arguments
+       (substitute-keyword-arguments (package-arguments upstream:emacs-agent-shell)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (add-after 'unpack 'fix-executable-find
+               (lambda _
+                 (substitute* "agent-shell.el"
+                   (("\\(executable-find command\\)")
+                    "(executable-find command 'remote)"))))))))))
+#+end_src
+
+
+#+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
+  (define-public emacs-agent-shell-tramp
+    (let ((commit "14560d42440c17d9b59fc18d304687641ddf06e5")
+          (last-release-version "0.2.0") ;; from the el file version header
+          (revision "1")
+          (url "https://github.com/junyi-hou/agent-shell-tramp.git"))
+      (package
+       (name "emacs-agent-shell-tramp")
+       (version (git-version last-release-version revision commit))
+       (source
+        (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url url)
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "18vf84yvi669xwyny2cympkax8as4wf2ri8b9lzclsk591bc3117"))))
+       (propagated-inputs
+        (list upstream:emacs-acp emacs-agent-shell-remote-fix))
+       (build-system emacs-build-system)
+       (arguments
+        `(#:include '("^agent-shell-tramp.el")
+          #:tests? #f))
+       (home-page url)
+       (synopsis "Generic TRAMP support for agent-shell")
+       (description "Generic TRAMP support for agent-shell.")
+       (license license:gpl3))))
+#+end_src
+
+When using agent-shell over TRAMP (talking with opencode installed remotely), we need to wait for the client actually starting reading STDIO, otherwise the first initialization message would be lost.  Here is my quick and dirty fix:
+#+begin_src emacs-lisp
+  (setup agent-shell
+    (define-advice agent-shell--initialize-client (:after (&rest _) delay-first-message)
+      "Agent-shell's delayed client instantiation is too late for opencode over TRAMP."
+      (acp--start-client :client
+                         (map-elt (agent-shell--state) :client))
+      (sleep-for 2)))
 #+end_src
 
 * References and Recommendations
