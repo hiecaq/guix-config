@@ -7300,15 +7300,28 @@ To use rime, here are the needed packages:
 
 #+end_src
 
-=liberime= is the actual binding.
+=liberime= is the actual binding.  With its latest version ~(liberime-get-preedit)~ always returns =nil=, so I revert it to the old version for now. 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-liberime-hiecaq
-    (package
-     (inherit upstream:emacs-liberime)
-     (name "emacs-liberime-hiecaq")
-     (inputs
-      (modify-inputs (package-inputs upstream:emacs-liberime)
-                     (replace "rime-data" rime-data-hiecaq)))))
+    (let ((commit "cc9eb9812fd6f68e78ed6a0c0a85da7a18765753")
+          (revision "0"))
+      (package
+        (inherit upstream:emacs-liberime)
+        (name "emacs-liberime-hiecaq")
+        (version (git-version "0.0.6" revision commit))
+        (source
+         (origin
+           (method git-fetch)
+           (uri (git-reference
+                  (url "https://github.com/merrickluo/liberime")
+                  (commit commit)))
+           (sha256
+            (base32
+             "11c2wj00wwbdxqkzl60sd77cp43rja5v8hrvhrvhg75v62kawva2"))
+           (file-name (git-file-name name version))))
+        (inputs
+         (modify-inputs (package-inputs upstream:emacs-liberime)
+           (replace "rime-data" rime-data-hiecaq))))))
 #+end_src
 
 *** vterm
