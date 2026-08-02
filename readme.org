@@ -3212,10 +3212,12 @@ I need some latest contributions to the =evil-collection= repository:
 
   (setup (:package evil-collection)
     (:option evil-collection-setup-minibuffer t
-             evil-collection-key-blacklist '("SPC" "C-SPC" "DEL" "C-z"))
+             evil-collection-key-blacklist '("SPC" "C-SPC" "DEL" "C-z" "<return>"))
     (:require evil-collection)
     (evil-collection-init))
 #+end_src
+
+The reason to disable binding =<return>= is that,  in GUI Emacs bindings on =<return>= shadows bindings on =RET= and many packages (for example, gptel and agent-shell) only binds to =RET= in some button-like maps, which are supported to have higher precedence. 
 
 I don't really use =;= at all, so I map it to ~evil-avy-goto-char-2~, which has the functionality similar to =vim-sneak=. I switched from =s= to =;= because overriding it for Magit is kind of hard, and it is even harder to come up with a new mnemonic for "staging".
 #+begin_src emacs-lisp
