@@ -186,6 +186,7 @@
     - [[#yaml][YAML]]
     - [[#vimrc][Vimrc]]
     - [[#go][Go]]
+    - [[#tramp][Tramp]]
     - [[#email][Email]]
       - [[#mu4e][mu4e]]
     - [[#mpv][MPV]]
@@ -6915,6 +6916,13 @@ Sometimes, I want to edit vimrc-like configurations.  There is [[https://github.
      (list
       (specification->package
        "emacs-go-mode")))))
+#+end_src
+
+*** Tramp
+#+begin_src emacs-lisp
+  (setup tramp
+    (:when-loaded
+      (:option (prepend tramp-remote-path) 'tramp-own-remote-path)))
 #+end_src
 
 *** Email
