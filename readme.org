@@ -201,6 +201,7 @@
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
     - [[#oauth2][OAUTH2]]
     - [[#ai-for-coding][AI for coding]]
+      - [[#tramp-integration][TRAMP integration]]
 - [[#references-and-recommendations][References and Recommendations]]
 
 * Introduction
@@ -7765,6 +7766,8 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
                     "(executable-find command 'remote)"))))))))))
 #+end_src
 
+**** TRAMP integration
+Enable TRAMP integration.  Many things are fixed with this.  For example if we don't do this, agent-shell will save transcripts remotely which is performed so many times that TRAMP hangs Emacs.
 
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-agent-shell-tramp
@@ -7795,6 +7798,16 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
        (synopsis "Generic TRAMP support for agent-shell")
        (description "Generic TRAMP support for agent-shell.")
        (license license:gpl3))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup agent-shell
+    (:also-load agent-shell-tramp))
+
+  (setup agent-shell-tramp
+    (:option agent-shell-tramp-transcript-directory (exdg-data "agent-shell"))
+    (:when-loaded
+      (:enable)))
 #+end_src
 
 When using agent-shell over TRAMP (talking with opencode installed remotely), we need to wait for the client actually starting reading STDIO, otherwise the first initialization message would be lost.  Here is my quick and dirty fix:
