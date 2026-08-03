@@ -201,6 +201,7 @@
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
     - [[#oauth2][OAUTH2]]
     - [[#ai-for-coding][AI for coding]]
+      - [[#codex-environment][Codex environment]]
       - [[#tramp-integration][TRAMP integration]]
 - [[#references-and-recommendations][References and Recommendations]]
 
@@ -7764,6 +7765,23 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
                  (substitute* "agent-shell.el"
                    (("\\(executable-find command\\)")
                     "(executable-find command 'remote)"))))))))))
+
+#+begin_src emacs-lisp
+  (setup agent-shell
+    (:option agent-shell-header-style 'text))
+#+end_src
+
+**** Codex environment
+#+begin_src emacs-lisp
+  (setup agent-shell-openai
+    (define-advice agent-shell-openai-start-codex (:before (&rest _) set-env)
+      "Set agent shell environment."
+      (setq agent-shell-openai-codex-environment
+            (agent-shell-make-environment-variables
+             "DEEPSEEK_API_KEY" (gptel-api-key-from-auth-source "api.deepseek.com"))))
+    (define-advice agent-shell-openai-start-codex (:after (&rest _) clear-env)
+      "Clear agent shell environment."
+      (setq agent-shell-openai-codex-environment nil)))
 #+end_src
 
 **** TRAMP integration
