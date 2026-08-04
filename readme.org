@@ -7772,6 +7772,143 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
       (:also-load gptel-agent-tools-introspection)))
 #+end_src
 
+
+***** Ask user question
+Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question][rpiv-ask-user-question]] to gptel.
+#+begin_src emacs-lisp
+  (defvar-local my-ask-user-question--raw-questions nil
+    "Saved questions for debugging.")
+
+  (defvar-local my-ask-user-question--question-widgets nil)
+
+  (defun my-ask-user-question (callback questions)
+    (with-current-buffer (get-buffer-create "*gptel ask*")
+      (unless callback
+        (setq questions my-ask-user-question--raw-questions))
+      (setq my-ask-user-question--raw-questions questions)
+      (let ((inhibit-read-only t))
+        (erase-buffer))
+      (remove-overlays)
+      (setq my-ask-user-question--question-widgets
+            (mapcar (lambda (question)
+                      (let ((w))
+                        (widget-insert (propertize (plist-get question :header) 'face 'bold) "\n")
+                        (widget-insert (plist-get question :question) "\n")
+                        (setq
+                         w
+                         (if-let* ((multi-select (plist-get question :multiSelect))
+                                   ((not (eq multi-select :json-false))))
+                             (apply #'widget-create 'checklist
+                                    (append (mapcar (lambda (option)
+                                                      `(item :tag ,(format "%s -- %s" (plist-get option :label) (plist-get option :explanation))
+                                                             ,(plist-get option :label)))
+                                                    (plist-get question :options))
+                                            '((editable-field :format "Other: %v"))))
+                           (apply #'widget-create 'radio-button-choice
+                                  :notify (lambda (widget &rest ignore)
+                                            (message "You selected %s"
+                                                     (widget-value widget)))
+                                  (append (mapcar (lambda (option)
+                                                    `(item :tag ,(format "%s -- %s" (plist-get option :label) (plist-get option :explanation))
+                                                           ,(plist-get option :label)))
+                                                  (plist-get question :options))
+                                          '((editable-field :format "Other: %v"))))))
+                        (widget-insert "\n")
+                        w))
+                    questions))
+
+      (widget-create
+       'push-button
+       :notify (lambda (&rest _)
+                 (let ((answers (mapcar (lambda (widget)
+                                          (let ((value (widget-value widget)))
+                                            (cond ((and (stringp value) (string-empty-p value)) nil)
+                                                  ((stringp value) value)
+                                                  (t (when-let* ((options (seq-remove (lambda (answer) (or (null answer) (string-empty-p answer))) value)))
+                                                       (string-join options ", "))))))
+                                        my-ask-user-question--question-widgets))
+                       (questions (mapcar (lambda (question) (plist-get question :question)) my-ask-user-question--raw-questions))
+                       (reports))
+                   (while (and answers questions)
+                     (let ((answer (car answers))
+                           (question (car questions)))
+                       (when answer
+                         (push (format "\"%s\"=\"%s\"." question answer) reports)))
+                     (setq answers (cdr answers)
+                           questions (cdr questions)))
+                   (if (null reports)
+                       (funcall callback "User declined to answer questions")
+                     (funcall callback (string-join
+                                        `("User has answered your questions:"
+                                          ,@reports
+                                          "You can now continue with the user's answers in mind.")
+                                        " ")))))
+       "submit")
+
+      (widget-insert "  ")
+
+      (widget-create
+       'push-button
+       :notify (lambda (&rest _)
+                 (funcall callback "User declined to answer questions"))
+       "Cancel")
+      (use-local-map widget-keymap)
+      (widget-setup)))
+
+  (setup gptel-request
+    (:when-loaded
+      (gptel-make-tool
+       :category "pi"
+       :name "ask_user_question"
+       :confirm nil
+       :async t
+       :function #'my-ask-user-question
+       :description "Ask the user one or more structured questions during execution. Use when you need to:
+  1. Gather user preferences or requirements
+  2. Clarify ambiguous instructions
+  3. Get decisions on implementation choices as you work
+  4. Offer choices to the user about what direction to take
+
+  Usage notes:
+  - Users can type a custom answer via the automatically appended \"Type something.\" row on every question or abandon the questionnaire. Do NOT author \"Other\" or \"Type something.\" labels yourself — reserved labels are rejected at runtime.
+  - Use multiSelect: true when multiple answers are valid. The \"Type something.\" row is available on every question.
+  - If you recommend a specific option, make that the first option in the list and add \"(Recommended)\" at the end of the label."
+       :args
+       '(( :name "questions"
+           :type array
+           :minItems 1
+           :maxItems 4
+           :description "Questions to ask the user (1-4 questions)"
+           :items
+           ( :type object
+             :properties
+             (:question
+              ( :type string
+                :description "The complete question to ask the user. Should be clear, specific, and end with a question mark. Example: \"Which library should we use for date formatting?\" If multiSelect is true, phrase it accordingly, e.g. \"Which features do you want to enable?\"")
+              :header
+              ( :type string
+                :maxLength 16
+                :description "MAX 16 CHARACTERS — hard limit, requests over the limit are rejected. Very short chip/tag shown next to the question. Examples: \"Auth method\", \"Library\", \"Approach\".")
+              :options
+              ( :type array
+                :minItems 2
+                :maxItems 4
+                :description "The available choices for this question. Must have 2-4 options. Each option should be a distinct, mutually exclusive choice (unless multiSelect is enabled). The 'Type something.' row is appended automatically — do NOT author it."
+                :items
+                ( :type object
+                  :properties
+                  (:label
+                   ( :type string
+                     :maxLength 60
+                     :description "MAX 60 CHARACTERS — hard limit, requests over the limit are rejected. The display text for this option that the user will see and select. Should be concise (1-5 words) and clearly describe the choice.")
+                   :explanation
+                   ( :type string
+                     :description "Explanation of what this option means or what will happen if chosen. Useful for providing context about trade-offs or implications."))))
+              :multiSelect
+              ( :type boolean
+                :description "Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive."))))))))
+#+end_src
+
 *** AI for coding
 #+begin_src scheme
   (simple-service
