@@ -200,6 +200,9 @@
     - [[#guix-2][Guix]]
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
     - [[#oauth2][OAUTH2]]
+    - [[#ai][AI]]
+      - [[#model][Model]]
+      - [[#tools-1][Tools]]
     - [[#ai-for-coding][AI for coding]]
       - [[#codex-environment][Codex environment]]
       - [[#tramp-integration][TRAMP integration]]
@@ -7737,6 +7740,37 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
       code-verifier))
 #+end_src
 
+*** AI
+#+begin_src emacs-lisp
+  (setup gptel
+    (:option gptel-default-mode #'org-mode))
+
+  (setup gptel-request
+    (:when-loaded
+      (:option (prepend gptel-prompt-prefix-alist) '(org-mode . "* "))))
+#+end_src
+
+**** Model
+#+begin_src emacs-lisp
+  (setup gptel
+    (gptel-make-deepseek "DeepSeek"
+      :stream t
+      :key gptel-api-key))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setup gptel
+    (:option gptel-backend (gptel-get-backend "DeepSeek")
+             gptel-model 'deepseek-v4-flash))
+#+end_src
+
+**** Tools
+#+begin_src emacs-lisp
+  (setup gptel
+    (:when-loaded
+      (:also-load gptel-agent-tools)
+      (:also-load gptel-agent-tools-introspection)))
+#+end_src
 
 *** AI for coding
 #+begin_src scheme
