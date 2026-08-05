@@ -7781,14 +7781,16 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
 
   (defvar-local my-ask-user-question--question-widgets nil)
 
+  (defcustom my-ask-user-question-buffer-name "*gptel ask*"
+    "Buffer name for ask-user-question.")
+
   (defun my-ask-user-question (callback questions)
-    (with-current-buffer (get-buffer-create "*gptel ask*")
-      (unless callback
-        (setq questions my-ask-user-question--raw-questions))
-      (setq my-ask-user-question--raw-questions questions)
+    (with-current-buffer (get-buffer-create my-ask-user-question-buffer-name)
+      (kill-all-local-variables)
       (let ((inhibit-read-only t))
         (erase-buffer))
       (remove-overlays)
+      (setq my-ask-user-question--raw-questions questions)
       (setq my-ask-user-question--question-widgets
             (mapcar (lambda (question)
                       (let ((w))
@@ -7836,11 +7838,12 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
                          (push (format "\"%s\"=\"%s\"." question answer) reports)))
                      (setq answers (cdr answers)
                            questions (cdr questions)))
+                   (quit-window)
                    (if (null reports)
                        (funcall callback "User declined to answer questions")
                      (funcall callback (string-join
                                         `("User has answered your questions:"
-                                          ,@reports
+                                          ,@(nreverse reports)
                                           "You can now continue with the user's answers in mind.")
                                         " ")))))
        "submit")
@@ -7850,10 +7853,12 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
       (widget-create
        'push-button
        :notify (lambda (&rest _)
+                 (quit-window)
                  (funcall callback "User declined to answer questions"))
        "Cancel")
       (use-local-map widget-keymap)
-      (widget-setup)))
+      (widget-setup)
+      (pop-to-buffer my-ask-user-question-buffer-name)))
 
   (setup gptel-request
     (:when-loaded
