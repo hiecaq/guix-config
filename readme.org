@@ -100,6 +100,7 @@
     - [[#auto-save][Auto Save]]
     - [[#recentf][Recentf]]
     - [[#save-history][Save History]]
+    - [[#tree-sitter-grammars][Tree-sitter grammars]]
     - [[#url][URL]]
       - [[#plz][plz]]
     - [[#editorconfig][Editorconfig]]
@@ -2942,6 +2943,16 @@ Tab-bar format is also constomizable, similar to ~mode-line-format~.  When it co
   (setup saveplace
     (:option save-place-forget-unreadable-files nil)
     (save-place-mode 1))
+#+end_src
+
+*** Tree-sitter grammars
+Starts from Emacs 31, tree-sitter can automatically install the grammars, which matches the versions declare in each ts major modes (~treesit-language-source-alist~).
+#+begin_src emacs-lisp
+  (setup treesit
+    (:option (prepend treesit-extra-load-path) (exdg-data "treesit"))
+    (when package-archives
+      (:option treesit-auto-install-grammar 'always
+               treesit-enabled-modes t)))
 #+end_src
 
 *** URL
