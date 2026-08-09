@@ -4785,8 +4785,8 @@ Eshell by default don't bind =C-d= to quitting the shell window and process. To 
 Use ~consult-history~ instead of ~eshell-*-matching-input~
 #+begin_src emacs-lisp
   (setup eshell
-    (:rebind #'eshell-previous-matching-input #'consult-history
-             #'eshell-next-matching-input #'consult-history))
+    (:rebind #'eshell-isearch-backward-regexp #'consult-history
+             #'eshell-isearch-forward-regexp #'consult-history))
 #+end_src
 
 When each session ends, append session history instead of replacing the whole history:
