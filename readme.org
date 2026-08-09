@@ -5243,6 +5243,136 @@ Sometimes, I forget to clock out before rebooting or shutting down. Org Clock pr
     (org-clock-persistence-insinuate))
 #+end_src
 
+***** Pomodoro
+#+begin_src emacs-lisp
+  (setup org-roam
+    (defun my-org-roam-clocking-node ()
+      "Return the clocking node if there is one."
+      (when (org-clocking-p)
+        (save-excursion ; Do not replace this with `with-current-buffer'.
+          (with-no-warnings (set-buffer (org-clocking-buffer)))
+          (save-restriction
+  	  (widen)
+  	  (goto-char org-clock-marker)
+            (org-roam-node-at-point))))))
+
+  (defvar my-pomodoro-state nil
+    "The current state of pomodoro.
+  It should be one of the following:
+  - `nil' not in pomodoro sections
+  - (`focus' . index)
+  - (`break' . index)")
+
+  (defcustom my-pomodoro-section-length 4
+    "How many focus-break pairs are there in a pomodoro section.
+  The last break will be the long break."
+    :type 'integer)
+
+  (defcustom my-pomodoro-focus-minute 25
+    "Focus interval in minutes."
+    :type 'integer)
+
+  (defcustom my-pomodoro-break-minute 5
+    "Break interval in minutes."
+    :type 'integer)
+
+  (defcustom my-pomodoro-long-break-minute 20
+    "Long break interval in minutes."
+    :type 'integer)
+
+  (defun my-pomodoro-next-state (state)
+    "Get the next pomodoro state."
+    (pcase state
+      ('nil
+       '(focus . 1))
+      (`(focus . ,index)
+       `(break . ,index))
+      (`(break . ,index)
+       (if (>= index my-pomodoro-section-length)
+           nil
+         `(focus . ,(1+ index))))))
+
+  (defun my-pomodoro-subsection-time (state)
+    "Get the subsection time by STATE."
+    (pcase state
+      (`(focus . ,_)
+       my-pomodoro-focus-minute)
+      (`(break . ,index)
+       (if (= index my-pomodoro-section-length)
+           my-pomodoro-long-break-minute
+         my-pomodoro-break-minute))
+      (_ (error "Invalid state"))))
+
+  (defvar my-pomodoro-mode-line-string ""
+    "The string displayed in `global-mode-string' when pomodoro is running.")
+  (put 'my-pomodoro-mode-line-string 'risky-local-variable t)
+
+  (defvar my-pomodoro--break-timer nil)
+  (defvar my-pomodoro--break-start-time nil)
+
+  (defun my-pomodoro-subsection-actual-time (state)
+    "Get the subsection time by STATE."
+    (pcase state
+      (`(focus . ,_)
+       (- (org-clock-get-clocked-time)
+          (or org-clock-total-time 0)))
+      (`(break . ,index)
+       (/ (float-time (time-since my-pomodoro--break-start-time)) 60))
+      (_ (error "Invalid state"))))
+
+  (defun my-pomodoro-update-mode-line (&rest _)
+    "Check if current state is overdue and update `my-pomodoro-mode-line-string'
+  accordingly."
+    (if my-pomodoro-state
+        (let ((expect (my-pomodoro-subsection-time my-pomodoro-state))
+              (actual (my-pomodoro-subsection-actual-time my-pomodoro-state))
+              (name (symbol-name (car my-pomodoro-state))))
+          (setq my-pomodoro-mode-line-string
+                (propertize name
+                            'face (if (>= actual expect)
+                                      'warning
+                                    'default))))
+      (setq my-pomodoro-mode-line-string nil)))
+
+  (advice-add #'org-clock-update-mode-line :before #'my-pomodoro-update-mode-line)
+
+  (defun my-pomodoro-org-clock-in ()
+    "When clocking in, set up the pomodoro to focus state."
+    (when (and my-pomodoro-state (eq 'focus (car my-pomodoro-state)))
+      (error "Still focusing"))
+    (let ((state (my-pomodoro-next-state my-pomodoro-state)))
+      (my-pomodoro-org-clock-cancel)
+      (setq my-pomodoro-state state))
+    (setq global-mode-string
+  	(append global-mode-string '(my-pomodoro-mode-line-string))))
+
+  (defun my-pomodoro-org-clock-out ()
+    "When clocking out, set up the pomodoro to break state."
+    (setq my-pomodoro-state (my-pomodoro-next-state my-pomodoro-state))
+    (if (and my-pomodoro-state (eq 'break (car my-pomodoro-state)))
+        (progn
+          (setq my-pomodoro--break-start-time (current-time))
+          (setq my-pomodoro--break-timer
+                (run-with-timer org-clock-update-period
+  		              org-clock-update-period
+  		              #'my-pomodoro-update-mode-line)))
+      (error "pomodoro state invalid"))
+    (my-pomodoro-update-mode-line))
+
+  (defun my-pomodoro-org-clock-cancel ()
+    "When clocking out, set up the pomodoro to break state."
+    (interactive)
+    (setq my-pomodoro-state nil)
+    (setq global-mode-string (delq 'my-pomodoro-mode-line-string global-mode-string))
+    (when my-pomodoro--break-timer
+      (cancel-timer my-pomodoro--break-timer)
+      (setq my-pomodoro-break-timer nil)))
+
+  (add-hook 'org-clock-in-hook #'my-pomodoro-org-clock-in)
+  (add-hook 'org-clock-out-hook #'my-pomodoro-org-clock-out)
+  (add-hook 'org-clock-cancel-hook #'my-pomodoro-org-clock-cancel)
+#+end_src
+
 **** Literate Programming
 References:
 + [[https://orgmode.org/worg/org-contrib/babel/intro.html][Babel: Introduction]] in worg/org-contrib
