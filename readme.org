@@ -3569,6 +3569,12 @@ As a side note, which-key default configuration requires there to be at least 1 
     (advice-add #'eldoc-doc-buffer :before #'my-eldoc-box-quit-frame-when-interactive))
 #+end_src
 
+Show =help-at-point-kbd-string= via Eldoc:
+#+begin_src emacs-lisp
+  (setup eldoc
+    (:option eldoc-help-at-pt t))
+#+end_src
+
 *** Ace Window
 [[https://github.com/abo-abo/ace-window][ace-window]] is helpful to do things the "embark" way: pick a window, then decide what to do with it.
 
