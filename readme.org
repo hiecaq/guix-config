@@ -523,7 +523,7 @@ We modify the system-wide channels (which will be used if a user does not have a
 #+end_src
 
 *** GDM
- here is how to do that in Guix's way to add configurations to =/etc/X11/xorg.conf.d/=.  
+ here is how to do that in Guix's way to add configurations to =/etc/X11/xorg.conf.d/=.
 #+begin_src scheme
   (gdm-service-type
    config => (gdm-configuration
@@ -3233,7 +3233,7 @@ I need some latest contributions to the =evil-collection= repository:
     (evil-collection-init))
 #+end_src
 
-The reason to disable binding =<return>= is that,  in GUI Emacs bindings on =<return>= shadows bindings on =RET= and many packages (for example, gptel and agent-shell) only binds to =RET= in some button-like maps, which are supported to have higher precedence. 
+The reason to disable binding =<return>= is that,  in GUI Emacs bindings on =<return>= shadows bindings on =RET= and many packages (for example, gptel and agent-shell) only binds to =RET= in some button-like maps, which are supported to have higher precedence.
 
 I don't really use =;= at all, so I map it to ~evil-avy-goto-char-2~, which has the functionality similar to =vim-sneak=. I switched from =s= to =;= because overriding it for Magit is kind of hard, and it is even harder to come up with a new mnemonic for "staging".
 #+begin_src emacs-lisp
@@ -3768,7 +3768,7 @@ This file provides a somewhat generic infrastructure for cross referencing comma
 Although =topsy= recommends to use =org-sticky-header= instead, this snippet for org-mode is good enough for me:
 #+begin_src emacs-lisp
   (setup (:package topsy)
-    (with-eval-after-load 'topsy
+    (:when-loaded
       (:option (prepend topsy-mode-functions)
                '(org-mode . (lambda ()
                               (save-excursion
@@ -4537,7 +4537,7 @@ The functions here come from tempel's README.
             (cons 'l template)
           (message "Template %s not found" (cadr elt))
           nil)))
-    (with-eval-after-load 'tempel
+    (:when-loaded
       (:option (prepend tempel-user-elements) #'tempel-include))
     (:option tempel-path (exdg-config "templates.eld")
              (append my-mode-line-indicators) '(tempel--active "Temp "))
@@ -6581,9 +6581,7 @@ I used to use [[https://ox-hugo.scripter.co/][ox-hugo]]. Last year I've been usi
                                (seq-filter (lambda (node) (equal (org-roam-node-level node) 0))))
                   (lambda (n1 n2) (equal (org-roam-node-file n1)
                                          (org-roam-node-file n2)))))))
-
 #+end_src
-
 
 **** Embedded Images
 ***** Org Download
@@ -6809,7 +6807,7 @@ Hide ===, =~= and other emphasis markers, and fontify src block natively:
 Eglot is Emacs' built-in LSP client.
 #+begin_src emacs-lisp
   (setup eglot
-    (with-eval-after-load 'eglot
+    (:when-loaded
       (set-face-attribute 'eglot-highlight-symbol-face nil :inherit 'highlight)))
 #+end_src
 
@@ -7457,7 +7455,7 @@ To use rime, here are the needed packages:
 
 #+end_src
 
-=liberime= is the actual binding.  With its latest version ~(liberime-get-preedit)~ always returns =nil=, so I revert it to the old version for now. 
+=liberime= is the actual binding.  With its latest version ~(liberime-get-preedit)~ always returns =nil=, so I revert it to the old version for now.
 #+begin_src scheme :tangle "build/hiecaq/packages/emacs-xyz.scm" :noweb-ref nil
   (define-public emacs-liberime-hiecaq
     (let ((commit "cc9eb9812fd6f68e78ed6a0c0a85da7a18765753")
@@ -7894,8 +7892,8 @@ Explicitly indicates where the prompt begins and ends.
 #+begin_src emacs-lisp
   (setup gptel-request
     (:when-loaded
-      (:option (prepend gptel-prompt-prefix-alist) '(org-mode . "#+gptel_prompt\n")
-               (prepend gptel-response-prefix-alist) '(org-mode . "#+gptel_response\n"))))
+      (:option (prepend gptel-prompt-prefix-alist) '(org-mode . "# gptel_prompt\n")
+               (prepend gptel-response-prefix-alist) '(org-mode . "# gptel_response\n"))))
 #+end_src
 
 Only send things in the current branch of org headings to LLM.
@@ -7958,7 +7956,7 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
     "Buffer name for ask-user-question.")
 
   (defun my-ask-user-question (callback questions)
-    (with-current-buffer (get-buffer-create my-ask-user-question-buffer-name)
+    (with-current-buffer (generate-new-buffer my-ask-user-question-buffer-name)
       (kill-all-local-variables)
       (let ((inhibit-read-only t))
         (erase-buffer))
@@ -8011,7 +8009,7 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
                          (push (format "\"%s\"=\"%s\"." question answer) reports)))
                      (setq answers (cdr answers)
                            questions (cdr questions)))
-                   (quit-window)
+                   (quit-window t)
                    (if (null reports)
                        (funcall callback "User declined to answer questions")
                      (funcall callback (string-join
@@ -8026,13 +8024,15 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
       (widget-create
        'push-button
        :notify (lambda (&rest _)
-                 (quit-window)
+                 (quit-window t)
                  (funcall callback "User declined to answer questions"))
        "Cancel")
       (use-local-map widget-keymap)
       (widget-setup)
       (pop-to-buffer my-ask-user-question-buffer-name)))
+#+end_src
 
+#+begin_src emacs-lisp
   (setup gptel-request
     (:when-loaded
       (gptel-make-tool
