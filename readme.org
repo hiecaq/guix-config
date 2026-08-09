@@ -202,7 +202,10 @@
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
     - [[#oauth2][OAUTH2]]
     - [[#ai][AI]]
-      - [[#model][Model]]
+      - [[#system-prompts][System Prompts]]
+      - [[#presets][Presets]]
+      - [[#chat-buffer][Chat buffer]]
+      - [[#models][Models]]
       - [[#tools-1][Tools]]
     - [[#ai-for-coding][AI for coding]]
       - [[#codex-environment][Codex environment]]
@@ -7880,6 +7883,38 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
 #+end_src
 
 *** AI
+**** System Prompts
+The idea is stolen from [[https://github.com/yantar92/emacs-config/blob/master/config.org#system-prompt][Ihor's configuration]].
+#+begin_src emacs-lisp
+  (defvar my-gptel-system-prompt-functions nil
+    "List of strings or functions to build default prompt.")
+
+  (defun my-gptel-system-prompt (prompt)
+    (with-temp-buffer
+      (dolist (el my-gptel-system-prompt-functions)
+        (pcase el
+    	((pred functionp) (insert (funcall el)))
+          ((pred stringp) (insert el)))
+        (insert "\n\n"))
+      (insert prompt)
+      (buffer-string)))
+#+end_src
+
+**** Presets
+#+begin_src emacs-lisp
+  (setup gptel
+    (:when-loaded
+      (gptel-make-preset 'base
+        :description "Base preset."
+        :tools '("ask_user_question")
+        :system 'default)
+
+      (gptel-make-preset 'chat
+        :parents 'base
+        :description "General preset for chat buffer."
+        :system (lambda () (my-gptel-system-prompt (alist-get 'chat gptel-directives))))))
+#+end_src
+
 **** Chat buffer
 Use org mode instead of markdown because we're in Emacs.
 #+begin_src emacs-lisp
@@ -7921,7 +7956,36 @@ To use this branching feature reliably, we need to strip org headings in LLM res
       (:hook my-gptel-remove-headings)))
 #+end_src
 
-**** Model
+A simple wrapper to have chat buffer started with the =chat= preset, and always use the same buffer name family.
+#+begin_src emacs-lisp
+  (defvar my-gptel-chat-buffer-name "gptel-chat*"
+    "Buffer name for `my-gptel-chat'.")
+
+  (defun my-gptel-chat (name &optional initial interactivep)
+    "My wrapper for gptel chat buffer.  It is meant to be interactive only."
+    (interactive
+     (let ((bufname (generate-new-buffer-name
+                     (format my-gptel-chat-buffer-name))))
+       (list
+        (read-buffer
+         "Create or choose gptel buffer: "
+         bufname nil
+         (lambda (b)
+           (and-let* ((buf (get-buffer (or (car-safe b) b))))
+             (buffer-local-value 'gptel-mode buf))))
+        (and (use-region-p) (buffer-substring (region-beginning)
+                                              (region-end)))
+        t)))
+    (let* ((was-alive (buffer-live-p (get-buffer name)))
+           (buf (funcall-interactively #'gptel name nil initial interactivep)))
+      (unless was-alive
+        (with-current-buffer buf
+          (gptel--apply-preset
+           'chat
+           (lambda (sym val) (set (make-local-variable sym) val)))))))
+#+end_src
+
+**** Models
 #+begin_src emacs-lisp
   (setup gptel
     (gptel-make-deepseek "DeepSeek"
@@ -7941,6 +8005,39 @@ To use this branching feature reliably, we need to strip org headings in LLM res
     (:when-loaded
       (:also-load gptel-agent-tools)
       (:also-load gptel-agent-tools-introspection)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my-prompt-snippet (tool)
+    (let ((description (gptel-tool-description tool)))
+      (if (string-match (rx "." (or " " line-end)) description)
+          (substring description 0 (match-beginning 0))
+        "")))
+#+end_src
+
+
+#+begin_src emacs-lisp
+  (defcustom my-gptel-prompt-guidelines-list nil
+    "Alist of tool name to its prompt guidelines."
+    :type '(alist :key-type string :value-type string))
+
+  (defun my-gptel-prompt-guidelines (tool)
+    (cdr (assoc (gptel-tool-name tool) my-gptel-prompt-guidelines-list)))
+
+
+  (defun my-gptel-prompt-guidelines-system-prompt ()
+    (when gptel-tools
+      (with-temp-buffer
+        (insert "Guidelines:\n")
+        (dolist (tool gptel-tools)
+          (when-let* ((gl (my-gptel-prompt-guidelines tool)))
+            (insert gl)
+            (insert "\n")))
+        (insert "\n")
+        (buffer-string))))
+
+  (setup gptel
+    (:option (append my-gptel-system-prompt-functions) #'my-gptel-prompt-guidelines-system-prompt))
 #+end_src
 
 
@@ -8085,6 +8182,14 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
               :multiSelect
               ( :type boolean
                 :description "Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive."))))))))
+
+
+  (setup gptel
+    (:option (prepend my-gptel-prompt-guidelines-list)
+             '("ask_user_question" . "Use ask_user_question whenever the user's request is underspecified and you cannot proceed without concrete decisions — you can ask up to 4 questions per invocation.
+  Each question MUST have 2-4 options. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer via the automatically appended \"Type something.\" row on every question, or abandon the questionnaire. Do NOT author \"Other\" or \"Type something.\" labels yourself — reserved labels are rejected at runtime.
+  Set multiSelect: true when multiple answers are valid.  The \"Type something.\" row is appended to every question.  If you recommend a specific option, make that the first option and append \"(Recommended)\" to its label.
+  Do not stack multiple ask_user_question calls back-to-back — group all clarifying questions into one invocation.")))
 #+end_src
 
 *** AI for coding
