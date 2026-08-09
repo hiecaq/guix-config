@@ -7882,13 +7882,45 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
 #+end_src
 
 *** AI
+**** Chat buffer
+Use org mode instead of markdown because we're in Emacs.
 #+begin_src emacs-lisp
   (setup gptel
     (:option gptel-default-mode #'org-mode))
+#+end_src
+IIUC, gptel'll convert the LLM response (likely in markdown) to org-mode.  Prompts (which includes previous LLM answers) sent to LLM will not be converted back to markdown.  This might or might not be a problem, so use it at your own risk.
 
+Explicitly indicates where the prompt begins and ends.
+#+begin_src emacs-lisp
   (setup gptel-request
     (:when-loaded
-      (:option (prepend gptel-prompt-prefix-alist) '(org-mode . "* "))))
+      (:option (prepend gptel-prompt-prefix-alist) '(org-mode . "#+gptel_prompt\n")
+               (prepend gptel-response-prefix-alist) '(org-mode . "#+gptel_response\n"))))
+#+end_src
+
+Only send things in the current branch of org headings to LLM.
+#+begin_src emacs-lisp
+  (setup gptel-org
+    (:option gptel-org-branching-context t))
+#+end_src
+
+To use this branching feature reliably, we need to strip org headings in LLM responses.  Here is the trick, stolen from [[https://github.com/karthink/gptel/discussions/1173#discussioncomment-15792643][here]]:
+#+begin_src emacs-lisp
+  (defun my-gptel-remove-headings (beg end)
+    (when (derived-mode-p 'org-mode)
+      (save-excursion
+        (goto-char beg)
+        (while (re-search-forward org-outline-regexp-bol end t)
+          (forward-line 0)
+          (delete-char (length (match-string 0)))
+          (insert-and-inherit "*")
+          (end-of-line)
+          (skip-chars-backward " \t\r")
+          (insert-and-inherit "*")))))
+
+  (setup gptel
+    (:with-hook gptel-post-response-functions
+      (:hook my-gptel-remove-headings)))
 #+end_src
 
 **** Model
