@@ -197,6 +197,7 @@
     - [[#eat][Eat]]
     - [[#dired][Dired]]
       - [[#dired-rsync][dired-rsync]]
+    - [[#ibuffer][IBuffer]]
     - [[#emms][EMMS]]
     - [[#guix-2][Guix]]
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
@@ -7665,6 +7666,12 @@ One thing that dired (with tramp) does it badly is copying files over network. F
 #+begin_src emacs-lisp
   (setup (:package dired-rsync)
     (:option dired-rsync-options "-azs --info=progress2"))
+#+end_src
+
+*** IBuffer
+#+begin_src emacs-lisp
+  (setup ibuffer
+    (:option ibuffer-human-readable-size t))
 #+end_src
 
 *** EMMS
