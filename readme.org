@@ -2530,6 +2530,11 @@ Increase process output buffer to 4MB (from [[https://emacsredux.com/blog/2026/0
     (:option read-process-output-max (* 4 1024 1024)))
 #+end_src
 
+Don't disable ~narrow-to-region~.
+#+begin_src emacs-lisp
+  (put 'narrow-to-region 'disabled nil)
+#+end_src
+
 **** D-Bus Support
 #+begin_src emacs-lisp
   (setup (:if-feature dbusbind)
