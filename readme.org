@@ -7908,14 +7908,19 @@ The idea is stolen from [[https://github.com/yantar92/emacs-config/blob/master/c
     "List of strings or functions to build default prompt.")
 
   (defun my-gptel-system-prompt (prompt)
-    (with-temp-buffer
-      (dolist (el my-gptel-system-prompt-functions)
-        (pcase el
-    	((pred functionp) (insert (funcall el)))
-          ((pred stringp) (insert el)))
-        (insert "\n\n"))
-      (insert prompt)
-      (buffer-string)))
+    (let ((buffer (current-buffer)))
+      (with-temp-buffer
+        (dolist (el my-gptel-system-prompt-functions)
+          (when-let* ((prompt
+                       (pcase el
+    	               ((pred functionp)
+                          (with-current-buffer buffer
+                            (funcall el)))
+                         ((pred stringp) el))))
+            (insert prompt)
+            (insert "\n\n")))
+        (insert prompt)
+        (buffer-string))))
 #+end_src
 
 **** Presets
@@ -7976,7 +7981,7 @@ To use this branching feature reliably, we need to strip org headings in LLM res
 
 A simple wrapper to have chat buffer started with the =chat= preset, and always use the same buffer name family.
 #+begin_src emacs-lisp
-  (defvar my-gptel-chat-buffer-name "gptel-chat*"
+  (defvar my-gptel-chat-buffer-name "*gptel-chat*"
     "Buffer name for `my-gptel-chat'.")
 
   (defun my-gptel-chat (name &optional initial interactivep)
@@ -8044,14 +8049,13 @@ A simple wrapper to have chat buffer started with the =chat= preset, and always 
 
 
   (defun my-gptel-prompt-guidelines-system-prompt ()
-    (when gptel-tools
+    (when-let* ((tools gptel-tools))
       (with-temp-buffer
         (insert "Guidelines:\n")
-        (dolist (tool gptel-tools)
+        (dolist (tool tools)
           (when-let* ((gl (my-gptel-prompt-guidelines tool)))
             (insert gl)
             (insert "\n")))
-        (insert "\n")
         (buffer-string))))
 
   (setup gptel
