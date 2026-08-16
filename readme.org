@@ -5,6 +5,7 @@
 
 #+toc: headlines 2
 
+
 * Table of Contents :TOC:noexport:
 - [[#introduction][Introduction]]
 - [[#system-configuration][System Configuration]]
@@ -7984,6 +7985,9 @@ A simple wrapper to have chat buffer started with the =chat= preset, and always 
   (defvar my-gptel-chat-buffer-name "*gptel-chat*"
     "Buffer name for `my-gptel-chat'.")
 
+  (defvar my-gptel-chat-buffer-hook nil
+    "Hooks to run when the buffer is created.")
+
   (defun my-gptel-chat (name &optional initial interactivep)
     "My wrapper for gptel chat buffer.  It is meant to be interactive only."
     (interactive
@@ -8003,9 +8007,14 @@ A simple wrapper to have chat buffer started with the =chat= preset, and always 
            (buf (funcall-interactively #'gptel name nil initial interactivep)))
       (unless was-alive
         (with-current-buffer buf
-          (gptel--apply-preset
-           'chat
-           (lambda (sym val) (set (make-local-variable sym) val)))))))
+          (run-hooks 'my-gptel-chat-buffer-hook)))))
+
+  (defun my-gptel-chat--apply-preset ()
+    (gptel--apply-preset
+     'chat
+     (lambda (sym val) (set (make-local-variable sym) val))))
+
+  (add-hook 'my-gptel-chat-buffer-hook #'my-gptel-chat--apply-preset -100)
 #+end_src
 
 **** Models
@@ -8020,6 +8029,30 @@ A simple wrapper to have chat buffer started with the =chat= preset, and always 
   (setup gptel
     (:option gptel-backend (gptel-get-backend "DeepSeek")
              gptel-model 'deepseek-v4-flash))
+#+end_src
+
+**** DeepSeek V4F/V4P fix
+[[https://github.com/xiaobright/dsh-anchored-standard/][See here]]
+
+#+begin_src emacs-lisp
+  (setup gptel-request
+    (:when-loaded
+      (setf (alist-get 'default gptel-directives) "You are a helpful software engineer assistant.")
+      (setf (alist-get 'programming gptel-directives) "You are a helpful software engineer assistant.")
+      (setf (alist-get 'chat gptel-directives) "You are a helpful software engineer assistant.")))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my-gptel-deepseek-v4-magic-1st-turn ()
+    (when (memq gptel-model '(deepseek-v4-flash deepseek-v4-pro))
+      (goto-char (point-max))
+      (insert "who are you")
+      (let ((my-gptel-system-prompt-functions nil)
+            (gptel-tools nil)
+            (gptel-use-context nil))
+        (gptel-send))))
+
+  (add-hook 'my-gptel-chat-buffer-hook #'my-gptel-deepseek-v4-magic-1st-turn 100)
 #+end_src
 
 **** Tools
