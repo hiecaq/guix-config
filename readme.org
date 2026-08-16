@@ -206,9 +206,12 @@
     - [[#ai][AI]]
       - [[#system-prompts][System Prompts]]
       - [[#presets][Presets]]
+      - [[#reasoning--cot][Reasoning / CoT]]
       - [[#chat-buffer][Chat buffer]]
       - [[#models][Models]]
+      - [[#deepseek-v4fv4p-fix][DeepSeek V4F/V4P fix]]
       - [[#tools-1][Tools]]
+      - [[#gptel-request-wrappers][gptel-request wrappers]]
     - [[#ai-for-coding][AI for coding]]
       - [[#codex-environment][Codex environment]]
       - [[#tramp-integration][TRAMP integration]]
@@ -8245,6 +8248,29 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
   Each question MUST have 2-4 options. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer via the automatically appended \"Type something.\" row on every question, or abandon the questionnaire. Do NOT author \"Other\" or \"Type something.\" labels yourself — reserved labels are rejected at runtime.
   Set multiSelect: true when multiple answers are valid.  The \"Type something.\" row is appended to every question.  If you recommend a specific option, make that the first option and append \"(Recommended)\" to its label.
   Do not stack multiple ask_user_question calls back-to-back — group all clarifying questions into one invocation.")))
+#+end_src
+
+**** gptel-request wrappers
+***** rewrite
+Sometimes LLM puts code fences in the response of ~gptel-rewrite~, so the diff will contains that too.  [[https://github.com/karthink/gptel/issues/604#issuecomment-2629375769][Here]] is a fix for this:
+#+begin_src emacs-lisp
+  (defun my-gptel-remove-rewrite-code-fence (beg end)
+    "Remove Markdown-style code fences from the GPTel rewrite response."
+    (save-excursion
+      ;; Remove closing fence
+      (goto-char end)
+      (beginning-of-line)
+      (when (looking-at (rx bol "```" eol))
+        (delete-region (match-beginning 0) (match-end 0)))
+
+      ;; Remove opening fence
+      (goto-char beg)
+      (when (looking-at (rx bol "```" (0+ any) eol (? "\n")))
+        (delete-region (match-beginning 0) (match-end 0)))))
+
+  (setup gptel-rewrite
+    (:with-hook gptel-post-rewrite-functions
+      (:hook my-gptel-remove-rewrite-code-fence)))
 #+end_src
 
 *** AI for coding
