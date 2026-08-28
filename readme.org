@@ -120,6 +120,7 @@
       - [[#evil-commentary][Evil Commentary]]
       - [[#window-map][Window map]]
     - [[#god-mode][God mode]]
+      - [[#emergency-escape][Emergency escape]]
     - [[#which-key][Which key]]
     - [[#posframe][Posframe]]
     - [[#eldoc][Eldoc]]
@@ -3494,6 +3495,20 @@ Add my helper commands to the ~evil-window-map~
      (:with-state (insert emacs motion)
        (:bind "C-<espace>" #'god-execute-with-current-bindings))))
 #+end_src
+
+**** Emergency escape
+Sometimes god-mode runs out of sync that it doesn't actually kill the transient map from ~set-transient-map~ when exiting god-mode.  Our last resort is the following:
+#+begin_src emacs-lisp
+  (defun my-kill-transient-map ()
+    "Clear `overriding-terminal-local-map'."
+    (interactive)
+    (setq overriding-terminal-local-map nil))
+
+  (setup god-mode
+    (:global
+     (:bind "C-<f1>" #'my-kill-transient-map)))
+#+end_src
+Press =F1= will save us from it.
 
 *** Which key
 [[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode that hints you the keybindings prefixed with what you have typed when you get stuck. It is built-in since Emacs 30.
