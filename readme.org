@@ -148,6 +148,7 @@
     - [[#corfu][Corfu]]
     - [[#visual-undo][Visual Undo]]
     - [[#hideshow][Hideshow]]
+      - [[#preserve-the-newline-before-the-closing-delimiter][Preserve the newline before the closing delimiter]]
     - [[#pulse][Pulse]]
     - [[#electric-pair-mode][electric-pair-mode]]
     - [[#aggresive-indent][Aggresive Indent]]
@@ -4658,6 +4659,21 @@ Anyway, [[https://github.com/fejfighter/eglot-tempel][eglot-tempel]], as the nam
   (setup hideshow
     (:with-mode hs-minor-mode (:hook-into prog-mode)))
 #+end_src
+
+**** Preserve the newline before the closing delimiter
+Stolen from [[https://emacs-china.org/t/emacs/31583/20][here]]
+#+begin_src emacs-lisp
+  (defun my-hs--adjust-block-end (hidden-beg)
+    (max hidden-beg (1- (line-beginning-position))))
+
+  (defun my-hs-setup-c-hideshow ()
+    (setq-local hs-adjust-block-end-function #'my-hs--adjust-block-end))
+
+  (setup hideshow
+    (:with-function my-hs-setup-c-hideshow
+      (:hook-into c-mode c++-mode c-ts-mode c++-ts-mode)))
+#+end_src
+
 
 *** Pulse
 =pulse= is a built-in package that transiently highlights a region (current cursor line, for example). Its callbacks can be added to post jump hooks, so that the jumps are easier to follow.
