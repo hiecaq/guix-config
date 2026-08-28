@@ -2468,7 +2468,7 @@ Always use =y-or-p= over =yes-or-no=, and use ~read-key~ instead of ~read-from-m
 #+begin_src emacs-lisp
   (setup emacs
     (:option use-short-answers t
-             y-or-n-p-use-read-key t))
+             y-or-n-p-use-read-key nil))
 #+end_src
 
 I don't want Emacs to auto-recenter when scrolling off-the-screen:
