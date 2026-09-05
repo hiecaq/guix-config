@@ -7116,10 +7116,22 @@ Sometimes, I want to edit vimrc-like configurations.  There is [[https://github.
 #+end_src
 
 *** Tramp
+Fix the PATH environment variable:
 #+begin_src emacs-lisp
   (setup tramp
     (:when-loaded
       (:option (prepend tramp-remote-path) 'tramp-own-remote-path)))
+#+end_src
+
+Don't interact with =authinfo.gpg= in any ways:
+#+begin_src emacs-lisp
+  (setup tramp
+    (:option tramp-completion-use-auth-sources nil)
+    (connection-local-set-profile-variables
+     'remote-without-auth-sources '((auth-sources . nil)))
+
+    (connection-local-set-profiles
+     '(:application tramp) 'remote-without-auth-sources))
 #+end_src
 
 *** Email
