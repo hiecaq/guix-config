@@ -7970,6 +7970,7 @@ The idea is stolen from [[https://github.com/yantar92/emacs-config/blob/master/c
   (defun my-gptel-system-prompt (prompt)
     (let ((buffer (current-buffer)))
       (with-temp-buffer
+        (insert prompt)
         (dolist (el my-gptel-system-prompt-functions)
           (when-let* ((prompt
                        (pcase el
@@ -7977,9 +7978,8 @@ The idea is stolen from [[https://github.com/yantar92/emacs-config/blob/master/c
                           (with-current-buffer buffer
                             (funcall el)))
                          ((pred stringp) el))))
-            (insert prompt)
-            (insert "\n\n")))
-        (insert prompt)
+            (insert "\n\n")
+            (insert prompt)))
         (buffer-string))))
 #+end_src
 
