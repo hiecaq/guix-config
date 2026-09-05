@@ -4918,9 +4918,22 @@ Somehow eshell's =C-c M-o= keybinding is not consistent with comints' (like ielm
 #+end_src
 
 *** Ediff
+Don't use an extra frame for the control panel:
 #+begin_src emacs-lisp
   (setup ediff
     (:option ediff-window-setup-function #'ediff-setup-windows-plain))
+#+end_src
+
+~mode-line-format-right-align~ and ediff's mode line indicator setup don't play well together.  Here is the fix:
+#+begin_src emacs-lisp
+  (setup ediff
+    (defun my-ediff-mode-line-format-fix ()
+      "Fix the ediff mode-line-format by removing `mode-line-format-right-align'
+  beforehand."
+      (setq mode-line-format
+            (remq 'mode-line-format-right-align mode-line-format)))
+    (:with-function my-ediff-mode-line-format-fix
+      (:hook-into ediff-prepare-buffer-hook)))
 #+end_src
 
 *** Magit
