@@ -201,6 +201,7 @@
     - [[#dired][Dired]]
       - [[#dired-rsync][dired-rsync]]
     - [[#ibuffer][IBuffer]]
+    - [[#proced][Proced]]
     - [[#emms][EMMS]]
     - [[#guix-2][Guix]]
     - [[#desktop-notification-daemon][Desktop Notification Daemon]]
@@ -7750,6 +7751,15 @@ One thing that dired (with tramp) does it badly is copying files over network. F
 #+begin_src emacs-lisp
   (setup ibuffer
     (:option ibuffer-human-readable-size t))
+#+end_src
+
+*** Proced
+Proced is basically Emacs' frontend to =ps=.  It list processes in a Dired-like way.
+
+It can even list processes on the remote:
+#+begin_src emacs-lisp
+  (setup proced
+    (:option proced-show-remote-processes t))
 #+end_src
 
 *** EMMS
