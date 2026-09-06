@@ -8334,6 +8334,35 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
   Do not stack multiple ask_user_question calls back-to-back — group all clarifying questions into one invocation.")))
 #+end_src
 
+***** Read a file from buffer
+#+begin_src emacs-lisp
+  (gptel-make-tool
+   :name "read"
+   :category "filesystem"
+   :description
+   "Read the contents of a file. Supports text files only."
+   :function
+   (lambda (filename)
+     (let* ((expanded (expand-file-name filename))
+            (buf (find-buffer-visiting expanded)))
+       (unless buf
+         (unless (file-readable-p expanded)
+           (error "File is not readable: %s" expanded))
+         (setq buf (find-file-noselect expanded)))
+       (with-current-buffer buf
+         (save-restriction
+           (widen)
+           (buffer-substring-no-properties (point-min) (point-max))))))
+   :args
+   '((:name "path"
+            :type string
+            :description "relative path to the file to read")))
+
+  (setup gptel
+    (:option (prepend my-gptel-prompt-guidelines-list)
+             '("read" . "Use read to examine files instead of cat or sed.")))
+#+end_src
+
 **** gptel-request wrappers
 ***** rewrite
 Sometimes LLM puts code fences in the response of ~gptel-rewrite~, so the diff will contains that too.  [[https://github.com/karthink/gptel/issues/604#issuecomment-2629375769][Here]] is a fix for this:
