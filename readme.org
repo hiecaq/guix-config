@@ -2470,7 +2470,25 @@ Always use =y-or-p= over =yes-or-no=, and use ~read-key~ instead of ~read-from-m
 #+begin_src emacs-lisp
   (setup emacs
     (:option use-short-answers t
-             y-or-n-p-use-read-key nil))
+             y-or-n-p-use-read-key t))
+#+end_src
+
+~map-y-or-n-p~ is currently broken when ~y-or-n-p-use-read-key~ is set to =t=, see bug#81804.  Here is the temporary fix:
+#+begin_src emacs-lisp
+  (define-advice map-y-or-n-p (:around (orig-fun &rest args) fix-keymap)
+    "Disable all keymaps before calling `read-key-sequence-vector'.
+  This is implemented by replace it with a wrapper function temporarily."
+    (if (not y-or-n-p-use-read-key)
+        (apply orig-fun args)
+      (let ((orig-read-key-sequence-vector
+             (symbol-function #'read-key-sequence-vector))
+            (temp-local-map (make-sparse-keymap)))
+        (cl-letf (((symbol-function #'read-key-sequence-vector)
+                   (lambda (&rest read-args)
+                     (let ((overriding-terminal-local-map nil)
+                           (overriding-local-map temp-local-map))
+                       (apply orig-read-key-sequence-vector read-args)))))
+          (apply orig-fun args)))))
 #+end_src
 
 I don't want Emacs to auto-recenter when scrolling off-the-screen:
