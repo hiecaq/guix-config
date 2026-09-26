@@ -27,7 +27,7 @@
     - [[#qemu][QEMU]]
   - [[#default-services-modification][Default Services Modification]]
     - [[#guix][Guix]]
-    - [[#gdm][GDM]]
+    - [[#login-manager][Login manager]]
       - [[#fix-cursor][Fix cursor]]
       - [[#fix-screen-tearing][Fix screen tearing]]
     - [[#audio][Audio]]
@@ -533,19 +533,26 @@ We modify the system-wide channels (which will be used if a user does not have a
     (q #C1FD53E5D4CE971933EC50C9F307AE2171A2D3B52C804642A7A35F84F3A4EA98#)))"))
 #+end_src
 
-*** GDM
+*** Login manager
  here is how to do that in Guix's way to add configurations to =/etc/X11/xorg.conf.d/=.
+#+begin_src scheme :noweb-ref system-services
+  (set-xorg-configuration
+   (xorg-configuration
+     (extra-config (list %fix-amd-disappearing-cursor-conf
+                         %fix-amd-screen-tearing)))
+   slim-service-type)
+#+end_src
+
+I now have switched to slim.
+#+begin_src scheme :noweb-ref system-services
+  (service slim-service-type (slim-configuration
+                              (display ":0")
+                              (vt "vt7")))
+#+end_src
+
+Delete the default login manager, GDM.
 #+begin_src scheme
-  (gdm-service-type
-   config => (gdm-configuration
-              (inherit config)
-              (auto-suspend? #f)
-              (xorg-configuration
-               (let ((xorg-config ((@@(gnu services xorg) gdm-configuration-xorg) config)))
-                 (xorg-configuration
-                  (inherit xorg-config)
-                  (extra-config (list %fix-amd-disappearing-cursor-conf
-                                      %fix-amd-screen-tearing)))))))
+  (delete gdm-service-type)
 #+end_src
 
 **** Fix cursor
