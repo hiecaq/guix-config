@@ -7504,13 +7504,14 @@ To use rime, here are the needed packages:
                        (method git-fetch)
                        (uri (git-reference
                              (url "https://github.com/iDvel/rime-ice")
-                             (commit "a5f5404e369100fcfc5562f86f1205827453e31c")))
+                             (commit "da1fbe602e38f26db846fa10120ee64c2b0324c0")))
                        (file-name "rime-ice")
                        (sha256
                         (base32
-                         "0v2x6a3v9xks5qml56km14vbvc6j49lf2fkb57kj72i5s5qzqymk"))
+                         "0cwgnsvn7lwri9kijmgpg8pcsnr2kxghcb9j8pi27575f268dxr2"))
                        (modules '((guix build utils)))
                        (snippet '(begin
+                                   (delete-file-recursively "build")
                                    (map delete-file (find-files "." "double.*\\.schema\\.yaml$"))
                                    (for-each delete-file '("squirrel.yaml" "weasel.yaml" "default.yaml"))
                                    (substitute* "others/recipes/cn_dicts.recipe.yaml"
@@ -7539,6 +7540,7 @@ To use rime, here are the needed packages:
                                                   (("clean:\\s$")
                                                    (string-append "\t@if [ -d \"$(OUTPUT)/cn_dicts\" ]; then install -d $(DESTDIR)$(RIME_DATA_DIR)/cn_dicts; install -m 644 $(OUTPUT)/cn_dicts/*.* $(DESTDIR)$(RIME_DATA_DIR)/cn_dicts; fi\n"
                                                                   "\t@if [ -d \"$(OUTPUT)/en_dicts\" ]; then install -d $(DESTDIR)$(RIME_DATA_DIR)/en_dicts; install -m 644 $(OUTPUT)/en_dicts/*.* $(DESTDIR)$(RIME_DATA_DIR)/en_dicts; fi\n"
+                                                                  "\t@if [ -d \"$(OUTPUT)/lua\" ]; then install -d $(DESTDIR)$(RIME_DATA_DIR)/lua; install -m 644 $(OUTPUT)/lua/*.* $(DESTDIR)$(RIME_DATA_DIR)/lua; fi\n"
                                                                   "\n"
                                                                   "clean:\n")))))
                         (add-after 'unpack 'patch-package-list
@@ -7546,14 +7548,10 @@ To use rime, here are the needed packages:
                                      (substitute* "extra-packages.conf"
                                                   (("^\\s*emoji\\s$") "")
                                                   (("^\\)") (string-append
-                                                             "    ice:others/recipes/en_dicts\n"
-                                                             "    ice:others/recipes/cn_dicts\n"
                                                              "    ice\n"
                                                              "    japanese\n"
                                                              ")"
                                                              )))))))))))
-
-
 #+end_src
 
 =liberime= is the actual binding.  With its latest version ~(liberime-get-preedit)~ always returns =nil=, so I revert it to the old version for now.
