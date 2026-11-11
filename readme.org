@@ -30,6 +30,7 @@
     - [[#login-manager][Login manager]]
       - [[#fix-cursor][Fix cursor]]
       - [[#fix-screen-tearing][Fix screen tearing]]
+      - [[#desktop-file-in-a-directory-for-xsession][Desktop file (in a directory) for Xsession]]
     - [[#audio][Audio]]
 - [[#home-configuration][Home Configuration]]
 - [[#guix-1][Guix]]
@@ -579,6 +580,21 @@ See https://wiki.archlinux.org/title/AMDGPU for details.
     Option \"TearFree\" \"true\"
   EndSection
   ")
+#+end_src
+
+**** Desktop file (in a directory) for Xsession
+#+begin_src scheme :noweb-ref system-helper
+  ;; (define %xsession-dir
+  ;;   (file-union "xsessions"
+  ;;               `(("xsession.desktop"
+  ;;                  ,(plain-file "xsession.desktop"
+  ;;                               "\
+  ;; [Desktop Entry]
+  ;; Type=Application
+  ;; Name=Xsession
+  ;; Comment=Run ~/.xsession
+  ;; Exec=/home/hiecaq/.xsession
+  ;; ")))))
 #+end_src
 
 *** Audio
