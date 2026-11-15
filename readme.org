@@ -8004,25 +8004,183 @@ It supports PCKE but unfortunately only with S256 method at time of writing.   H
 
 *** AI
 **** System Prompts
-The idea is stolen from [[https://github.com/yantar92/emacs-config/blob/master/config.org#system-prompt][Ihor's configuration]].
+The idea is stolen from [[https://github.com/yantar92/emacs-config/blob/master/config.org#system-prompt][Ihor's configuration]], and themed based on [[https://pi.dev/][pi-coding-agent]].
 #+begin_src emacs-lisp
   (defvar my-gptel-system-prompt-functions nil
     "List of strings or functions to build default prompt.")
 
+  (defvar-local my-gptel--system-prompt-cache nil
+    "Per-buffer system prompt.  Supposed to be invalidated when
+  configuration changes.")
+
   (defun my-gptel-system-prompt (prompt)
-    (let ((buffer (current-buffer)))
+    (unless my-gptel--system-prompt-cache
+      (setq my-gptel--system-prompt-cache
+            (let ((buffer (current-buffer)))
+              (with-temp-buffer
+                (insert prompt)
+                (dolist (el my-gptel-system-prompt-functions)
+                  (when-let* ((prompt
+                               (pcase el
+    	                       ((pred functionp)
+                                  (with-current-buffer buffer
+                                    (funcall el)))
+                                 ((pred stringp) el))))
+                    (insert "\n\n")
+                    (insert prompt)))
+                (buffer-string)))))
+    my-gptel--system-prompt-cache)
+#+end_src
+
+***** Preamble
+This is the first several sentences in the system prompt, describing the role of this agent.
+
+***** Tool short descriptions (snippets)
+#+begin_src emacs-lisp
+  (defun my-gptel--prompt-tool-snippet (tool)
+    (let ((description (gptel-tool-description tool)))
+      (when (string-match (rx "." (or " " line-end)) description)
+        (substring description 0 (match-beginning 0)))))
+
+
+  (defun my-gptel-prompt-snippets-system-prompt ()
+    (when-let* ((tools gptel-tools))
       (with-temp-buffer
-        (insert prompt)
-        (dolist (el my-gptel-system-prompt-functions)
-          (when-let* ((prompt
-                       (pcase el
+        (insert "<tools>\n")
+        (dolist (tool tools)
+          (when-let* ((gl (my-gptel--prompt-tool-snippet tool)))
+            (insert "- " (gptel-tool-name tool) ": " gl "\n")))
+        (insert "</tools>")
+        (buffer-string))))
+
+
+  (setup gptel
+    (:option (append my-gptel-system-prompt-functions) #'my-gptel-prompt-snippets-system-prompt))
+#+end_src
+
+***** Rules
+This part gives guidelines to the agent's response tongue and tool use strategies.
+#+begin_src emacs-lisp
+  (defcustom my-gptel-prompt-tool-rules-list nil
+    "Alist of tool name to its prompt guidelines."
+    :type '(alist :key-type string :value-type string))
+
+
+  (defcustom my-gptel-prompt-rules-list
+    '("Be concise in your responses"
+      "Show file paths clearly when working with files")
+    "list of prompt guidelines."
+    :type '(repeat (choice function string)))
+
+  (defun my-gptel--prompt-tool-rules (tool)
+    (cdr (assoc (gptel-tool-name tool) my-gptel-prompt-tool-rules-list)))
+
+  (defun my-gptel-prompt-rules-system-prompt ()
+    (let ((tools gptel-tools)
+          (buffer (current-buffer)))
+      (with-temp-buffer
+        (insert "<rules>\n")
+        (dolist (tool tools)
+          (when-let* ((gl (my-gptel--prompt-tool-rules tool)))
+            (insert "- " gl "\n")))
+        (dolist (rule my-gptel-prompt-rules-list)
+          (when-let* ((r
+                       (pcase rule
     	               ((pred functionp)
                           (with-current-buffer buffer
-                            (funcall el)))
-                         ((pred stringp) el))))
-            (insert "\n\n")
-            (insert prompt)))
+                            (funcall rule)))
+                         ((pred stringp) rule))))
+            (insert "- " r "\n")))
+        (insert "</rules>")
         (buffer-string))))
+
+  (setup gptel
+    (:option (append my-gptel-system-prompt-functions) #'my-gptel-prompt-rules-system-prompt))
+#+end_src
+
+***** Docs
+In Pi, it lists the paths to the documentations of pi-coding-agent itself.
+
+***** Project context
+This is where the AGENTS.md are: they are ordered from most general to most specific.
+
+#+begin_src emacs-lisp
+  (defcustom my-gptel-prompt-context-global-file nil
+    "Path to the global AGENTS.md file."
+    :type '(choice (const :tag "None" nil) file))
+
+  (defcustom my-gptel-prompt-context-file-names
+    '("AGENTS.override.md" "AGENTS.md")
+    "File names looked up in each directory, in priority order.
+  Only the first readable name of a directory is kept."
+    :type '(repeat string))
+
+
+  (defun my-gptel--prompt-context-ancestors (dir)
+    "Return DIR and its ancestors up to the filesystem root, root first.
+  TRAMP paths are walked by local name, so a remote session stops at \"/\"
+  on the remote host."
+    (let ((dirs (list (file-name-as-directory (expand-file-name dir)))))
+      (while-let ((cur (car dirs))
+                  (_ (not (equal "/" (file-local-name cur))))
+                  (parent (file-name-directory (directory-file-name cur)))
+                  (_ (not (equal parent cur))))
+        (push parent dirs))
+      dirs))
+
+  (defun my-gptel--prompt-context-file (dir)
+    "Return the instruction file of DIR, or nil."
+    (when-let* ((name (seq-some (lambda (name)
+                                  (when (file-readable-p
+                                         (expand-file-name name dir))
+                                    name))
+                                my-gptel-prompt-context-file-names)))
+      (expand-file-name name dir)))
+
+
+  (defun my-gptel--prompt-context-files (dir)
+    "Return the list of instruction files for DIR, most general first."
+    (let ((seen nil)
+          (files nil)
+          (global my-gptel-prompt-context-global-file)
+          (contexts (mapcar #'my-gptel--prompt-context-file
+                            (my-gptel--prompt-context-ancestors dir))))
+      (dolist (file (if (and global (file-readable-p global))
+                        (cons global contexts)
+                      contexts)
+                    (nreverse files))
+        (when file
+          (let ((truename (file-truename file)))
+            (unless (member truename seen)
+              (push truename seen)
+              (push file files)))))))
+
+  (defun my-gptel-prompt-project-context-system-prompt ()
+    (when-let* ((files (my-gptel--prompt-context-files default-directory)))
+      (with-temp-buffer
+        (insert "<project_context>\nProject-specific instructions and guidelines:\n")
+        (dolist (file files)
+          (insert "\n<project_instructions path=\"" (file-local-name file) "\">\n")
+          (forward-char (cadr (insert-file-contents file)))
+          (insert "</project_instructions>\n"))
+        (insert "</project_context>")
+        (buffer-string))))
+
+
+  (setup gptel
+    (:option (append my-gptel-system-prompt-functions) #'my-gptel-prompt-project-context-system-prompt))
+#+end_src
+
+***** Skills
+
+***** cwd
+#+begin_src emacs-lisp
+  (defun my-gptel-prompt-cwd-system-prompt ()
+    (when-let* ((path (file-local-name (expand-file-name default-directory))))
+      (format "<cwd>\n%s\n</cwd>" path)))
+
+  (setup gptel
+    (:option (append my-gptel-system-prompt-functions) #'my-gptel-prompt-cwd-system-prompt))
 #+end_src
 
 **** Presets
@@ -8164,38 +8322,45 @@ A simple wrapper to have chat buffer started with the =chat= preset, and always 
       (:also-load gptel-agent-tools-introspection)))
 #+end_src
 
+
+***** Internet Search (via tavily)
 #+begin_src emacs-lisp
-  (defun my-prompt-snippet (tool)
-    (let ((description (gptel-tool-description tool)))
-      (if (string-match (rx "." (or " " line-end)) description)
-          (substring description 0 (match-beginning 0))
-        "")))
+  (defun tavily-search (query &optional callback)
+    (let ((url "api.tavily.com")
+          (ep "/search"))
+      (plz
+        'post
+        (concat "https://" url ep)
+        :headers
+        `(("Content-Type" . application/json)
+          ("Authorization" . ,(concat "Bearer " (gptel-api-key-from-auth-source url))))
+        :body
+        (json-encode
+         `(("query" . ,query)
+           ("search_depth" . "basic")
+           ("max_results" . 5)))
+        :as 'string
+        :then
+        (if callback
+            (lambda (result) (funcall callback result))
+          'sync))))
+
+
+  (setup gptel-request
+    (:when-loaded
+      (gptel-make-tool
+       :category "web"
+       :name "web_search"
+       :confirm t
+       :async t
+       :function (lambda (cb query)
+                   (tavily-search query cb))
+       :description "Search the Internet"
+       :args (list '(:name "query"
+                           :type string
+                           :description "The query to search")))))
+
 #+end_src
-
-
-#+begin_src emacs-lisp
-  (defcustom my-gptel-prompt-guidelines-list nil
-    "Alist of tool name to its prompt guidelines."
-    :type '(alist :key-type string :value-type string))
-
-  (defun my-gptel-prompt-guidelines (tool)
-    (cdr (assoc (gptel-tool-name tool) my-gptel-prompt-guidelines-list)))
-
-
-  (defun my-gptel-prompt-guidelines-system-prompt ()
-    (when-let* ((tools gptel-tools))
-      (with-temp-buffer
-        (insert "Guidelines:\n")
-        (dolist (tool tools)
-          (when-let* ((gl (my-gptel-prompt-guidelines tool)))
-            (insert gl)
-            (insert "\n")))
-        (buffer-string))))
-
-  (setup gptel
-    (:option (append my-gptel-system-prompt-functions) #'my-gptel-prompt-guidelines-system-prompt))
-#+end_src
-
 
 ***** Ask user question
 Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question][rpiv-ask-user-question]] to gptel.
@@ -8341,7 +8506,7 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
 
 
   (setup gptel
-    (:option (prepend my-gptel-prompt-guidelines-list)
+    (:option (prepend my-gptel-prompt-tool-rules-list)
              '("ask_user_question" . "Use ask_user_question whenever the user's request is underspecified and you cannot proceed without concrete decisions — you can ask up to 4 questions per invocation.
   Each question MUST have 2-4 options. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer via the automatically appended \"Type something.\" row on every question, or abandon the questionnaire. Do NOT author \"Other\" or \"Type something.\" labels yourself — reserved labels are rejected at runtime.
   Set multiSelect: true when multiple answers are valid.  The \"Type something.\" row is appended to every question.  If you recommend a specific option, make that the first option and append \"(Recommended)\" to its label.
@@ -8373,7 +8538,7 @@ Here's my attempt of porting [[https://github.com/juicesharp/rpiv-mono/tree/main
             :description "relative path to the file to read")))
 
   (setup gptel
-    (:option (prepend my-gptel-prompt-guidelines-list)
+    (:option (prepend my-gptel-prompt-tool-rules-list)
              '("read" . "Use read to examine files instead of cat or sed.")))
 #+end_src
 
